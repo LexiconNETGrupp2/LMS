@@ -5,12 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LMS.API.Services;
 
-//ToDo: Important for project to even work!
-//Add in secret.json
-//{
-//   "password" :  "YourSecretPasswordHere"
-//
-
 //You need all this for JWT to work :) 
 //User Secrets Json
 //Important to have secretkey inside same key "JwtSettings" as used in appsettings.json for get both sections!!!!
