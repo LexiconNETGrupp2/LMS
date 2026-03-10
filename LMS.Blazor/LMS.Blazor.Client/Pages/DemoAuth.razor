@@ -1,4 +1,5 @@
 ﻿@page "/demoauth"
+@inject IApiService ApiService
 
 @attribute [Authorize]
 
@@ -67,7 +68,8 @@
 
         try
         {
-            throw new HttpRequestException("We have not implement this yet :)");
+            users = await ApiService.GetAsync<IEnumerable<DemoAuthDto>>("api/demoauth");
+            //throw new HttpRequestException("We have not implement this yet :)");
         }
         catch (Exception ex)
         {
