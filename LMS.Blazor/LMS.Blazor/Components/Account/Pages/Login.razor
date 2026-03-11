@@ -136,6 +136,13 @@
             if(user != null)
             {
                 var tokenSuccess = await GetAndStoreJwtTokenAsync(user.Id, Input.Email, Input.Password);
+
+                if (!tokenSuccess)
+                {
+                    await SignInManager.SignOutAsync();
+                    errorMessage = "Error: Unable to connect to API. Please ensure the API is running and try again.";
+                    return;
+                }
             }
 
 
@@ -160,11 +167,6 @@
 
     private async Task<bool> GetAndStoreJwtTokenAsync(string userId, string email, string password)
     {
-        //Call API
-        //Get token
-        //Handle errors
-        //Store token
-
         try
         {
             var httpClient = HttpClientFactory.CreateClient("LmsApiClient");
@@ -183,18 +185,27 @@
 
                 if(tokens != null)
                 {
-                    
+                    await TokenStorage.StoreTokensAsync(userId, tokens);
+                    Logger.LogInformation("JWT tokens stored for user {UserId}", userId);
+                    return true;
                 }
-
+                else
+                {
+                    Logger.LogWarning("Failed to deserialize tokens from API response");
+                    return false;
+                }
+            }
+            else
+            {
+                Logger.LogWarning("Failed to get JWT tokens from API. Status: {StatusCode}", response.StatusCode);
+                return false;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            
-            
+            Logger.LogError(ex, "Error getting JWT tokens from API");
+            return false;
         }
-
-        return true;
     }
 
 
