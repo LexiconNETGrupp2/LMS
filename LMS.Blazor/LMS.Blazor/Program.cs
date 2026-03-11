@@ -3,6 +3,7 @@ using LMS.Blazor.Client.Pages;
 using LMS.Blazor.Components;
 using LMS.Blazor.Components.Account;
 using LMS.Blazor.Data;
+using LMS.Blazor.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
@@ -61,6 +62,8 @@ public class Program
             client.DefaultRequestHeaders.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
+
+        builder.Services.AddSingleton<ITokenStorage, TokenStorageService>();
 
         var app = builder.Build();
 
