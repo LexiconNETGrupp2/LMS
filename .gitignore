@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Token storage (contains sensitive authentication tokens)
 **/App_Data/
+
+# Jetbrains Rider
+.idea/
