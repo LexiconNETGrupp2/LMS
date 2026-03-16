@@ -67,7 +67,8 @@ public class Program
         });
 
         builder.Services.AddSingleton<ITokenStorage, TokenStorageService>();
-        builder.Services.AddScoped<IApiService, ClientApiService>();
+        //  builder.Services.AddScoped<IApiService, ClientApiService>();
+        builder.Services.AddScoped<IApiService, ServerNoOpApiService>();
 
         var app = builder.Build();
 

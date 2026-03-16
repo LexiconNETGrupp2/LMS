@@ -27,5 +27,8 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     private IComponentRenderMode? PageRenderMode =>
-        HttpContext.AcceptsInteractiveRouting() ? InteractiveWebAssembly : null;
+        HttpContext.AcceptsInteractiveRouting() ? InteractiveWebAssembly : null;                                   //prerender true
+       //HttpContext.AcceptsInteractiveRouting() ? new InteractiveWebAssemblyRenderMode() : null;                  //prerender true
+       //HttpContext.AcceptsInteractiveRouting()? new InteractiveWebAssemblyRenderMode(prerender: true) : null;    //prerender true
+       //HttpContext.AcceptsInteractiveRouting()? new InteractiveWebAssemblyRenderMode(prerender: false) : null;   //prerender false
 }

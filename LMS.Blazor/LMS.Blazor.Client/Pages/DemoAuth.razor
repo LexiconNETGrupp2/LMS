@@ -1,7 +1,9 @@
 ﻿@page "/demoauth"
 @inject IApiService ApiService
-@* @rendermode InteractiveWebAssembly *@
-@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: true))
+@* @rendermode InteractiveWebAssembly *@                                               @* true *@
+@* @rendermode @(new InteractiveWebAssemblyRenderMode)  *@                             @* true *@
+@* @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: true)) *@             @* true *@
+@* @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false)) *@            @* false *@
 
 @attribute [Authorize]
 
@@ -76,6 +78,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        //This method run in prerender
         await CallApi();
     }
 
