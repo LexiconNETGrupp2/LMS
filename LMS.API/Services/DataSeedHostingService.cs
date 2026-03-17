@@ -168,14 +168,14 @@ public class DataSeedHostingService : IHostedService
             new() {
                 Name = "Javascript",
                 Description = "Learn JS",
-                StartDate = new DateTime(2025, 10, 16, 8, 0, 0),
-                EndDate = new DateTime(2026, 4, 30, 16, 45, 0),
+                StartDate = new DateOnly (2025, 10, 16),
+                EndDate = new DateOnly(2026, 4, 30),
             },
             new() {
                 Name = ".NET",
                 Description = "Learn C# .NET",
-                StartDate = new DateTime(2026, 10, 16, 8, 0, 0),
-                EndDate = new DateTime(2027, 2, 10, 17, 0, 0)
+                StartDate = new DateOnly(2026, 10, 16),
+                EndDate = new DateOnly (2027, 2, 10)
             }
         ];
 
@@ -188,14 +188,14 @@ public class DataSeedHostingService : IHostedService
         IReadOnlyCollection<Module> modules = [
             new() {
                 Name = "Web API",
-                StartDate = new DateTime(2027, 1, 10, 8, 0, 0),
-                EndDate = new DateTime(2027, 2, 28, 17, 0, 0),
+                StartDate = new DateOnly(2027, 1, 10), //DateOnly.Parse(new DateTime(2027, 1, 10)),
+                EndDate = new DateOnly(2027, 2, 28),
                 Course = course,
             },
             new() {
                 Name = "Frontend",
-                StartDate= new DateTime(2027, 3, 1, 8, 0, 0),
-                EndDate = new DateTime(2027, 4, 30, 17, 0, 0),
+                StartDate= new DateOnly (2027, 3, 1),
+                EndDate = new DateOnly (2027, 4, 30),
                 Course = course
             }
         ];
