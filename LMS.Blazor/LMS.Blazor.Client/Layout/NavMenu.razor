@@ -1,10 +1,9 @@
 ﻿@implements IDisposable
-
 @inject NavigationManager NavigationManager
 
-<div class="top-row ps-3 navbar navbar-dark">
+<div class="top-row ps-3 navbar">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">LMS.Blazor</a>
+        <a class="navbar-brand" href="">Lexicon LMS</a>
     </div>
 </div>
 
@@ -12,64 +11,53 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="demoauth">
-                <span class="bi bi-shield-lock-nav-menu" aria-hidden="true"></span> Demo Auth
-            </NavLink>
-        </div>
-
         <AuthorizeView>
-            <Authorized>
-                <div class="nav-item px-3">
+            <Authorized Context="authState">
+                @if (authState.User.IsInRole("Student"))
+                {
+                    @foreach (var item in StudentMenuItems)
+                    {
+                        <NavMenuItem Icon="@item.Icon"
+                                     Text="@item.Text"
+                                     Href="@item.Href"
+                                     Match="@item.Match" />
+                    }
+                }
+                else if (authState.User.IsInRole("Teacher"))
+                {
+                    @foreach (var item in TeacherMenuItems)
+                    {
+                        <NavMenuItem Icon="@item.Icon"
+                                     Text="@item.Text"
+                                     Href="@item.Href"
+                                     Match="@item.Match" />
+                    }
+                }
+
+                @* TODO: Manage account move to topbar. *@
+
+                @* <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @authState.User.Identity?.Name
                     </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <form action="Account/Logout" method="post">
+                </div> *@
+
+                <div class="nav-item">
+                    <form action="Account/Logout" method="post" class="logout-form">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                        <button type="submit" class="menu-link logout-button">
+                            <span class="bi bi-arrow-bar-left menu-icon" aria-hidden="true"></span>
+                            <span>Logout</span>
                         </button>
                     </form>
                 </div>
             </Authorized>
+
             <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
-                    </NavLink>
-                </div>
+                <NavMenuItem Icon="bi bi-person-badge-nav-menu"
+                             Text="Login"
+                             Href="Account/Login" />
             </NotAuthorized>
         </AuthorizeView>
     </nav>
@@ -77,6 +65,23 @@
 
 @code {
     private string? currentUrl;
+
+    private List<NavMenuItemModel> StudentMenuItems => new()
+    {
+        new("bi bi-house", "Dashboard", "", NavLinkMatch.All),
+        new("bi bi-book", "My Course", "weather"),
+        new("bi bi-file-earmark-text", "Assignments", "counter"),
+        new("bi bi-people", "Classmates", "auth")
+    };
+
+    private List<NavMenuItemModel> TeacherMenuItems => new()
+    {
+        new("bi bi-house", "Dashboard", "", NavLinkMatch.All),
+        new("bi bi-book", "Courses", "weather"),
+        new("bi bi-plus-circle", "Create new course", "counter"),
+        new("bi bi-people", "Users", "auth"),
+        new("bi bi-list-task", "Assignments", "demoauth")
+    };
 
     protected override void OnInitialized()
     {
