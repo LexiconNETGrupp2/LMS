@@ -28,6 +28,11 @@ public class CoursesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
+        // If a student is requesting all courses, return 401
+        if (IsStudent()) {
+            return Unauthorized();
+        }
+
         var courseDtos = await _serviceManager.CourseService.GetAllCourses();
         return Ok(courseDtos);
     }
@@ -35,6 +40,11 @@ public class CoursesController : ControllerBase
     [HttpGet("course/{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
+        // If a student is requesting someone else's courses, return 401
+        if (IsStudentGettingUnauthorizedCourse(id)) {
+            return Unauthorized();
+        }
+
         var courseDto = await _serviceManager.CourseService.GetCourseById(id);
         if (courseDto is null) {
             return BadRequest();
@@ -46,19 +56,27 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> GetByUserId(Guid id)
     {
         // If a student is requesting someone else's courses, return 401
-        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var isStudent = User.IsInRole(RolesNames.Student);
-        if (isStudent &&
-            (currentUserId is null || 
-            currentUserId != id.ToString())) 
+        if (IsStudentGettingUnauthorizedCourse(id)) 
         {
             return Unauthorized();
         }
 
         var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id);
-        if (isStudent && courseDto.Count != 1) {
+        if (IsStudent() && courseDto.Count != 1) {
+            _logger.LogError("Student {StudentId} is enrolled in 0 or >1 courses", id);
             return BadRequest();
         }
         return Ok(courseDto);
+    }
+
+    private bool IsStudent()
+        => User.IsInRole(RolesNames.Student);
+
+    private bool IsStudentGettingUnauthorizedCourse(Guid studentId)
+    {
+        var isStudent = IsStudent();
+        if (!isStudent) return false;
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return currentUserId is null || currentUserId != studentId.ToString();
     }
 }
