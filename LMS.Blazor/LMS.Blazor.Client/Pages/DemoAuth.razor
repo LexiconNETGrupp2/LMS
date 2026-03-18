@@ -66,11 +66,11 @@
     </div>
 }
 
+<div>
+    All Courses
+</div>
 @if (courses != null && courses.Any()) {
     <table border="1">
-        <caption>
-            All Courses
-        </caption>
 
         <tr>
             <th>Name</th>
@@ -104,10 +104,10 @@
             </tr>
         }
     </table>
+    <div>
+        Course By Id
+    </div>
     <table>
-        <caption>
-            Course By Id
-        </caption>
         @if (course is not null) {
             <tr>
                 <td class="px-4">@course.Name</td>
@@ -133,10 +133,10 @@
             </tr>
         }
     </table>
+    <div>
+        The course(s) you are currently in
+    </div>
     <table>
-        <caption>
-            The course(s) you are currently in
-        </caption>
         @if (myCourses is not null && myCourses.Any()) {
             @foreach (var course in myCourses) {
                 <tr>
