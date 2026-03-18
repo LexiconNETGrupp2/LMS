@@ -134,8 +134,12 @@
         }
     </table>
     <div>
-        The course(s) you are currently in
+        The course(s) you are currently in (@userId)
     </div>
+    @if (error is not null && error.Contains("401"))
+    {
+        <div>You cannot see others courses</div>
+    }
     <table>
         @if (myCourses is not null && myCourses.Any()) {
             @foreach (var course in myCourses) {
@@ -174,6 +178,9 @@
     private IEnumerable<CourseDto>? courses;
     private IEnumerable<CourseDto>? myCourses;
     private CourseDto? course;    
+    // Change to get for different accounts or different courses
+    private Guid userId = Guid.Parse("5f5ff588-d075-4794-96a7-8eeb7a99ffb8");
+    private Guid courseId = Guid.Parse("78dc2759-824c-4587-b5bd-2d52132e54c1");
 
     protected override async Task OnInitializedAsync()
     {
@@ -190,9 +197,6 @@
         try {
             users = await ApiService.GetAsync<IEnumerable<DemoAuthDto>>("api/demoauth");
             courses = await ApiService.GetAsync<IEnumerable<CourseDto>>("api/courses");
-            // Change to get for different accounts or different courses
-            Guid userId = Guid.Parse("5f5ff588-d075-4794-96a7-8eeb7a99ffb8");
-            Guid courseId = Guid.Parse("78dc2759-824c-4587-b5bd-2d52132e54c1");
             course = (await ApiService.GetAsync<CourseDto>($"api/courses/course/{courseId}"));
             myCourses = (await ApiService.GetAsync<IEnumerable<CourseDto>>($"api/courses/user/{userId}"));
         } catch (Exception ex) {

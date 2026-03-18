@@ -24,11 +24,11 @@ public class ClientApiService : IApiService
     public async Task<T?> GetAsync<T>(string endpoint, CancellationToken ct = default)
     {
         var response = await _httpClient.GetAsync($"api/proxy/{endpoint}", ct);
-
+        
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
             response.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
-            _navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+            //_navigationManager.NavigateTo("/Account/Login", forceLoad: true);
         }
 
         response.EnsureSuccessStatusCode();

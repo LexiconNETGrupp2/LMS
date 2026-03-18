@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Service.Contracts;
 using System.Net;
+using System.Security.Claims;
 
 namespace LMS.Presentation.Controllers;
 
@@ -44,8 +45,18 @@ public class CoursesController : ControllerBase
     [HttpGet("user/{id:guid}")]
     public async Task<IActionResult> GetByUserId(Guid id)
     {
+        // If a student is requesting someone else's courses, return 401
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isStudent = User.IsInRole(RolesNames.Student);
+        if (isStudent &&
+            (currentUserId is null || 
+            currentUserId != id.ToString())) 
+        {
+            return Unauthorized();
+        }
+
         var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id);
-        if (User.IsInRole(RolesNames.Student) && courseDto.Count != 1) {
+        if (isStudent && courseDto.Count != 1) {
             return BadRequest();
         }
         return Ok(courseDto);
