@@ -5,5 +5,6 @@ namespace Domain.Contracts.Repositories;
 public interface ICourseRepository : IRepositoryBase<Course>
 {
     Task<IReadOnlyCollection<Course>> GetAllCourses();
-    Task<Course?> GetCourseFromUserId(Guid UserId);
+    Task<Course?> GetCourseById(Guid id);
+    Task<Course?> GetCourseFromUserId(Guid userId);
 }
