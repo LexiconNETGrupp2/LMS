@@ -1,4 +1,5 @@
 ﻿@page "/demoauth"
+@using LMS.Shared.DTOs
 @inject IApiService ApiService
 @* @rendermode InteractiveWebAssembly *@                                               @* true *@
 @* @rendermode @(new InteractiveWebAssemblyRenderMode)  *@                             @* true *@
@@ -71,10 +72,51 @@
     </div>
 }
 
+@if (courses != null && courses.Any())
+{
+    <table border="1">
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>StartDate</th>
+            <th>EndDate</th>
+            <th>Modules</th>
+        </tr>
+        @foreach (var course in courses)
+        {
+            <tr>
+                <td class="px-4">@course.Name</td>
+                <td class="px-4">@course.Description</td>
+                <td class="px-4">@course.StartDate</td>
+                <td class="px-4">@course.EndDate</td>
+                <td class="px-4">
+                    <table>
+                        <tr>
+                            <th>Name</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                        </tr>
+                        @foreach (var module in course.Modules)
+                        {
+                            <tr>
+                                <td class="px-4">@module.Name</td>
+                                <td class="px-4">@module.StartDate</td>
+                                <td class="px-4">@module.EndDate</td>
+                            </tr>
+                        }
+                    </table>
+                </td>
+            </tr>
+        }
+    </table>
+}
+
 @code {
     private IEnumerable<DemoAuthDto>? users;
     private string? error;
     private bool isLoading;
+
+    private IEnumerable<CourseDto>? courses;
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,6 +132,7 @@
 
         try
         {
+            courses = await ApiService.GetAsync<IEnumerable<CourseDto>>("api/courses"); 
             users = await ApiService.GetAsync<IEnumerable<DemoAuthDto>>("api/demoauth");
         }
         catch (Exception ex)
