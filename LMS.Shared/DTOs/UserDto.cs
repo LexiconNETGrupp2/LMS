@@ -3,5 +3,5 @@
 public sealed record UserDto(
     string Email,
     string FirstName,
-    string LastNam
+    string LastName
 );
