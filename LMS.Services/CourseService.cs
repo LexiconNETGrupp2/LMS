@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Domain.Contracts.Repositories;
-using LMS.Shared.DTOs;
+using Domain.Models.Entities;
+using LMS.Shared.DTOs.CourseDtos;
 using Service.Contracts;
 
 namespace LMS.Services;
@@ -20,7 +21,7 @@ public class CourseService : ICourseService
 
     public async Task<IReadOnlyCollection<CourseDto>> GetAllCourses()
     {
-        var courses = await _courseRepository.GetAllCourses();
+        IReadOnlyCollection<Course> courses = await _courseRepository.GetAllCourses();        
         var courseDtos = _mapper.Map<IReadOnlyCollection<CourseDto>>(courses);
         return courseDtos ?? [];
     }
