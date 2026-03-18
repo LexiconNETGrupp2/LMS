@@ -18,6 +18,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
     {
         return await _context.Courses
                         .AsNoTracking()
+                        .Include(c => c.Modules)
                         .ToListAsync();
     }
 
