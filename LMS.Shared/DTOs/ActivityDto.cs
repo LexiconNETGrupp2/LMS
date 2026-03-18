@@ -1,4 +1,6 @@
-﻿namespace LMS.Shared.DTOs;
+﻿using LMS.Shared.DTOs.CourseDtos;
+
+namespace LMS.Shared.DTOs;
 
 public sealed record ActivityDto(
     string Name,
@@ -6,5 +8,5 @@ public sealed record ActivityDto(
     DateTime StartDate,
     DateTime EndDate,
     ActivityTypeDto Type,
-    ModuleDto Module
+    CourseModuleDto Module
 );

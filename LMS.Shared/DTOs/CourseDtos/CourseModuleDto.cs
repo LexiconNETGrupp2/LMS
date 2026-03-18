@@ -1,8 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿namespace LMS.Shared.DTOs.CourseDtos;
 
-namespace LMS.Shared.DTOs;
-
-public sealed record ModuleDto(
+public sealed record CourseModuleDto(
     string Name,
     DateOnly StartDate,
     DateOnly EndDate,

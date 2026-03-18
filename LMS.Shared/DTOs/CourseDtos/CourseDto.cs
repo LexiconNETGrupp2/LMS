@@ -1,4 +1,4 @@
-﻿namespace LMS.Shared.DTOs;
+﻿namespace LMS.Shared.DTOs.CourseDtos;
 
 public sealed record CourseDto(
     string Name,
@@ -6,5 +6,5 @@ public sealed record CourseDto(
     DateOnly StartDate,
     DateOnly EndDate,
     ICollection<UserDto> Students,
-    ICollection<ModuleDto> Modules
+    ICollection<CourseModuleDto> Modules
 );

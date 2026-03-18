@@ -2,6 +2,7 @@
 using Domain.Models.Entities;
 using LMS.Shared.DTOs;
 using LMS.Shared.DTOs.AuthDtos;
+using LMS.Shared.DTOs.CourseDtos;
 
 namespace LMS.Infractructure.Data;
 
@@ -12,7 +13,7 @@ public class MapperProfile : Profile
         CreateMap<UserRegistrationDto, ApplicationUser>();
         CreateMap<UserDto, ApplicationUser>().ReverseMap();
         CreateMap<CourseDto, Course>().ReverseMap();
-        CreateMap<ModuleDto, Module>().ReverseMap();
+        CreateMap<CourseModuleDto, Module>().ReverseMap();
         CreateMap<ActivityDto, Activity>().ReverseMap();
     }
 }
