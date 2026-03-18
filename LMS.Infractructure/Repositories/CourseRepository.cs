@@ -19,6 +19,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         return await _context.Courses
                         .AsNoTracking()
                         .Include(c => c.Modules)
+                        .Include(c => c.Students)
                         .ToListAsync();
     }
 
@@ -27,6 +28,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         return await _context.Courses
                         .AsNoTracking()
                         .Include(c => c.Modules)
+                        .Include(c => c.Students)
                         .FirstOrDefaultAsync(c => c.Id == id);
     }
 
@@ -37,6 +39,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .AsNoTracking()
                         .Where(c => c.Students.FirstOrDefault(u => u.Id == userIdStr) != null)
                         .Include(c => c.Modules)
+                        .Include(c => c.Students)
                         .ToListAsync();
     }
 }
