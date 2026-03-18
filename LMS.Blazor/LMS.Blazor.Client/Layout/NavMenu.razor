@@ -54,8 +54,9 @@
                 @* TODO: Manage account move to topbar. *@
 
                 <div class="nav-item">
-                    <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @authState.User.Identity?.Name
+                    <NavLink class="menu-link" href="Account/Manage">
+                        <span class="bi bi-person-circle" aria-hidden="true"></span>
+                        <span>@authState.User.Identity?.Name</span>
                     </NavLink>
                 </div>
 
