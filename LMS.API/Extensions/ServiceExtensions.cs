@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Filters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 namespace LMS.API.Extensions;
@@ -69,7 +71,10 @@ public static class ServiceExtensions
             opt.Filters.Add(new ProducesAttribute("application/json"));
 
         })
-                .AddNewtonsoftJson()
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                })
                 .AddApplicationPart(typeof(AssemblyReference).Assembly);
     }
 
