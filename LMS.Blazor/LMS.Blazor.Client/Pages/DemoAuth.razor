@@ -173,10 +173,7 @@
 
     private IEnumerable<CourseDto>? courses;
     private IEnumerable<CourseDto>? myCourses;
-    private CourseDto? course;
-    // Change to get for different accounts
-    private Guid userId = Guid.Parse("5f5ff588-d075-4794-96a7-8eeb7a99ffb8");
-
+    private CourseDto? course;    
 
     protected override async Task OnInitializedAsync()
     {
@@ -193,7 +190,9 @@
         try {
             users = await ApiService.GetAsync<IEnumerable<DemoAuthDto>>("api/demoauth");
             courses = await ApiService.GetAsync<IEnumerable<CourseDto>>("api/courses");
-            var courseId = courses?.FirstOrDefault()?.Id;
+            // Change to get for different accounts or different courses
+            Guid userId = Guid.Parse("5f5ff588-d075-4794-96a7-8eeb7a99ffb8");
+            Guid courseId = Guid.Parse("78dc2759-824c-4587-b5bd-2d52132e54c1");
             course = (await ApiService.GetAsync<CourseDto>($"api/courses/course/{courseId}"));
             myCourses = (await ApiService.GetAsync<IEnumerable<CourseDto>>($"api/courses/user/{userId}"));
         } catch (Exception ex) {
