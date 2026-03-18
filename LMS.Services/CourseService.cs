@@ -29,14 +29,16 @@ public class CourseService : ICourseService
     public async Task<CourseDto?> GetCourseById(Guid id)
     {
         var course = await _courseRepository.GetCourseById(id);
+        if (course is null) return null;
+
         var courseDto = _mapper.Map<CourseDto>(course);
         return courseDto;
     }
 
-    public async Task<CourseDto?> GetCourseByUserId(Guid id)
+    public async Task<IReadOnlyCollection<CourseDto>> GetCourseByUserId(Guid id)
     {
-        var course = await _courseRepository.GetCourseFromUserId(id);
-        var courseDto = _mapper.Map<CourseDto>(course);
-        return courseDto;
+        var courses = await _courseRepository.GetCourseFromUserId(id);        
+        var courseDtos = _mapper.Map<IReadOnlyCollection<CourseDto>>(courses);
+        return courseDtos ?? [];
     }
 }

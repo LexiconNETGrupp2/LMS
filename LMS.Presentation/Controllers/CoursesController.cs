@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using LMS.Shared.DTOs.CourseDtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -26,34 +27,23 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var courseDtos = await _serviceManager.CourseService.GetAllCourses();
-        //var json = JsonConvert.SerializeObject(courseDtos);
         return Ok(courseDtos);
     }
 
     [HttpGet("course/{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        try {
-            var courseDto = await _serviceManager.CourseService.GetCourseById(id);
-            var json = JsonConvert.SerializeObject(courseDto);
-            return Ok(courseDto);
-        } catch (Exception ex) {
-            _logger.LogCritical("Error occurred: {ErrorMessage}", ex.Message);
-            throw;
-            return StatusCode((int)HttpStatusCode.InternalServerError);
+        var courseDto = await _serviceManager.CourseService.GetCourseById(id);
+        if (courseDto is null) {
+            return BadRequest();
         }
+        return Ok(courseDto);
     }
 
     [HttpGet("user/{id:guid}")]
     public async Task<IActionResult> GetByUserId(Guid id)
     {
-        try {
-            var courseDtos = _serviceManager.CourseService.GetCourseByUserId(id);
-            return Ok(courseDtos);
-        } catch (Exception ex) {
-            _logger.LogCritical("Error occurred: {ErrorMessage}", ex.Message);
-            throw;
-            return StatusCode((int)HttpStatusCode.InternalServerError);
-        }
+        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id);
+        return Ok(courseDto);
     }
 }

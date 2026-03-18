@@ -25,16 +25,18 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
     public async Task<Course?> GetCourseById(Guid id)
     {
         return await _context.Courses
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == id);
+                        .AsNoTracking()
+                        .Include(c => c.Modules)
+                        .FirstOrDefaultAsync(c => c.Id == id);
     }
 
-    public async Task<Course?> GetCourseFromUserId(Guid userId)
+    public async Task<IReadOnlyCollection<Course>> GetCourseFromUserId(Guid userId)
     {
         string userIdStr = userId.ToString();
         return await _context.Courses
                         .AsNoTracking()
                         .Where(c => c.Students.FirstOrDefault(u => u.Id == userIdStr) != null)
-                        .FirstOrDefaultAsync();
+                        .Include(c => c.Modules)
+                        .ToListAsync();
     }
 }
