@@ -1,4 +1,5 @@
-﻿using LMS.Shared.DTOs.CourseDtos;
+﻿using LMS.Shared.Constants;
+using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -44,6 +45,9 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> GetByUserId(Guid id)
     {
         var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id);
+        if (User.IsInRole(RolesNames.Student) && courseDto.Count != 1) {
+            return BadRequest();
+        }
         return Ok(courseDto);
     }
 }
