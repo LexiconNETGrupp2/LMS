@@ -22,13 +22,13 @@
 
         .nav-item ::deep .menu-link:hover {
             background-color: #f3f6ff;
-            color: #4c6ef5;
+            color: #2563eb;
             text-decoration: none;
         }
 
         .nav-item ::deep .menu-link.active {
             background-color: #eef3ff;
-            color: #4c6ef5;
+            color: #2563eb;
         }
 
             .nav-item ::deep .menu-link.active::after {
@@ -38,7 +38,7 @@
                 bottom: 0;
                 right: 0;
                 width: 5px;
-                background-color: #4c6ef5;
+                background-color: #2563eb;
             }
 
     .nav-item ::deep .menu-icon {

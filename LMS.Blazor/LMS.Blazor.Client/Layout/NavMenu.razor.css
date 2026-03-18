@@ -8,7 +8,7 @@
     top: 0.5rem;
     right: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/2rem transparent;
 }
 
 .navbar-toggler:checked {
@@ -17,7 +17,6 @@
 
 .top-row {
     min-height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
 }
 
 .navbar-brand {
@@ -72,7 +71,7 @@
 
         .nav-item ::deep .menu-link.active {
             background-color: #eef3ff;
-            color: #4c6ef5;
+            color: #2563eb;
         }
 
             .nav-item ::deep .menu-link.active::after {
@@ -82,7 +81,7 @@
                 bottom: 0;
                 right: 0;
                 width: 5px;
-                background-color: #4c6ef5;
+                background-color: #2563eb;
             }
 
     .nav-item ::deep .menu-icon {
