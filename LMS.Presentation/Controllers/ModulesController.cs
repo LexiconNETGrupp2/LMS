@@ -10,8 +10,10 @@ namespace LMS.Presentation.Controllers;
 [Route("api/modules")]
 [ApiController]
 [Authorize]
-public class ModulesController(IModuleService moduleService) : ControllerBase
+public class ModulesController(IServiceManager serviceManager) : ControllerBase
 {
+    private readonly IServiceManager _serviceManager = serviceManager;
+    private IModuleService moduleService => _serviceManager.ModuleService;
     [HttpGet]
     [SwaggerOperation(
         Summary = "Get all modules",

@@ -17,8 +17,8 @@ public class MapperProfile : Profile
         CreateMap<CourseModuleDto, Module>().ReverseMap();
         CreateMap<ActivityDto, Activity>().ReverseMap();
         CreateMap<Module, ModuleDto>()
-            .ForCtorParam(nameof(ModuleDto.StartDate), opt => opt.MapFrom(src => src.StartDate.ToDateTime(TimeOnly.MinValue)))
-            .ForCtorParam(nameof(ModuleDto.EndDate), opt => opt.MapFrom(src => src.EndDate.ToDateTime(TimeOnly.MinValue)))
+            .ForCtorParam(nameof(ModuleDto.StartDate), opt => opt.MapFrom(src => src.StartDate))
+            .ForCtorParam(nameof(ModuleDto.EndDate), opt => opt.MapFrom(src => src.EndDate))
             .ForCtorParam(nameof(ModuleDto.CourseId), opt => opt.MapFrom(src => src.Course.Id))
             .ForCtorParam(nameof(ModuleDto.CourseName), opt => opt.MapFrom(src => src.Course.Name));
     }
