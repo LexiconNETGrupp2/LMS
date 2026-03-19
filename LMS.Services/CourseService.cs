@@ -35,10 +35,11 @@ public class CourseService : ICourseService
         return courseDto;
     }
 
-    public async Task<IReadOnlyCollection<CourseDto>> GetCourseByUserId(Guid id)
+    public async Task<CourseDto?> GetCourseByUserId(Guid id)
     {
-        var courses = await _courseRepository.GetCourseFromUserId(id);        
-        var courseDtos = _mapper.Map<IReadOnlyCollection<CourseDto>>(courses);
-        return courseDtos ?? [];
+        var course = await _courseRepository.GetCourseFromUserId(id);
+        if (course is null) return null;
+        var courseDto = _mapper.Map<CourseDto>(course);
+        return courseDto;
     }
 }

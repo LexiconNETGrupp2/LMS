@@ -6,5 +6,5 @@ public interface ICourseService
 {
     Task<IReadOnlyCollection<CourseDto>> GetAllCourses();
     Task<CourseDto?> GetCourseById(Guid id);
-    Task<IReadOnlyCollection<CourseDto>> GetCourseByUserId(Guid id);
+    Task<CourseDto?> GetCourseByUserId(Guid id);
 }

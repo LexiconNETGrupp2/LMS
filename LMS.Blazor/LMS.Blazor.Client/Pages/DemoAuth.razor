@@ -141,31 +141,29 @@
     <div>You cannot see others courses</div>
 }
 <table>
-    @if (myCourses is not null && myCourses.Any()) {
-        @foreach (var course in myCourses) {
-            <tr>
-                <td class="px-4">@course.Name</td>
-                <td class="px-4">@course.Description</td>
-                <td class="px-4">@course.StartDate</td>
-                <td class="px-4">@course.EndDate</td>
-                <td class="px-4">
-                    <table>
+    @if (myCourses is not null) {
+        <tr>
+            <td class="px-4">@myCourses.Name</td>
+            <td class="px-4">@myCourses.Description</td>
+            <td class="px-4">@myCourses.StartDate</td>
+            <td class="px-4">@myCourses.EndDate</td>
+            <td class="px-4">
+                <table>
+                    <tr>
+                        <th>Name</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                    </tr>
+                    @foreach (var module in myCourses.Modules) {
                         <tr>
-                            <th>Name</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
+                            <td class="px-4">@module.Name</td>
+                            <td class="px-4">@module.StartDate</td>
+                            <td class="px-4">@module.EndDate</td>
                         </tr>
-                        @foreach (var module in course.Modules) {
-                            <tr>
-                                <td class="px-4">@module.Name</td>
-                                <td class="px-4">@module.StartDate</td>
-                                <td class="px-4">@module.EndDate</td>
-                            </tr>
-                        }
-                    </table>
-                </td>
-            </tr>
-        }
+                    }
+                </table>
+            </td>
+        </tr>
     }
 </table>
 
@@ -176,7 +174,7 @@
     private bool isLoading;
 
     private IEnumerable<CourseDto>? courses;
-    private IEnumerable<CourseDto>? myCourses;
+    private CourseDto? myCourses;
     private CourseDto? course;
     // Change to get for different accounts or different courses
     private Guid userId = Guid.Parse("479fec36-7876-48d9-8ca7-641c0b1e930c");
@@ -216,7 +214,7 @@
 
         isLoading = true;
         try {
-            course = (await ApiService.GetAsync<CourseDto>($"api/courses/course/{courseId}"));
+            course = (await ApiService.GetAsync<CourseDto>($"api/courses/{courseId}"));
         } catch (Exception ex) {
             error = ex.Message;
         } finally {
@@ -225,7 +223,7 @@
 
         isLoading = true;
         try {
-            myCourses = (await ApiService.GetAsync<IEnumerable<CourseDto>>($"api/courses/user/{userId}"));
+            myCourses = (await ApiService.GetAsync<CourseDto?>($"api/courses/user/{userId}"));
         } catch (Exception ex) {
             error = ex.Message;
         } finally {

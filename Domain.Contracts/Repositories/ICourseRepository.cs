@@ -6,5 +6,5 @@ public interface ICourseRepository : IRepositoryBase<Course>
 {
     Task<IReadOnlyCollection<Course>> GetAllCourses();
     Task<Course?> GetCourseById(Guid id);
-    Task<IReadOnlyCollection<Course>> GetCourseFromUserId(Guid userId);
+    Task<Course?> GetCourseFromUserId(Guid userId);
 }

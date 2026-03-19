@@ -37,7 +37,7 @@ public class CoursesController : ControllerBase
         return Ok(courseDtos);
     }
 
-    [HttpGet("course/{id:guid}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         // If a student is requesting someone else's courses, return 401
@@ -61,11 +61,7 @@ public class CoursesController : ControllerBase
             return Unauthorized();
         }
 
-        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id);
-        if (IsStudent() && courseDto.Count != 1) {
-            _logger.LogError("Student {StudentId} is enrolled in 0 or >1 courses", id);
-            return BadRequest();
-        }
+        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id);        
         return Ok(courseDto);
     }
 

@@ -32,7 +32,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .FirstOrDefaultAsync(c => c.Id == id);
     }
 
-    public async Task<IReadOnlyCollection<Course>> GetCourseFromUserId(Guid userId)
+    public async Task<Course?> GetCourseFromUserId(Guid userId)
     {
         string userIdStr = userId.ToString();
         return await _context.Courses
@@ -40,6 +40,6 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .Where(c => c.Students.FirstOrDefault(u => u.Id == userIdStr) != null)
                         .Include(c => c.Modules)
                         .Include(c => c.Students)
-                        .ToListAsync();
+                        .FirstOrDefaultAsync();
     }
 }
