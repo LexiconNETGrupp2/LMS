@@ -92,16 +92,6 @@
         align-items: center;
     }
 
-.logout-form {
-    width: 100%;
-}
-
-.logout-button {
-    cursor: pointer;
-    font: inherit;
-    text-align: left;
-}
-
 .nav-scrollable {
     display: block;
 }
