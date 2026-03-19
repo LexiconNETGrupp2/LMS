@@ -1,16 +1,40 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
+    <div class="sidebar @(isNavOpen ? "sidebar-open" : "")">
         <NavMenu />
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row main-top-row px-3">
+            <button class="menu-toggle"
+                    @onclick="ToggleNav"
+                    aria-label="Toggle navigation">
+            </button>
+
+            <div class="brand-group mainlayout-brand">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="30"
+                     height="30"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="#2563eb"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     class="lucide lucide-book-open"
+                     aria-hidden="true">
+                    <path d="M12 7v14"></path>
+                    <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path>
+                </svg>
+
+                <a class="brand-text" href="">Lexicon LMS</a>
+            </div>
+
+            <a class="about-link" href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 
-        <article class="content px-4">
+        <article class="content px-4" @onclick="CloseNavOnMobile">
             @Body
         </article>
     </main>
@@ -21,3 +45,17 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool isNavOpen;
+
+    private void ToggleNav()
+    {
+        isNavOpen = !isNavOpen;
+    }
+
+    private void CloseNavOnMobile()
+    {
+        isNavOpen = false;
+    }
+}
