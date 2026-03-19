@@ -1,0 +1,56 @@
+﻿@* More styling in the TeacherOverview.razor.css file *@
+<div id="custom-navbar" class="container border-bottom d-flex mt-3">
+    <button class="py-3 px-1 @(_currentPage == "overview" ? "custom-active" : "")" @onclick="GoToOverview">
+            Översikt
+    </button>
+    <button class="py-3 px-1 ms-4 @(_currentPage == "courses" ? "custom-active" : "")" @onclick="GoToAllCourses">
+            Kurser
+    </button>
+</div>
+
+<div class="container mt-3">
+    <div class="row">
+        @* Teacher overview *@
+        @if (_currentPage == "overview") {
+            <div class="container">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between">
+                            <h2 class="h2 fs-5 fw-semibold d-inline-block">Aktiva kurser</h2>
+                            <a href="#">Visa alla ＞</a>
+                        </div>
+                        <ActiveCourses Courses="Courses" />
+                    </div>
+                    <div class="col-6">
+                        <h2 class="h2 fs-5 fw-semibold">Senaste aktivitet</h2>
+                        @* Komponent för att lista senaste aktiviteter *@
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        @* Komponent för att lista kommande aktiviteter *@
+                    </div>
+                </div>
+            </div>
+        }
+        @* All courses *@
+        @if (_currentPage == "courses") {
+            <div>Alla Kurser</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyCollection<CourseDto>? Courses { get; set; }
+
+    private string _currentPage = "overview";
+
+    private void GoToOverview()
+        => _currentPage = "overview";
+
+    private void GoToAllCourses()
+        => _currentPage = "courses";
+
+
+}

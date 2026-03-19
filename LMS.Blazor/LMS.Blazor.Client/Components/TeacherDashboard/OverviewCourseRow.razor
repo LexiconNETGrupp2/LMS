@@ -1,0 +1,26 @@
+﻿@if (Course is not null) {
+    <li class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <div class="w-50 d-flex flex-column">
+                <div>
+                    <a href="#" class="text-decoration-none">@Course.Name</a>
+                </div>
+                <div class="text-secondary">
+                    @Course.StartDate.ToString("yyyy-MM-dd") - @Course.EndDate.ToString("yyyy-MM-dd")
+                </div>
+            </div>
+            <div class="w-50 d-flex flex-column">
+                <div class="text-end">
+                    @Course.NumberOfStudents elever
+                </div>
+                <div class="text-end text-secondary">
+                    @Course.Modules.Count moduler
+                </div>
+            </div>
+        </div>        
+    </li>
+}
+@code {
+    [Parameter]
+    public CourseDto? Course { get; set; }
+}
