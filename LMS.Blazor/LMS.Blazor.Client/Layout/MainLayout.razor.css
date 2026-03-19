@@ -48,7 +48,8 @@ main {
     white-space: nowrap;
 }
 
-.top-link {
+.top-link,
+::deep .top-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -64,7 +65,8 @@ main {
     line-height: 1;
 }
 
-    .top-link:hover {
+    .top-link:hover,
+    ::deep .top-link:hover {
         background-color: #f3f6ff;
         color: #3b5bdb;
         text-decoration: none;
@@ -84,7 +86,8 @@ main {
     line-height: 1;
 }
 
-.top-link .bi {
+.top-link .bi,
+::deep .top-link .bi {
     font-size: 1.5rem;
 }
 
