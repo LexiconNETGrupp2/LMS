@@ -22,11 +22,11 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .AsQueryable();
 
         if (param.AfterDate is not null) {
-            query = query.Where(c => c.StartDate > param.AfterDate);
+            query = query.Where(c => c.StartDate <= param.AfterDate);
         }
 
         if (param.BeforeDate is not null) {
-            query = query.Where(c => c.EndDate < param.BeforeDate);
+            query = query.Where(c => c.EndDate >= param.BeforeDate);
         }
 
         return await query.Include(c => c.Modules)
