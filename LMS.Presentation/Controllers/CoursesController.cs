@@ -26,26 +26,25 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] AllCoursesParams param, CancellationToken token)
     {
         // If a student is requesting all courses, return 401
         if (IsStudent()) {
             return Unauthorized();
         }
 
-        var courseDtos = await _serviceManager.CourseService.GetAllCourses();
+        var courseDtos = await _serviceManager.CourseService.GetAllCourses(param, token);
         return Ok(courseDtos);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken token)
     {
-        // If a student is requesting someone else's courses, return 401
-        if (IsStudentGettingUnauthorizedCourse(id)) {
-            return Unauthorized();
-        }
+        // If a student is requesting a course they're not in, return 401
+        string? currentStudentId = null;
+        if (IsStudent()) currentStudentId = GetCurrentUserId();
 
-        var courseDto = await _serviceManager.CourseService.GetCourseById(id);
+        var courseDto = await _serviceManager.CourseService.GetCourseById(id, currentStudentId, token);
         if (courseDto is null) {
             return BadRequest();
         }
@@ -53,7 +52,7 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet("user/{id:guid}")]
-    public async Task<IActionResult> GetByUserId(Guid id)
+    public async Task<IActionResult> GetByUserId(Guid id, CancellationToken token)
     {
         // If a student is requesting someone else's courses, return 401
         if (IsStudentGettingUnauthorizedCourse(id)) 
@@ -61,18 +60,20 @@ public class CoursesController : ControllerBase
             return Unauthorized();
         }
 
-        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id);        
+        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, token);
         return Ok(courseDto);
     }
 
     private bool IsStudent()
         => User.IsInRole(RolesNames.Student);
+    private string? GetCurrentUserId()
+        => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     private bool IsStudentGettingUnauthorizedCourse(Guid studentId)
     {
         var isStudent = IsStudent();
         if (!isStudent) return false;
-        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var currentUserId = GetCurrentUserId();
         return currentUserId is null || currentUserId != studentId.ToString();
     }
 }
