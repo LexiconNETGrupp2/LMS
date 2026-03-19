@@ -88,8 +88,8 @@
             <tr>
                 <td class="px-4">@course.Name</td>
                 <td class="px-4">@course.Description</td>
-                <td class="px-4">@course.StartDate</td>
-                <td class="px-4">@course.EndDate</td>
+                <td class="px-4">@course.StartDate.ToString("yyyy-MM-dd")</td>
+                <td class="px-4">@course.EndDate.ToString("yyyy-MM-dd")</td>
                 <td class="px-4">@course.NumberOfStudents</td>
                 <td class="px-4">
                     <table>
@@ -101,8 +101,8 @@
                         @foreach (var module in course.Modules) {
                             <tr>
                                 <td class="px-4">@module.Name</td>
-                                <td class="px-4">@module.StartDate</td>
-                                <td class="px-4">@module.EndDate</td>
+                                <td class="px-4">@module.StartDate.ToString("yyyy-MM-dd")</td>
+                                <td class="px-4">@module.EndDate.ToString("yyyy-MM-dd")</td>
                             </tr>
                         }
                     </table>
@@ -119,8 +119,8 @@
         <tr>
             <td class="px-4">@course.Name</td>
             <td class="px-4">@course.Description</td>
-            <td class="px-4">@course.StartDate</td>
-            <td class="px-4">@course.EndDate</td>
+            <td class="px-4">@course.StartDate.ToString("yyyy-MM-dd")</td>
+            <td class="px-4">@course.EndDate.ToString("yyyy-MM-dd")</td>
             <td class="px-4">@course.NumberOfStudents</td>
             <td class="px-4">
                 <table>
@@ -132,8 +132,8 @@
                     @foreach (var module in course.Modules) {
                         <tr>
                             <td class="px-4">@module.Name</td>
-                            <td class="px-4">@module.StartDate</td>
-                            <td class="px-4">@module.EndDate</td>
+                            <td class="px-4">@module.StartDate.ToString("yyyy-MM-dd")</td>
+                            <td class="px-4">@module.EndDate.ToString("yyyy-MM-dd")</td>
                         </tr>
                     }
                 </table>
@@ -149,8 +149,8 @@
         <tr>
             <td class="px-4">@myCourses.Name</td>
             <td class="px-4">@myCourses.Description</td>
-            <td class="px-4">@myCourses.StartDate</td>
-            <td class="px-4">@myCourses.EndDate</td>
+            <td class="px-4">@myCourses.StartDate.ToString("yyyy-MM-dd")</td>
+            <td class="px-4">@myCourses.EndDate.ToString("yyyy-MM-dd")</td>
             <td class="px-4">@myCourses.NumberOfStudents</td>
             <td class="px-4">
                 <table>
@@ -162,8 +162,8 @@
                     @foreach (var module in myCourses.Modules) {
                         <tr>
                             <td class="px-4">@module.Name</td>
-                            <td class="px-4">@module.StartDate</td>
-                            <td class="px-4">@module.EndDate</td>
+                            <td class="px-4">@module.StartDate.ToString("yyyy-MM-dd")</td>
+                            <td class="px-4">@module.EndDate.ToString("yyyy-MM-dd")</td>
                         </tr>
                     }
                 </table>
@@ -211,9 +211,10 @@
         isLoading = true;
         try {
             courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
-            foreach (var c in courses!)
-            {
-                Console.WriteLine($"{c.StartDate} {c.EndDate}");
+            if (courses is not null) {
+                foreach (var c in courses) {
+                    Console.WriteLine($"{c.StartDate} {c.EndDate}");
+                }
             }
         } catch (Exception) {
             error.Add("401: You're not allowed see all courses");
