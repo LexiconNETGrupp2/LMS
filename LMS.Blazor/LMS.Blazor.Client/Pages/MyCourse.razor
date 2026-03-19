@@ -1,6 +1,100 @@
 ﻿@page "/MyCourse"
 @using LMS.Blazor.Client.Components.CourseOverview
 
+<CourseOverviewView Course="_model" />
 @code {
+    private readonly CourseOverviewViewModel _model = new()
+    {
+        Title = "Frontend-utvecklare",
+        Description = "En omfattande utbildning i modern webbutveckling med fokus på JavaScript och React.",
+        DateRange = "2023-08-15 - 2023-12-15",
+        ProgressPercent = 35,
+        Modules = new List<ModuleViewModel>()
+        {
+            new ModuleViewModel
+            {
+                Title = "HTML & CSS",
+                DateRange = "2023-08-15 - 2023-09-01",
+                ProgressPercent = 100,
+                Activities =
+                new List<ActivityViewModel>() {
+                    new ActivityViewModel
+                    {
+                        Type = "Föreläsning",
+                        Title = "JavaScript grunder",
+                        Date = "2023-09-02",
+                        HasDocument = true,
+                        StatusText = "Genomförd",
+                        StatusIcon = "check2-circle",
+                        StatusTextClass = "text-success",
+                    },
+                }
+
+            },
+            new ModuleViewModel
+            {
+                Title = "JavaScript",
+                DateRange = "2023-09-02 - 2023-09-20",
+                ProgressPercent = 60,
+                IsExpanded = true,
+                Description = "Grunderna i JavaScript programmering",
+                Activities =
+                new List<ActivityViewModel>() {
+                    new ActivityViewModel
+                    {
+                        Type = "Föreläsning",
+                        Title = "JavaScript grunder",
+                        Date = "2023-09-02",
+                        HasDocument = true,
+                        StatusText = "Genomförd",
+                        StatusIcon = "check2-circle",
+                        StatusTextClass = "text-success",
+                    },
+                    new ActivityViewModel
+                    {
+                        Type = "Övning",
+                        Title = "DOM manipulation",
+                        Date = "2023-09-05",
+                        HasDocument = true,
+                        StatusText = "Genomförd",
+                        StatusIcon = "check2-circle",
+                        StatusTextClass = "text-success",
+                    },
+                    new ActivityViewModel
+                    {
+                        Type = "E-learning",
+                        Title = "JavaScript funktioner",
+                        Date = "2023-09-10",
+                        HasDocument = false,
+                        StatusText = "Genomförd",
+                        StatusIcon = "check2-circle",
+                        StatusTextClass = "text-success",
+                    },
+                    new ActivityViewModel
+                    {
+                        Type = "Inlämning",
+                        Title = "JavaScript applikation",
+                        Date = "2023-09-20",
+                        HasDocument = true,
+                        StatusText = "Försenad",
+                        StatusIcon = "exclamation-circle",
+                        StatusTextClass = "text-danger"
+                    },
+                }
+            },
+            new ModuleViewModel
+            {
+                Title = "React",
+                DateRange = "2023-09-21 - 2023-10-15",
+                ProgressPercent = 20
+            },
+            new ModuleViewModel
+            {
+                Title = "Databasdesign",
+                DateRange = "2023-10-16 - 2023-11-05",
+                ProgressPercent = 0
+            },
+        }
+    };
 
 }
