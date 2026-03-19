@@ -26,29 +26,29 @@
 </div>
 
 <button class="btn btn-primary" @onclick="CallApi" disabled="@isLoading">
-    @if (isLoading)
-    {
+    @if (isLoading) {
         <span class="spinner-border spinner-border-sm me-2"></span>
     }
     Refresh API
 </button>
 
-@if (error != null)
-{
+@if (error.Count > 0) {
     <div class="alert alert-danger mt-3">
-        <strong>Error:</strong> @error
+        <strong>Error(s):</strong> 
+        @foreach (string e in error)
+        {
+            <div>@e</div>
+        }
     </div>
 }
 
-@if (users != null && !users.Any())
-{
+@if (users != null && !users.Any()) {
     <div class="alert alert-info mt-3">
         No users were returned.
     </div>
 }
 
-@if (users != null && users.Any())
-{
+@if (users != null && users.Any()) {
     <div class="alert alert-success mt-3">
         <h4>Response from API:</h4>
         <table class="table">
@@ -59,8 +59,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var user in users)
-                {
+                @foreach (var user in users) {
                     <tr>
                         <td>@user.Id</td>
                         <td>@user.Name</td>
@@ -71,10 +70,120 @@
     </div>
 }
 
+<div>
+    All Courses
+</div>
+@if (courses != null && courses.Any()) {
+    <table border="1">
+
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>StartDate</th>
+            <th>EndDate</th>
+            <th>Number of Students</th>
+            <th>Modules</th>
+        </tr>
+        @foreach (var course in courses) {
+            <tr>
+                <td class="px-4">@course.Name</td>
+                <td class="px-4">@course.Description</td>
+                <td class="px-4">@course.StartDate.ToString("yyyy-MM-dd")</td>
+                <td class="px-4">@course.EndDate.ToString("yyyy-MM-dd")</td>
+                <td class="px-4">@course.NumberOfStudents</td>
+                <td class="px-4">
+                    <table>
+                        <tr>
+                            <th>Name</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                        </tr>
+                        @foreach (var module in course.Modules) {
+                            <tr>
+                                <td class="px-4">@module.Name</td>
+                                <td class="px-4">@module.StartDate.ToString("yyyy-MM-dd")</td>
+                                <td class="px-4">@module.EndDate.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                        }
+                    </table>
+                </td>
+            </tr>
+        }
+    </table>
+}
+<div>
+    Course By Id
+</div>
+<table>
+    @if (course is not null) {
+        <tr>
+            <td class="px-4">@course.Name</td>
+            <td class="px-4">@course.Description</td>
+            <td class="px-4">@course.StartDate.ToString("yyyy-MM-dd")</td>
+            <td class="px-4">@course.EndDate.ToString("yyyy-MM-dd")</td>
+            <td class="px-4">@course.NumberOfStudents</td>
+            <td class="px-4">
+                <table>
+                    <tr>
+                        <th>Name</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                    </tr>
+                    @foreach (var module in course.Modules) {
+                        <tr>
+                            <td class="px-4">@module.Name</td>
+                            <td class="px-4">@module.StartDate.ToString("yyyy-MM-dd")</td>
+                            <td class="px-4">@module.EndDate.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </table>
+            </td>
+        </tr>
+    }
+</table>
+<div>
+    The course(s) you are currently in (@userId)
+</div>
+<table>
+    @if (myCourses is not null) {
+        <tr>
+            <td class="px-4">@myCourses.Name</td>
+            <td class="px-4">@myCourses.Description</td>
+            <td class="px-4">@myCourses.StartDate.ToString("yyyy-MM-dd")</td>
+            <td class="px-4">@myCourses.EndDate.ToString("yyyy-MM-dd")</td>
+            <td class="px-4">@myCourses.NumberOfStudents</td>
+            <td class="px-4">
+                <table>
+                    <tr>
+                        <th>Name</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                    </tr>
+                    @foreach (var module in myCourses.Modules) {
+                        <tr>
+                            <td class="px-4">@module.Name</td>
+                            <td class="px-4">@module.StartDate.ToString("yyyy-MM-dd")</td>
+                            <td class="px-4">@module.EndDate.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </table>
+            </td>
+        </tr>
+    }
+</table>
+
+
 @code {
     private IEnumerable<DemoAuthDto>? users;
-    private string? error;
+    private List<string> error = [];
     private bool isLoading;
+
+    private IReadOnlyCollection<CourseDto>? courses;
+    private CourseDto? myCourses;
+    private CourseDto? course;
+    // Change to get for different accounts or different courses
+    private Guid userId = Guid.Parse("479fec36-7876-48d9-8ca7-641c0b1e930c");
+    private Guid courseId = Guid.Parse("a89a2c99-407a-468c-8ae6-88877ed5d948");
 
     protected override async Task OnInitializedAsync()
     {
@@ -85,19 +194,50 @@
     private async Task CallApi()
     {
         isLoading = true;
-        error = null;
+        error.Clear();
         users = null;
+        courses = null;
+        course = null;
+        myCourses = null;
 
-        try
-        {
+        try {
             users = await ApiService.GetAsync<IEnumerable<DemoAuthDto>>("api/demoauth");
+        } catch (Exception ex) {
+            error.Add(ex.Message);
+        } finally {
+            isLoading = false;
         }
-        catch (Exception ex)
-        {
-            error = ex.Message;
+
+        isLoading = true;
+        try {
+            courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
+            if (courses is not null) {
+                foreach (var c in courses) {
+                    Console.WriteLine($"{c.StartDate} {c.EndDate}");
+                }
+            }
+        } catch (Exception) {
+            error.Add("401: You're not allowed see all courses");
+        } finally {
+            isLoading = false;
         }
-        finally
-        {
+
+        isLoading = true;
+        try {
+            course = (await ApiService.GetAsync<CourseDto>($"api/courses/{courseId}"));
+            Console.WriteLine($"{course?.StartDate} {course?.EndDate}");
+        } catch (Exception) {
+            error.Add("401: You are not allowed to see this course");
+        } finally {
+            isLoading = false;
+        }
+
+        isLoading = true;
+        try {
+            myCourses = (await ApiService.GetAsync<CourseDto?>($"api/courses/user/{userId}"));
+        } catch (Exception) {
+            error.Add("401: You can only see your own course");
+        } finally {
             isLoading = false;
         }
     }
