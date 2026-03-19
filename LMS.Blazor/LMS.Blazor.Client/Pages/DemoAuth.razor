@@ -32,9 +32,13 @@
     Refresh API
 </button>
 
-@if (error != null) {
+@if (error.Count > 0) {
     <div class="alert alert-danger mt-3">
-        <strong>Error:</strong> @error
+        <strong>Error(s):</strong> 
+        @foreach (string e in error)
+        {
+            <div>@e</div>
+        }
     </div>
 }
 
@@ -77,6 +81,7 @@
             <th>Description</th>
             <th>StartDate</th>
             <th>EndDate</th>
+            <th>Number of Students</th>
             <th>Modules</th>
         </tr>
         @foreach (var course in courses) {
@@ -85,6 +90,7 @@
                 <td class="px-4">@course.Description</td>
                 <td class="px-4">@course.StartDate</td>
                 <td class="px-4">@course.EndDate</td>
+                <td class="px-4">@course.NumberOfStudents</td>
                 <td class="px-4">
                     <table>
                         <tr>
@@ -115,6 +121,7 @@
             <td class="px-4">@course.Description</td>
             <td class="px-4">@course.StartDate</td>
             <td class="px-4">@course.EndDate</td>
+            <td class="px-4">@course.NumberOfStudents</td>
             <td class="px-4">
                 <table>
                     <tr>
@@ -137,9 +144,6 @@
 <div>
     The course(s) you are currently in (@userId)
 </div>
-@if (error is not null && error.Contains("401")) {
-    <div>You cannot see others courses</div>
-}
 <table>
     @if (myCourses is not null) {
         <tr>
@@ -147,6 +151,7 @@
             <td class="px-4">@myCourses.Description</td>
             <td class="px-4">@myCourses.StartDate</td>
             <td class="px-4">@myCourses.EndDate</td>
+            <td class="px-4">@myCourses.NumberOfStudents</td>
             <td class="px-4">
                 <table>
                     <tr>
@@ -170,15 +175,15 @@
 
 @code {
     private IEnumerable<DemoAuthDto>? users;
-    private string? error;
+    private List<string> error = [];
     private bool isLoading;
 
-    private IEnumerable<CourseDto>? courses;
+    private IReadOnlyCollection<CourseDto>? courses;
     private CourseDto? myCourses;
     private CourseDto? course;
     // Change to get for different accounts or different courses
     private Guid userId = Guid.Parse("479fec36-7876-48d9-8ca7-641c0b1e930c");
-    private Guid courseId = Guid.Parse("78dc2759-824c-4587-b5bd-2d52132e54c1");
+    private Guid courseId = Guid.Parse("a89a2c99-407a-468c-8ae6-88877ed5d948");
 
     protected override async Task OnInitializedAsync()
     {
@@ -189,7 +194,7 @@
     private async Task CallApi()
     {
         isLoading = true;
-        error = null;
+        error.Clear();
         users = null;
         courses = null;
         course = null;
@@ -198,16 +203,20 @@
         try {
             users = await ApiService.GetAsync<IEnumerable<DemoAuthDto>>("api/demoauth");
         } catch (Exception ex) {
-            error = ex.Message;
+            error.Add(ex.Message);
         } finally {
             isLoading = false;
         }
 
         isLoading = true;
         try {
-            courses = await ApiService.GetAsync<IEnumerable<CourseDto>>("api/courses");
-        } catch (Exception ex) {
-            error = ex.Message;
+            courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
+            foreach (var c in courses!)
+            {
+                Console.WriteLine($"{c.StartDate} {c.EndDate}");
+            }
+        } catch (Exception) {
+            error.Add("401: You're not allowed see all courses");
         } finally {
             isLoading = false;
         }
@@ -215,8 +224,9 @@
         isLoading = true;
         try {
             course = (await ApiService.GetAsync<CourseDto>($"api/courses/{courseId}"));
-        } catch (Exception ex) {
-            error = ex.Message;
+            Console.WriteLine($"{course?.StartDate} {course?.EndDate}");
+        } catch (Exception) {
+            error.Add("401: You are not allowed to see this course");
         } finally {
             isLoading = false;
         }
@@ -224,8 +234,8 @@
         isLoading = true;
         try {
             myCourses = (await ApiService.GetAsync<CourseDto?>($"api/courses/user/{userId}"));
-        } catch (Exception ex) {
-            error = ex.Message;
+        } catch (Exception) {
+            error.Add("401: You can only see your own course");
         } finally {
             isLoading = false;
         }
