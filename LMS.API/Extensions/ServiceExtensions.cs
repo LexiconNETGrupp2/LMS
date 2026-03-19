@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Filters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 namespace LMS.API.Extensions;
@@ -69,7 +71,10 @@ public static class ServiceExtensions
             opt.Filters.Add(new ProducesAttribute("application/json"));
 
         })
-                .AddNewtonsoftJson()
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                })
                 .AddApplicationPart(typeof(AssemblyReference).Assembly);
     }
 
@@ -82,6 +87,7 @@ public static class ServiceExtensions
     public static void AddRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<ICourseRepository, CourseRepository>();
     }
 
     public static void AddServiceLayer(this IServiceCollection services)
@@ -89,9 +95,10 @@ public static class ServiceExtensions
         services.AddScoped<IServiceManager, ServiceManager>();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<IModuleService, ModuleService>();
-
         services.AddScoped(provider => new Lazy<IAuthService>(() => provider.GetRequiredService<IAuthService>()));
+        services.AddScoped(provider => new Lazy<ICourseService>(() => provider.GetRequiredService<ICourseService>()));
         services.AddScoped(provider => new Lazy<IModuleService>(() => provider.GetRequiredService<IModuleService>()));
     }
 }
