@@ -1,0 +1,42 @@
+﻿@inject IApiService ApiService
+@inject NavigationManager NavigationManager
+@attribute [Authorize]
+
+<div class="container">
+    <h1 class="h1 fs-3 fw-bold">Lärarens Dashboard</h1>
+</div>
+
+<TeacherOverview AllCourses="courses"
+                 ActiveCourses="activeCourses"
+                 SearchCourses="SearchForCourses" />
+
+@code {
+    private IReadOnlyCollection<CourseDto>? courses;
+    private IReadOnlyCollection<CourseDto> activeCourses = [];
+    private bool isLoading = false;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Init();
+    }
+
+    private async Task Init()
+    {
+        // AFAIK this component can only load if the current user is a teacher + api also has validation
+        courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>($"api/courses");
+        await SetActiveCourses();
+    }
+
+    private async Task SetActiveCourses()
+    {
+        if (courses is null) return;
+
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+        activeCourses = courses.Where(c => c.StartDate <= today && c.EndDate >= today).ToList();
+    }
+
+    private async Task SearchForCourses(string search)
+    {
+        courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>($"api/courses?search={search}");
+    }
+}
