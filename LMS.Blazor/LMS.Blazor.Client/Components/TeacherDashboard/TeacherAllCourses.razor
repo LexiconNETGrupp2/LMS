@@ -5,13 +5,18 @@
     </li>
     <li class="list-group-item" style="background-color: #F9FAFB;">
         <div class="d-flex justify-content-between">
-            <form class="d-flex" role="search">
-                <input type="search" class="form-control search-input" placeholder="Sök efter kurs..." />
+            <EditForm Model="_searchStr" OnValidSubmit="SearchForCourses" class="d-flex" role="search">
+                <DataAnnotationsValidator />
+                @* <input type="search" class="form-control search-input" placeholder="Sök efter kurs..." /> *@
+                <InputText @bind-Value="_searchStr"
+                           class="form-control search-input"
+                           placeholder="Sök efter kurs...">
+                </InputText>
                 <button class="btn btn-primary ms-2" type="submit">Sök</button>
-            </form>
+            </EditForm>
             <div>
                 <button class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Ny kurs 
+                    <i class="bi bi-plus-circle"></i> Ny kurs
                 </button>
             </div>
         </div>
@@ -28,10 +33,8 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Courses is not null)
-                {
-                    foreach (var course in Courses)
-                    {
+                @if (Courses is not null) {
+                    foreach (var course in Courses) {
                         <TeacherAllCoursesTableRow Course="course" />
                     }
                 }
@@ -43,4 +46,15 @@
 @code {
     [Parameter]
     public IReadOnlyCollection<CourseDto>? Courses { get; set; }
+    private string _searchStr = "";
+
+    [Parameter]
+    public EventCallback<string> SearchCourses { get; set; }
+
+    private async Task SearchForCourses()
+    {
+        if (!SearchCourses.HasDelegate) return;
+
+        await SearchCourses.InvokeAsync(_searchStr);
+    }
 }

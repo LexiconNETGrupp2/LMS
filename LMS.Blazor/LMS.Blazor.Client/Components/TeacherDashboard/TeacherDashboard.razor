@@ -12,7 +12,9 @@
     </Authorized>
 </AuthorizeView> *@
 
-<TeacherOverview AllCourses="courses" ActiveCourses="activeCourses" />
+<TeacherOverview AllCourses="courses"
+                 ActiveCourses="activeCourses"
+                 SearchCourses="SearchForCourses" />
 
 @code {
     private IReadOnlyCollection<CourseDto>? courses;
@@ -35,8 +37,12 @@
     {
         if (courses is null) return;
 
-        //DateOnly today = DateOnly.FromDateTime(DateTime.Now);
-        DateOnly today = new DateOnly(2027, 1, 1);
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now);
         activeCourses = courses.Where(c => c.StartDate <= today && c.EndDate >= today).ToList();
+    }
+
+    private async Task SearchForCourses(string search)
+    {
+        courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>($"api/courses?search={search}");
     }
 }

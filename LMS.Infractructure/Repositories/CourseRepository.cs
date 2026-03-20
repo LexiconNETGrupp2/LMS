@@ -29,6 +29,11 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
             query = query.Where(c => c.EndDate >= param.BeforeDate);
         }
 
+        if (param.Search is not null) {
+            query = query.Where(c => c.Name.Contains(param.Search) || 
+                                c.Description.Contains(param.Search));
+        }
+
         return await query.Include(c => c.Modules)
                         .Include(c => c.Students)
                         .ToListAsync(token);

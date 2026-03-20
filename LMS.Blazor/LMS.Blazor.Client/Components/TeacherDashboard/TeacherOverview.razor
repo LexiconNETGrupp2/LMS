@@ -38,7 +38,7 @@
         }
         @* All courses *@
         @if (_currentPage == "courses") {
-            <TeacherAllCourses Courses="AllCourses"/>
+            <TeacherAllCourses Courses="AllCourses" SearchCourses="SearchCourses" />
         }
     </div>
 </div>
@@ -49,6 +49,9 @@
 
     [Parameter]
     public IReadOnlyCollection<CourseDto> ActiveCourses { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<string> SearchCourses { get; set; }
 
     private string _currentPage = "overview";
 
