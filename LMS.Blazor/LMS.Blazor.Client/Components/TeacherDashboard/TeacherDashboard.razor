@@ -6,12 +6,6 @@
     <h1 class="h1 fs-3 fw-bold">Lärarens Dashboard</h1>
 </div>
 
-@* <AuthorizeView>
-    <Authorized>
-        Hejsan Lärare @context.User.Identity?.Name
-    </Authorized>
-</AuthorizeView> *@
-
 <TeacherOverview AllCourses="courses"
                  ActiveCourses="activeCourses"
                  SearchCourses="SearchForCourses" />
