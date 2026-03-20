@@ -13,21 +13,24 @@
         @* Teacher overview *@
         @if (_currentPage == "overview") {
             <div class="container">
-                <div class="row">
-                    <div class="col-6">
+                <div class="row mb-5">
+                    <div class="col-lg-6">
                         <div class="d-flex justify-content-between">
                             <h2 class="h2 fs-5 fw-semibold d-inline-block">Aktiva kurser</h2>
                             <a href="#">Visa alla ＞</a>
                         </div>
-                        <ActiveCourses Courses="Courses" />
+                        <div class="overflow-y-scroll" style="height: 23em;">
+                            <ActiveCourses Courses="ActiveCourses" />
+                        </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-lg-6">
                         <h2 class="h2 fs-5 fw-semibold">Senaste aktivitet</h2>
                         @* Komponent för att lista senaste aktiviteter *@
                     </div>
                 </div>
                 <div class="row">
                     <div class="col">
+                        <h2 class="h2 fs-5 fw-semibold">Kommande aktiviteter</h2>
                         @* Komponent för att lista kommande aktiviteter *@
                     </div>
                 </div>
@@ -35,14 +38,17 @@
         }
         @* All courses *@
         @if (_currentPage == "courses") {
-            <div>Alla Kurser</div>
+            <TeacherAllCourses Courses="AllCourses"/>
         }
     </div>
 </div>
 
 @code {
     [Parameter]
-    public IReadOnlyCollection<CourseDto>? Courses { get; set; }
+    public IReadOnlyCollection<CourseDto>? AllCourses { get; set; }
+
+    [Parameter]
+    public IReadOnlyCollection<CourseDto> ActiveCourses { get; set; } = [];
 
     private string _currentPage = "overview";
 
