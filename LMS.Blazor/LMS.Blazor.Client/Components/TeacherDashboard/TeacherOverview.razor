@@ -1,9 +1,9 @@
 ﻿@* More styling in the TeacherOverview.razor.css file *@
 <div id="custom-navbar" class="container border-bottom d-flex mt-3">
-    <button class="py-3 px-1 @(_currentPage == "overview" ? "custom-active" : "")" @onclick="GoToOverview">
+    <button class="py-3 px-1 user-select-none @(_currentPage == "overview" ? "custom-active" : "")" @onclick="GoToOverview">
             Översikt
     </button>
-    <button class="py-3 px-1 ms-4 @(_currentPage == "courses" ? "custom-active" : "")" @onclick="GoToAllCourses">
+    <button class="py-3 px-1 ms-4 user-select-none @(_currentPage == "courses" ? "custom-active" : "")" @onclick="GoToAllCourses">
             Kurser
     </button>
 </div>
