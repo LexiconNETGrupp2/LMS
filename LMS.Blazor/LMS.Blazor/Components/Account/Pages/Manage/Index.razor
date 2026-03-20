@@ -138,7 +138,6 @@
             return;
         }
 
-        await SignInManager.RefreshSignInAsync(user);
         RedirectManager.RedirectToCurrentPageWithStatus("Kontot har uppdaterats.", HttpContext);
     }
 

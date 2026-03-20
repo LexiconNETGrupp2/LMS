@@ -3,17 +3,22 @@
 @inject NavigationManager NavigationManager
 
 <div class="page">
-    <div class="sidebar @(isNavOpen ? "sidebar-open" : "")">
+    <input id="nav-toggle"
+           type="checkbox"
+           class="nav-toggle"
+           title="Navigation menu" />
+
+    <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
         <div class="top-row main-top-row px-3">
             <div class="top-row-left">
-                <button class="menu-toggle"
-                        @onclick="ToggleNav"
-                        aria-label="Toggle navigation">
-                </button>
+                <label for="nav-toggle"
+                       class="menu-toggle"
+                       aria-label="Toggle navigation">
+                </label>
 
                 <div class="brand-group mainlayout-brand">
                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -56,15 +61,12 @@
             </div>
         </div>
 
-        @if (isNavOpen)
-        {
-            <button class="mobile-nav-backdrop"
-                    @onclick="CloseNavOnMobile"
-                    aria-label="Close navigation">
-            </button>
-        }
+        <label for="nav-toggle"
+               class="mobile-nav-backdrop"
+               aria-label="Close navigation">
+        </label>
 
-        <article class="content px-4" @onclick="CloseNavOnMobile">
+        <article class="content px-4">
             @Body
         </article>
     </main>
@@ -77,7 +79,6 @@
 </div>
 
 @code {
-    private bool isNavOpen;
     private string? currentUrl;
 
     protected override void OnInitialized()
@@ -86,20 +87,9 @@
         NavigationManager.LocationChanged += OnLocationChanged;
     }
 
-    private void ToggleNav()
-    {
-        isNavOpen = !isNavOpen;
-    }
-
-    private void CloseNavOnMobile()
-    {
-        isNavOpen = false;
-    }
-
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
-        isNavOpen = false;
         StateHasChanged();
     }
 

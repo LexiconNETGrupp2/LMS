@@ -22,7 +22,8 @@
     </div>
 </div>
 
-<div class="nav-scrollable">
+<div class="nav-scrollable"
+     onclick="var navToggle = document.getElementById('nav-toggle'); if (navToggle) { navToggle.checked = false; }">
     <nav class="nav flex-column">
         <AuthorizeView>
             <Authorized Context="authState">
@@ -58,8 +59,6 @@
 </div>
 
 @code {
-    private string? currentUrl;
-
     private List<NavMenuItemModel> StudentMenuItems => new()
     {
         new("bi bi-house", "Dashboard", "", NavLinkMatch.All),
