@@ -6,6 +6,7 @@
 
 main {
     flex: 1;
+    position: relative;
 }
 
 .top-row {
@@ -17,6 +18,9 @@ main {
 }
 
 .main-top-row {
+    position: sticky;
+    top: 0;
+    z-index: 30;
     justify-content: space-between;
     gap: 1rem;
 }
@@ -109,11 +113,23 @@ main {
 
 .sidebar {
     display: none;
+    position: absolute;
+    top: 3.5rem;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background-color: #fff;
+    border-bottom: 1px solid #d6d5d5;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
 
     .sidebar.sidebar-open {
         display: block;
     }
+
+.mobile-nav-backdrop {
+    display: none;
+}
 
 .mainlayout-brand {
     display: flex;
@@ -132,6 +148,18 @@ main {
     .top-link {
         padding: 0.5rem;
     }
+
+    .mobile-nav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 3.5rem 0 0;
+        z-index: 10;
+        border: none;
+        padding: 0;
+        margin: 0;
+        background: transparent;
+        appearance: none;
+    }
 }
 
 @media (min-width: 641px) {
@@ -145,6 +173,11 @@ main {
         height: 100vh;
         position: sticky;
         top: 0;
+        z-index: auto;
+        right: auto;
+        background-color: transparent;
+        border-bottom: none;
+        box-shadow: none;
     }
 
     .menu-toggle {
@@ -153,12 +186,6 @@ main {
 
     .mainlayout-brand {
         display: none;
-    }
-
-    .main-top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
     }
 
     .main-top-row,

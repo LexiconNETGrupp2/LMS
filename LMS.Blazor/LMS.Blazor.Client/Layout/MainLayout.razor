@@ -56,6 +56,14 @@
             </div>
         </div>
 
+        @if (isNavOpen)
+        {
+            <button class="mobile-nav-backdrop"
+                    @onclick="CloseNavOnMobile"
+                    aria-label="Close navigation">
+            </button>
+        }
+
         <article class="content px-4" @onclick="CloseNavOnMobile">
             @Body
         </article>
@@ -91,6 +99,7 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        isNavOpen = false;
         StateHasChanged();
     }
 
