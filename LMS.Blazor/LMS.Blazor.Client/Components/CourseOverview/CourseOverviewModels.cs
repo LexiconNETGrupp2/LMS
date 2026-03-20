@@ -11,6 +11,7 @@ public sealed class CourseOverviewViewModel
 
 public sealed class ModuleViewModel
 {
+    public string Id { get; init; } = Guid.NewGuid().ToString();
     public string Title { get; init; } = string.Empty;
     public string DateRange { get; init; } = string.Empty;
     public int ProgressPercent { get; init; }
