@@ -1,10 +1,8 @@
 
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using LMS.Shared.DTOs.ModuleDtos;
-using Microsoft.EntityFrameworkCore;
 using Service.Contracts;
 
 namespace LMS.Services;
@@ -30,32 +28,20 @@ public class ModuleService : IModuleService
 
     public async Task<IEnumerable<ModuleDto>> GetAllModulesAsync()
     {
-        var modules = await _moduleRepository.FindAll()
-            .Include(m => m.Course)
-            .ProjectTo<ModuleDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
-
-        return modules;
+        var modules = await _moduleRepository.GetAllModulesAsync();
+        return _mapper.Map<IEnumerable<ModuleDto>>(modules);
     }
 
     public async Task<ModuleDto?> GetModuleByIdAsync(Guid id)
     {
-        var module = await _moduleRepository.FindByCondition(m => m.Id == id)
-            .Include(m => m.Course)
-            .ProjectTo<ModuleDto>(_mapper.ConfigurationProvider)
-            .SingleOrDefaultAsync();
-
-        return module;
+        var module = await _moduleRepository.GetModuleByIdAsync(id);
+        return module is null ? null : _mapper.Map<ModuleDto>(module);
     }
 
     public async Task<IEnumerable<ModuleDto>> GetModulesByCourseIdAsync(Guid courseId)
     {
-        var modules = await _moduleRepository.FindByCondition(m => m.Course.Id == courseId)
-            .Include(m => m.Course)
-            .ProjectTo<ModuleDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
-
-        return modules;
+        var modules = await _moduleRepository.GetModulesByCourseIdAsync(courseId);
+        return _mapper.Map<IEnumerable<ModuleDto>>(modules);
     }
 
     public async Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto)
@@ -80,9 +66,7 @@ public class ModuleService : IModuleService
 
     public async Task UpdateModuleAsync(Guid id, UpdateModuleDto updateModuleDto)
     {
-        var module = await _moduleRepository.FindByCondition(m => m.Id == id, trackChanges: true)
-            .FirstOrDefaultAsync();
-
+        var module = await _moduleRepository.GetModuleByIdTrackedAsync(id);
         if (module == null)
             throw new KeyNotFoundException("Module not found");
 
@@ -95,9 +79,7 @@ public class ModuleService : IModuleService
 
     public async Task DeleteModuleAsync(Guid id)
     {
-        var module = await _moduleRepository.FindByCondition(m => m.Id == id, trackChanges: true)
-            .FirstOrDefaultAsync();
-
+        var module = await _moduleRepository.GetModuleByIdTrackedAsync(id);
         if (module == null)
             throw new KeyNotFoundException("Module not found");
 

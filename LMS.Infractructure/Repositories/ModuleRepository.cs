@@ -38,4 +38,11 @@ public class ModuleRepository : RepositoryBase<Module>, IModuleRepository
             .Where(m => m.Course.Id == courseId)
             .ToListAsync();
     }
+
+    public async Task<Module?> GetModuleByIdTrackedAsync(Guid id)
+    {
+        return await _context.Modules
+            .Include(m => m.Course)
+            .FirstOrDefaultAsync(m => m.Id == id);
+    }
 }

@@ -7,4 +7,5 @@ public interface IModuleRepository : IRepositoryBase<Module>, IInternalRepositor
     Task<IReadOnlyCollection<Module>> GetAllModulesAsync();
     Task<Module?> GetModuleByIdAsync(Guid id);
     Task<IReadOnlyCollection<Module>> GetModulesByCourseIdAsync(Guid courseId);
+    Task<Module?> GetModuleByIdTrackedAsync(Guid id);
 }
