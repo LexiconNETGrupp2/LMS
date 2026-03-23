@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+﻿using LMS.Shared.DTOs.ModuleDtos;
 
 namespace LMS.Shared.DTOs.CourseDtos;
 
@@ -7,5 +7,5 @@ public sealed record CreateCourseDto(
     string Description,
     DateOnly StartDate,
     DateOnly EndDate,
-    ICollection<Module> Modules
+    ICollection<CreateModuleDto> Modules
 );
