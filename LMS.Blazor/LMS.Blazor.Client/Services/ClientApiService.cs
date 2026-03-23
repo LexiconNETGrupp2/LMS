@@ -34,16 +34,27 @@ public class ClientApiService : IApiService
 
         response.EnsureSuccessStatusCode();
 
-        return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync(ct), _jsonOptions, ct);
+        return await TryDeserialize<T>(response.Content, ct);
+    }
+
+    public async Task<TResult?> PatchAsync<TParam, TResult>(string endpoint, TParam body, CancellationToken token = default)
+    {
+        using var jsonContent = Serialize(body);
+
+        using var response = await _httpClient.PatchAsync($"api/proxy/{endpoint}", jsonContent, token);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+            response.StatusCode == System.Net.HttpStatusCode.Forbidden) {
+            //_navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        }
+
+        // Not everything can be parsed, so just return null
+        return await TryDeserialize<TResult>(response.Content, token);
     }
 
     public async Task<TResult?> PostAsync<TParam, TResult>(string endpoint, TParam body, CancellationToken token = default)
     {
-        using StringContent jsonContent = new(
-            JsonSerializer.Serialize(body),
-            Encoding.UTF8,
-            "application/json"
-        );
+        using var jsonContent = Serialize(body);
 
         using var response = await _httpClient.PostAsync($"api/proxy/{endpoint}", jsonContent, token);
 
@@ -53,8 +64,24 @@ public class ClientApiService : IApiService
         }
 
         // Not everything can be parsed, so just return null
+        return await TryDeserialize<TResult>(response.Content, token);
+    }
+
+    private StringContent Serialize<T>(T obj)
+    {
+        return new(
+            JsonSerializer.Serialize(obj),
+            Encoding.UTF8,
+            "application/json"
+        );
+    }
+
+    private async Task<T?> TryDeserialize<T>(HttpContent? content, CancellationToken token = default)
+    {
+        if (content is null) return default;
+
         try {
-            return await JsonSerializer.DeserializeAsync<TResult>(await response.Content.ReadAsStreamAsync(token), _jsonOptions, token);
+            return await JsonSerializer.DeserializeAsync<T>(await content.ReadAsStreamAsync(token), _jsonOptions, token);
         } catch (Exception) {
             return default;
         }
