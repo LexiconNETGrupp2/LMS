@@ -1,0 +1,27 @@
+@namespace LMS.Blazor.Client.Components.CourseParticipants
+
+<div class="container py-4">
+    <div class="mb-4">
+        <h1 class="h2 fw-bold mb-2">Kursdeltagare</h1>
+        <p class="text-muted mb-1">@Course.CourseTitle</p>
+        <p class="text-muted mb-0">@Course.Description</p>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+                <h2 class="h4 fw-semibold mb-0">Deltagare</h2>
+                <span class="badge text-bg-primary rounded-pill px-3 py-2">
+                    @Course.Participants.Count deltagare
+                </span>
+            </div>
+
+            <ParticipantList Participants="Course.Participants" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public CourseParticipantsViewModel Course { get; set; } = new();
+}
