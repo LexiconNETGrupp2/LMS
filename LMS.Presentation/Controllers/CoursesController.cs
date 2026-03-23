@@ -87,7 +87,7 @@ public class CoursesController : ControllerBase
     [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Add a course to the database",
-        Description = ""
+        Description = "Takes a Name, Description, Start Date, End Date, and a list of Modules and creates a course with the data"
     )]
     [SwaggerResponse(StatusCodes.Status201Created)]
     [SwaggerResponse(StatusCodes.Status400BadRequest)]
