@@ -1,4 +1,6 @@
-﻿namespace LMS.Shared.DTOs.CourseDtos;
+﻿using LMS.Shared.DTOs.ActivityDtos;
+
+namespace LMS.Shared.DTOs.CourseDtos;
 
 public sealed record CourseModuleDto(
     string Name,

@@ -1,4 +1,6 @@
+using LMS.Shared.DTOs.ActivityDtos;
 using Microsoft.AspNetCore.Mvc;
+using Service.Contracts;
 
 namespace LMS.Presentation.Controllers;
 
@@ -6,9 +8,17 @@ namespace LMS.Presentation.Controllers;
 [Route("api/[controller]")]
 public class ActivitiesController : ControllerBase
 {
-    [HttpPost]
-    public IActionResult CreateActivity()
+    private readonly IActivityService _activityService;
+
+    public ActivitiesController(IActivityService activityService)
     {
-        return Created("api/activities", null);
+        _activityService = activityService;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateActivity([FromBody] CreateActivityDto request)
+    {
+        var response = await _activityService.CreateActivity(request);
+        return Created("api/activities", response);
     }
 }

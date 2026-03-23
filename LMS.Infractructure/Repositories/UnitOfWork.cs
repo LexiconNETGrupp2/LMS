@@ -6,8 +6,9 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext context;
     private readonly Lazy<ICourseRepository> _courseRepository;
-    
+
     public ICourseRepository CourseRepository => _courseRepository.Value;
+    public IActivityRepository Activities => field ??= new ActivityRepository(context);
 
     public UnitOfWork(ApplicationDbContext context, Lazy<ICourseRepository> courseRepository)
     {

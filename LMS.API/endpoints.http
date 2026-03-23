@@ -1,0 +1,14 @@
+### GET request to example server
+
+POST http://localhost:5166/api/activities
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "New Activity",
+  "description": "This is a new activity created via HTTP request.",
+  "startDate": "2024-07-01T09:00:00Z",
+  "endDate": "2024-07-01T17:00:00Z",
+  "type": {"name": "Examination"},
+  "moduleId": "e04e457e-8cdd-4af6-ae15-a77f52dff46c"
+}

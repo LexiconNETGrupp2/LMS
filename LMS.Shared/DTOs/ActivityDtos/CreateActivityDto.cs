@@ -1,8 +1,8 @@
-﻿using LMS.Shared.DTOs.CourseDtos;
+using LMS.Shared.DTOs.CourseDtos;
 
-namespace LMS.Shared.DTOs;
+namespace LMS.Shared.DTOs.ActivityDtos;
 
-public sealed record ActivityDto(
+public record CreateActivityDto(
     string Name,
     string Description,
     DateTime StartDate,
