@@ -189,6 +189,7 @@
     {
         //This method run in prerender
         await CallApi();
+        await CreateCourse();
     }
 
     private async Task CallApi()
@@ -224,7 +225,7 @@
 
         isLoading = true;
         try {
-            course = (await ApiService.GetAsync<CourseDto>($"api/courses/{courseId}"));
+            course = await ApiService.GetAsync<CourseDto>($"api/courses/{courseId}");
             Console.WriteLine($"{course?.StartDate} {course?.EndDate}");
         } catch (Exception) {
             error.Add("401: You are not allowed to see this course");
@@ -234,11 +235,24 @@
 
         isLoading = true;
         try {
-            myCourses = (await ApiService.GetAsync<CourseDto?>($"api/courses/user/{userId}"));
+            myCourses = await ApiService.GetAsync<CourseDto?>($"api/courses/user/{userId}");
         } catch (Exception) {
             error.Add("401: You can only see your own course");
         } finally {
             isLoading = false;
         }
+    }
+
+    private async Task CreateCourse()
+    {
+        CreateCourseDto createCourseDto = new(
+            Name: "Demoauth",
+            Description: "Created from demoauth",
+            StartDate: new DateOnly(2025, 1, 1),
+            EndDate: new DateOnly(2026, 1, 1),
+            Modules: []
+        );
+
+        var result = await ApiService.PostAsync<CreateCourseDto, bool>("api/courses/create", createCourseDto);
     }
 }
