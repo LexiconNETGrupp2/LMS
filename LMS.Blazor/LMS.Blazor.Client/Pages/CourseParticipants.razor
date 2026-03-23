@@ -1,0 +1,39 @@
+@page "/CourseParticipants"
+@attribute [Authorize(Roles = "Student")]
+@using LMS.Blazor.Client.Components.CourseParticipants
+
+<CourseParticipantsView Course="_model" />
+
+@code {
+    private readonly CourseParticipantsViewModel _model = CreateModel();
+
+    private static CourseParticipantsViewModel CreateModel()
+    {
+        IReadOnlyList<UserDto> participants =
+        [
+            new("alice.andersson@lexicon.se", "Alice", "Andersson"),
+            new("benjamin.berg@lexicon.se", "Benjamin", "Berg"),
+            new("clara.lind@lexicon.se", "Clara", "Lind"),
+            new("david.nordin@lexicon.se", "David", "Nordin"),
+            new("erik.eriksson@lexicon.se", "Erik", "Eriksson")
+        ];
+
+        return new CourseParticipantsViewModel
+        {
+            CourseTitle = "JavaScript",
+            Description = "Studenter som deltar i din nuvarande kurs.",
+            Participants = participants.Select(MapParticipant).ToArray()
+        };
+    }
+
+    private static ParticipantViewModel MapParticipant(UserDto user)
+        => new()
+        {
+            FullName = $"{user.FirstName} {user.LastName}",
+            Email = user.Email,
+            Initials = $"{GetInitial(user.FirstName)}{GetInitial(user.LastName)}"
+        };
+
+    private static string GetInitial(string value)
+        => string.IsNullOrWhiteSpace(value) ? "?" : value[0].ToString().ToUpperInvariant();
+}
