@@ -83,10 +83,18 @@ public class CoursesController : ControllerBase
         return Ok(courseDto);
     }
 
-    [HttpPost]
+    [HttpPost("create")]
+    [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+        Summary = "Add a course to the database",
+        Description = ""
+    )]
+    [SwaggerResponse(StatusCodes.Status201Created)]
+    [SwaggerResponse(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
     {
-
+        var result = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
+        return result ? Created() : BadRequest();
     }
 
     private bool IsStudent()

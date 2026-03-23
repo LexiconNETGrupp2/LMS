@@ -23,9 +23,14 @@ public class CourseService : ICourseService
     public async Task<bool> CreateCourse(CreateCourseDto createCourseDto, CancellationToken token)
     {
         Course course = _mapper.Map<Course>(createCourseDto);
-        _uow.CourseRepository.Create(course);
-        await _uow.CompleteAsync(token);
-        return true;
+        try {
+            _uow.CourseRepository.Create(course);
+            await _uow.CompleteAsync(token);
+            return true;
+        } catch (Exception ex) {
+            _logger.LogWarning("Error when adding course {CourseId} to database: {ExMessage}", course.Id, ex.Message);
+            return false;
+        }
     }
 
     public async Task<IReadOnlyCollection<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
