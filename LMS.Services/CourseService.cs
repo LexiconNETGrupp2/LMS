@@ -61,4 +61,32 @@ public class CourseService : ICourseService
         var courseDto = _mapper.Map<CourseDto>(course);
         return courseDto;
     }
+
+    public async Task<bool> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
+    {
+        Course? course = await _uow.CourseRepository.GetCourseById(id, token); 
+        if (course is null) return false;
+        
+        if (updateCourseDto.Name is not null) {
+            course.Name = updateCourseDto.Name;
+        }
+        if (updateCourseDto.Description is not null) {
+            course.Description = updateCourseDto.Description;
+        }
+        if (updateCourseDto.StartDate is not null) {
+            course.StartDate = (DateOnly)updateCourseDto.StartDate;
+        }
+        if (updateCourseDto.EndDate is not null) {
+            course.EndDate = (DateOnly)updateCourseDto.EndDate;
+        }
+
+        try {
+            _uow.CourseRepository.Update(course);
+            await _uow.CompleteAsync(token);
+            return true;
+        } catch (Exception ex) {
+            _logger.LogWarning("Error when updating course {CourseId}: {ExMessage}", id, ex.Message);
+            return false;
+        }
+    }
 }
