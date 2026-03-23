@@ -53,4 +53,15 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(token);
     }
+
+    public async Task<Course?> GetCourseWithStudentsFromUserId(Guid userId, CancellationToken token)
+    {
+        string userIdStr = userId.ToString();
+
+        return await _context.Courses
+                        .AsNoTracking()
+                        .Where(c => c.Students.Any(u => u.Id == userIdStr))
+                        .Include(c => c.Students)
+                        .FirstOrDefaultAsync(token);
+    }
 }

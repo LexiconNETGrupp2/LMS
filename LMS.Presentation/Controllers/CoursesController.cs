@@ -64,6 +64,18 @@ public class CoursesController : ControllerBase
         return Ok(courseDto);
     }
 
+    [HttpGet("me/participants")]
+    public async Task<IActionResult> GetMyCourseParticipants(CancellationToken token)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var dto = await _serviceManager.CourseService.GetCourseParticipantsByUserId(userId, token);
+        return Ok(dto);
+    }
+
     private bool IsStudent()
         => User.IsInRole(RolesNames.Student);
     private string? GetCurrentUserId()
