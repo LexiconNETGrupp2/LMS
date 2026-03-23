@@ -93,8 +93,16 @@ public class CoursesController : ControllerBase
     [SwaggerResponse(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
     {
-        var result = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
-        return result ? Created() : BadRequest();
+        bool success = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
+        return success ? Created() : BadRequest();
+    }
+
+    [HttpPatch("update/{id:guid}")]
+    [Authorize(Roles = RolesNames.Teacher)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseDto updateCourseDto, CancellationToken token)
+    {
+        bool success = await _serviceManager.CourseService.UpdateCourse(id, updateCourseDto, token);
+        return success ? NoContent() : BadRequest();
     }
 
     private bool IsStudent()

@@ -190,6 +190,7 @@
         //This method run in prerender
         await CallApi();
         await CreateCourse();
+        await UpdateCourse();
     }
 
     private async Task CallApi()
@@ -254,5 +255,16 @@
         );
 
         var result = await ApiService.PostAsync<CreateCourseDto, bool>("api/courses/create", createCourseDto);
+    }
+
+    private async Task UpdateCourse()
+    {
+        UpdateCourseDto updateCourseDto = new(
+            Name: "JavaScript 2: Promises",
+            Description: "Created from demoauth",
+            null, null
+        );
+        string courseId = "78dc2759-824c-4587-b5bd-2d52132e54c1";
+        var result = await ApiService.PatchAsync<UpdateCourseDto, bool>($"api/courses/update/{courseId}", updateCourseDto);
     }
 }
