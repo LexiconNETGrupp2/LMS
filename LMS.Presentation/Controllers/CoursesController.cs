@@ -99,10 +99,30 @@ public class CoursesController : ControllerBase
 
     [HttpPatch("update/{id:guid}")]
     [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+        Summary = "Update info for a course",
+        Description = "Can take a new Name, Description, Start Date, and End Date and replaces the non-null parameters"
+    )]
+    [SwaggerResponse(StatusCodes.Status204NoContent)]
+    [SwaggerResponse(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseDto updateCourseDto, CancellationToken token)
     {
         bool success = await _serviceManager.CourseService.UpdateCourse(id, updateCourseDto, token);
         return success ? NoContent() : BadRequest();
+    }
+
+    [HttpDelete("delete/{id:guid}")]
+    [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+        Summary = "Delete a course",
+        Description = "Deletes a course by its ID"
+    )]
+    [SwaggerResponse(StatusCodes.Status204NoContent)]
+    [SwaggerResponse(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
+    {
+        bool success = await _serviceManager.CourseService.DeleteCourse(id, token);
+        return success ? NoContent() : NotFound();
     }
 
     private bool IsStudent()

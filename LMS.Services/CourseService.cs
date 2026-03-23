@@ -31,7 +31,7 @@ public class CourseService : ICourseService
             _logger.LogWarning("Error when adding course {CourseId} to database: {ExMessage}", course.Id, ex.Message);
             return false;
         }
-    }
+    }    
 
     public async Task<IReadOnlyCollection<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
@@ -86,6 +86,21 @@ public class CourseService : ICourseService
             return true;
         } catch (Exception ex) {
             _logger.LogWarning("Error when updating course {CourseId}: {ExMessage}", id, ex.Message);
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteCourse(Guid id, CancellationToken token)
+    {
+        Course? course = await _uow.CourseRepository.GetCourseById(id, token);
+        if (course is null) return false;
+
+        try {
+            _uow.CourseRepository.Delete(course);
+            await _uow.CompleteAsync(token);
+            return true;
+        } catch (Exception ex) {
+            _logger.LogWarning("Could not delete course {CourseId}: {ExMessage}", id, ex.Message);
             return false;
         }
     }

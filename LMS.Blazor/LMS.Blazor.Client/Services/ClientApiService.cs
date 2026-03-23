@@ -20,7 +20,7 @@ public class ClientApiService : IApiService
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-    }
+    }    
 
     public async Task<T?> GetAsync<T>(string endpoint, CancellationToken ct = default)
     {
@@ -65,6 +65,16 @@ public class ClientApiService : IApiService
 
         // Not everything can be parsed, so just return null
         return await TryDeserialize<TResult>(response.Content, token);
+    }
+
+    public async Task DeleteAsync(string endpoint, CancellationToken token = default)
+    {
+        using var response = await _httpClient.DeleteAsync($"api/proxy/{endpoint}", token);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+            response.StatusCode == System.Net.HttpStatusCode.Forbidden) {
+            //_navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        }
     }
 
     private StringContent Serialize<T>(T obj)

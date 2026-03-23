@@ -191,6 +191,7 @@
         await CallApi();
         await CreateCourse();
         await UpdateCourse();
+        await DeleteCourse();
     }
 
     private async Task CallApi()
@@ -260,11 +261,17 @@
     private async Task UpdateCourse()
     {
         UpdateCourseDto updateCourseDto = new(
-            Name: "JavaScript 2: Promises",
+            Name: "JavaScript 3: Callback",
             Description: "Created from demoauth",
             null, null
         );
         string courseId = "78dc2759-824c-4587-b5bd-2d52132e54c1";
         var result = await ApiService.PatchAsync<UpdateCourseDto, bool>($"api/courses/update/{courseId}", updateCourseDto);
+    }
+
+    private async Task DeleteCourse()
+    {
+        string courseId = "78dc2759-824c-4587-b5bd-2d52132e54c1";
+        await ApiService.DeleteAsync($"api/courses/delete/{courseId}");
     }
 }

@@ -6,6 +6,12 @@ public class ServerNoOpApiService(ILogger<ServerNoOpApiService> logger) : IApiSe
 {
     private readonly ILogger<ServerNoOpApiService> _logger = logger;
 
+    public Task DeleteAsync(string endpoint, CancellationToken token = default)
+    {
+        _logger.LogWarning("ServerNoOpApiService called for: {Endpoint}", endpoint);
+        return Task.CompletedTask;
+    }
+
     public Task<T?> GetAsync<T>(string endpoint, CancellationToken ct = default)
     {
         _logger.LogWarning("ServerNoOpApiService called for: {Endpoint}", endpoint);
