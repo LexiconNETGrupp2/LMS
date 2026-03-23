@@ -1,14 +1,70 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager NavigationManager
 
 <div class="page">
+    <input id="nav-toggle"
+           type="checkbox"
+           class="nav-toggle"
+           title="Navigation menu" />
+
     <div class="sidebar shadow-sm">
         <NavMenu />
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row main-top-row px-3">
+            <div class="top-row-left">
+                <label for="nav-toggle"
+                       class="menu-toggle"
+                       aria-label="Toggle navigation">
+                </label>
+
+                <div class="brand-group mainlayout-brand">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="30"
+                         height="30"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="#2563eb"
+                         stroke-width="2"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         class="lucide lucide-book-open"
+                         aria-hidden="true">
+                        <path d="M12 7v14"></path>
+                        <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path>
+                    </svg>
+
+                    <a class="brand-text" href="">Lexicon LMS</a>
+                </div>
+            </div>
+
+            <div class="top-row-right">
+                <AuthorizeView>
+                    <Authorized Context="authState">
+                        <NavLink class="top-link account-link" href="Account/Manage">
+                            <i class="bi bi-person-circle top-icon" aria-hidden="true"></i>
+                            <span>@authState.User.Identity?.Name</span>
+                        </NavLink>
+
+                        <form action="Account/Logout" method="post" class="top-logout-form">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                            <button type="submit" class="top-link top-logout-button">
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                <span>Logga ut</span>
+                            </button>
+                        </form>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
         </div>
+
+        <label for="nav-toggle"
+               class="mobile-nav-backdrop"
+               aria-label="Close navigation">
+        </label>
 
         <article class="content px-4">
             @Body
@@ -21,3 +77,24 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

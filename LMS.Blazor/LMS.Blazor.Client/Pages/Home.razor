@@ -1,5 +1,7 @@
 ﻿@page "/"
 
+@attribute [Authorize]
+
 <PageTitle>Home</PageTitle>
 
 <AuthorizeView Roles="@RolesNames.Teacher">
