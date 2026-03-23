@@ -37,6 +37,9 @@
             {
                 Title = s.Name,
                 DateRange = $"{s.StartDate} - {s.EndDate}",
+                // Expand when current date is between start and end date of the module
+                IsExpanded = DateTime.Now >= s.StartDate.ToDateTime(TimeOnly.MinValue) &&
+                             DateTime.Now <= s.EndDate.ToDateTime(TimeOnly.MaxValue),
                 Activities = s.Activities.Select(a => new ActivityViewModel()
                 {
                     Title = a.Name,

@@ -18,7 +18,7 @@ public sealed class ModuleViewModel
     public int ProgressPercent { get; init; }
     public bool IsExpanded { get; set; }
     public string? Description { get; init; }
-    public IReadOnlyList<ActivityViewModel> Activities { get; init; } = [];
+    public IReadOnlyList<ActivityViewModel> Activities { get; set; } = [];
 }
 
 public sealed class ActivityViewModel
