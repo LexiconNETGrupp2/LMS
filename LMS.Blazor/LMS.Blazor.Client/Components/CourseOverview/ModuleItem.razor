@@ -1,3 +1,4 @@
+@using LMS.Shared.DTOs.ActivityDtos
 @namespace LMS.Blazor.Client.Components.CourseOverview
 @inject IApiService ApiService
 
@@ -54,7 +55,7 @@
             <h4 class="h5 mb-3">Aktiviteter</h4>
 
             <div class="list-group list-group-flush border rounded">
-                <Virtualize Context="activity" ItemsProvider="LoadActivities">
+                <Virtualize Context="activity" Items="Module.Activities.ToArray()">
                     <ItemContent>
                         <ActivityItem Activity="activity"/>
                     </ItemContent>
@@ -83,36 +84,18 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: Load real activities from API
-        //_Module.Activities = await GetActivities();
-        Module.Activities = GetMockActivities(100).ToList();
-    }
-
-    private IEnumerable<ActivityViewModel> GetMockActivities(int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            yield return new ActivityViewModel
-            {
-                Title = $"Aktivitet {i + 1}",
-                Type = i % 3 == 0 ? "E-Learning" : (i % 3 == 1 ? "Föreläsning" : "Inlämning"),
-                Date = $"2024-01-{10 + (i % 20)} - 2024-01-{15 + (i % 20)}",
-                StatusText = i % 3 == 0 ? "Avklarad" : (i % 3 == 1 ? "Ej avklarad" : "Under arbete"),
-                StatusTextClass = i % 3 == 0 ? "text-success" : (i % 3 == 1 ? "text-danger" : "text-warning"),
-                StatusIcon = i % 3 == 0 ? "check2-circle" : (i % 3 == 1 ? "x-circle" : "exclamation-triangle"),
-                HasDocument = i % 2 == 0,
-            };
-        }
+        Module.Activities = await GetActivities();
     }
 
     private async Task<List<ActivityViewModel>> GetActivities()
     {
-        var uri = $"api/modules/{Module.Id}";
-        var result = await ApiService.GetAsync<CourseModuleDto>(uri);
+        var uri = $"api/activities/module/{Module.Id}";
+        var result = await ApiService.GetAsync<List<ActivityDto>>(uri);
         if (result == null)
             return [];
-        return result.Activities.Select(s => new ActivityViewModel
+        return result.Select(s => new ActivityViewModel
         {
+            Id = s.Id.ToString(),
             Title = s.Name,
             Type = s.Type.Name,
             Date = $"{s.StartDate} - {s.EndDate}",
