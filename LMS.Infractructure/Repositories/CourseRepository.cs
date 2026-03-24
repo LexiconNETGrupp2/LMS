@@ -1,7 +1,9 @@
-﻿using Domain.Contracts.Repositories;
+using Domain.Contracts.Repositories;
+using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
 using LMS.Shared.DTOs.CourseDtos;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Repositories;
@@ -45,7 +47,8 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
 
     public async Task<Course?> GetCourseFromUserId(Guid userId, CancellationToken token)
     {
-        string userIdStr = userId.ToString();
+        var userIdStr = userId.ToString();
+
         return await _context.Courses
                         .AsNoTracking()
                         .Where(c => c.Students.FirstOrDefault(u => u.Id == userIdStr) != null)
@@ -54,14 +57,58 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .FirstOrDefaultAsync(token);
     }
 
-    public async Task<Course?> GetCourseWithStudentsFromUserId(Guid userId, CancellationToken token)
+    public async Task<CourseParticipantsReadModel?> GetCourseParticipantsByUserId(Guid userId, CancellationToken token)
     {
-        string userIdStr = userId.ToString();
+        var userIdStr = userId.ToString();
 
-        return await _context.Courses
+        var courseData = await _context.Courses
                         .AsNoTracking()
                         .Where(c => c.Students.Any(u => u.Id == userIdStr))
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(token);
+
+        if (courseData is null)
+            return null;
+
+        var participants = courseData.Students
+                           .Select(student => new CourseParticipantReadModel
+                           {
+                               Id = student.Id,
+                               FirstName = student.FirstName.Trim(),
+                               LastName = student.LastName.Trim(),
+                               Email = student.Email ?? string.Empty
+                           })
+                           .ToList();
+
+        var participantIds = participants.Select(participant => participant.Id).ToList();
+        var participantRoles = await GetParticipantRolesAsync(participantIds, token);
+
+        return new CourseParticipantsReadModel
+        {
+            CourseId = courseData.Id,
+            Name = courseData.Name,
+            Description = courseData.Description,
+            Participants = participants,
+            ParticipantRoles = participantRoles
+        };
+    }
+
+    private async Task<IReadOnlyCollection<CourseParticipantRoleReadModel>> GetParticipantRolesAsync(
+        IReadOnlyCollection<string> participantIds,
+        CancellationToken token)
+    {
+        if (participantIds.Count == 0)
+            return [];
+
+        return await (
+                        from userRole in _context.Set<IdentityUserRole<string>>().AsNoTracking()
+                        join role in _context.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+                        where participantIds.Contains(userRole.UserId)
+                        select new CourseParticipantRoleReadModel
+                        {
+                            UserId = userRole.UserId,
+                            RoleName = role.Name
+                        })
+                        .ToListAsync(token);
     }
 }

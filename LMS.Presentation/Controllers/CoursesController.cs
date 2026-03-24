@@ -73,6 +73,9 @@ public class CoursesController : ControllerBase
             return Unauthorized();
 
         var dto = await _serviceManager.CourseService.GetCourseParticipantsByUserId(userId, token);
+        if (dto is null)
+            return NotFound();
+
         return Ok(dto);
     }
 

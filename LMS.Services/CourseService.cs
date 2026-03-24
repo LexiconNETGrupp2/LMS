@@ -1,8 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Domain.Contracts.Repositories;
+using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
+using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
-using Microsoft.AspNetCore.Identity;
 using Service.Contracts;
 
 namespace LMS.Services;
@@ -12,14 +13,12 @@ public class CourseService : ICourseService
     private readonly IUnitOfWork _uow;
     private readonly ICourseRepository _courseRepository;
     private readonly IMapper _mapper;
-    private readonly UserManager<ApplicationUser> _userManager;
 
-    public CourseService(IUnitOfWork uow, ICourseRepository courseRepository, IMapper mapper, UserManager<ApplicationUser> userManager)
+    public CourseService(IUnitOfWork uow, ICourseRepository courseRepository, IMapper mapper)
     {
         _uow = uow;
         _courseRepository = courseRepository;
         _mapper = mapper;
-        _userManager = userManager;
     }
 
     public async Task<IReadOnlyCollection<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
@@ -53,31 +52,41 @@ public class CourseService : ICourseService
 
     public async Task<CourseParticipantsDto?> GetCourseParticipantsByUserId(Guid id, CancellationToken token)
     {
-        var courseParticipants = await _courseRepository.GetCourseWithStudentsFromUserId(id, token);
-        if (courseParticipants is null) return null;
+        var courseParticipants = await _courseRepository.GetCourseParticipantsByUserId(id, token);
+        if (courseParticipants is null)
+            return null;
 
-        var participants = new List<CourseParticipantDto>();
+        var roleByUserId = courseParticipants.ParticipantRoles
+                        .GroupBy(role => role.UserId)
+                        .ToDictionary(
+                            group => group.Key,
+                            group => group.Select(role => role.RoleName)
+                                          .Where(roleName => !string.IsNullOrWhiteSpace(roleName))
+                                          .OrderBy(GetRolePriority)
+                                          .ThenBy(roleName => roleName)
+                                          .FirstOrDefault() ?? string.Empty);
 
-        foreach(var user in courseParticipants.Students)
-        {
-            var roles = await _userManager.GetRolesAsync(user);
-            participants.Add(new CourseParticipantDto
-            {
-                Id = user.Id,
-                FullName = $"{user.FirstName} {user.LastName}".Trim(),
-                Email = user.Email ?? string.Empty,
-                Role = roles.FirstOrDefault() ?? string.Empty
-
-            });
-        }
-
-        var courseParticipantsDto = new CourseParticipantsDto
+        return new CourseParticipantsDto
         {
             Name = courseParticipants.Name,
             Description = courseParticipants.Description,
-            Students = participants
+            Students = courseParticipants.Participants
+                        .Select(participant => new CourseParticipantDto
+                        {
+                            Id = participant.Id,
+                            FullName = $"{participant.FirstName} {participant.LastName}".Trim(),
+                            Email = participant.Email ?? string.Empty,
+                            Role = roleByUserId.GetValueOrDefault(participant.Id, string.Empty)
+                        })
+                        .ToList()
         };
-
-        return courseParticipantsDto;
     }
+
+    private static int GetRolePriority(string? roleName) =>
+        roleName switch
+        {
+            RolesNames.Teacher => 0,
+            RolesNames.Student => 1,
+            _ => 2
+        };
 }
