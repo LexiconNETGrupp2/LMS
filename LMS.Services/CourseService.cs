@@ -69,7 +69,7 @@ public class CourseService : ICourseService
 
     public async Task<CourseParticipantsDto?> GetCourseParticipantsByUserId(Guid id, CancellationToken token)
     {
-        var courseParticipants = await _courseRepository.GetCourseParticipantsByUserId(id, token);
+        var courseParticipants = await _uow.CourseRepository.GetCourseParticipantsByUserId(id, token);
         if (courseParticipants is null)
             return null;
 
