@@ -11,8 +11,10 @@
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
+        <div class="card-header">
             <h2 class="h4 fw-semibold mb-3">Kursframsteg</h2>
+        </div>
+        <div class="card-body p-4">
             <p class="mb-3">
                 <span class="fs-2 fw-bold text-primary">@Course.ProgressPercent%</span>
                 <span class="text-muted ms-1">avklarat</span>
@@ -28,13 +30,25 @@
         </div>
     </div>
 
-    <h2 class="h3 fw-semibold mb-3">Moduler</h2>
-
-    <div class="accordion">
-    @foreach (var module in Course.Modules)
-    {
-        <ModuleItem Module="module" />
-    }
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header">
+            <h2 class="h3 fw-semibold mb-3">Moduler</h2>
+        </div>
+        <div class="card-body p-0 m-0">
+            <div class="accordion">
+                <Virtualize Context="module" Items="Course.Modules.ToArray()">
+                    <ItemContent>
+                        <ModuleItem Module="module"/>
+                    </ItemContent>
+                    <EmptyContent>
+                        <div class="p-5">
+                            <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                            <p class="text-muted">Inga moduler hittades.</p>
+                        </div>
+                    </EmptyContent>
+                </Virtualize>
+            </div>
+        </div>
     </div>
 </div>
 
