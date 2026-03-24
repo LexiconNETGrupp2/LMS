@@ -59,6 +59,8 @@
                         <InputDate id="module-start"
                                    class="form-control"
                                    @bind-Value="Model.StartDate"
+                                   min="@CourseMinDate"
+                                   max="@StartDateMax"
                                    disabled="@IsSubmitting" />
                         <ValidationMessage For="() => Model.StartDate" />
                     </div>
@@ -68,10 +70,19 @@
                         <InputDate id="module-end"
                                    class="form-control"
                                    @bind-Value="Model.EndDate"
+                                   min="@EndDateMin"
+                                   max="@CourseMaxDate"
                                    disabled="@IsSubmitting" />
                         <ValidationMessage For="() => Model.EndDate" />
                     </div>
                 </div>
+
+                @if (SelectedCourse is not null)
+                {
+                    <div class="form-text mb-3">
+                        Tillåtet datumintervall för kursen: @CourseMinDate - @CourseMaxDate
+                    </div>
+                }
 
                 <div class="mb-4">
                     <label class="form-label" for="module-description">Beskrivning</label>
@@ -113,6 +124,12 @@
     [Parameter] public ModuleFormModel Model { get; set; } = new();
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnSubmit { get; set; }
+
+    private CourseDto? SelectedCourse => Courses.FirstOrDefault(course => course.Id == Model.CourseId);
+    private string? CourseMinDate => SelectedCourse?.StartDateStr;
+    private string? CourseMaxDate => SelectedCourse?.EndDateStr;
+    private string? StartDateMax => Model.EndDate?.ToString("yyyy-MM-dd") ?? CourseMaxDate;
+    private string? EndDateMin => Model.StartDate?.ToString("yyyy-MM-dd") ?? CourseMinDate;
 
     private async Task HandleSubmit()
     {
