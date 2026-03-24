@@ -19,6 +19,19 @@ public class ActivityService : IActivityService
         _mapper = mapper;
     }
 
+    public async Task<ActivityDto?> GetActivityById(Guid id)
+    {
+        var activity = await _uow.Activities.GetActivityById(id);
+        if (activity == null) return null;
+        return _mapper.Map<ActivityDto>(activity);
+    }
+
+    public async Task<List<ActivityDto>> GetAllActivities()
+    {
+        var activities = await _uow.Activities.GetAllActivities();
+        return _mapper.Map<List<ActivityDto>>(activities);
+    }
+
     public async Task<ActivityDto> CreateActivity(CreateActivityDto request)
     {
         var activity = _mapper.Map<Activity>(request);

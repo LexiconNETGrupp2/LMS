@@ -4,6 +4,7 @@ namespace Domain.Contracts.Repositories;
 
 public interface IActivityRepository : IRepositoryBase<Activity>
 {
-    public IReadOnlyCollection<Activity> GetActivitiesFromModuleId(Guid moduleId);
-    public Activity? GetActivityById(Guid id);
+    public Task<IReadOnlyCollection<Activity>> GetActivitiesFromModuleId(Guid moduleId);
+    public Task<Activity?> GetActivityById(Guid id);
+    public Task<List<Activity>> GetAllActivities();
 }

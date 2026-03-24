@@ -1,3 +1,4 @@
+using LMS.Shared.DTOs;
 using LMS.Shared.DTOs.ActivityDtos;
 using Microsoft.AspNetCore.Mvc;
 using Service.Contracts;
@@ -6,19 +7,30 @@ namespace LMS.Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ActivitiesController : ControllerBase
+public class ActivitiesController(IServiceManager serviceManager) : ControllerBase
 {
-    private readonly IActivityService _activityService;
+    private IActivityService ActivityService => serviceManager.ActivityService;
 
-    public ActivitiesController(IActivityService activityService)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities()
     {
-        _activityService = activityService;
+        var activities = await ActivityService.GetAllActivities();
+        return Ok(activities);
+    }
+
+    [HttpGet("{id:guid}", Name = nameof(GetActivityById))]
+    public async Task<ActionResult<ActivityDto>> GetActivityById(Guid id)
+    {
+        var activity = await ActivityService.GetActivityById(id);
+        if (activity == null)
+            return NotFound();
+        return Ok(activity);
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateActivity([FromBody] CreateActivityDto request)
     {
-        var response = await _activityService.CreateActivity(request);
-        return Created("api/activities", response);
+        var response = await ActivityService.CreateActivity(request);
+        return CreatedAtAction(nameof(GetActivityById), new { response.Id }, response);
     }
 }
