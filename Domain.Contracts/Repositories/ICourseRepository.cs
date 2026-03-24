@@ -1,4 +1,5 @@
-﻿using Domain.Models.Entities;
+using Domain.Contracts.Repositories.Models;
+using Domain.Models.Entities;
 using LMS.Shared.DTOs.CourseDtos;
 
 namespace Domain.Contracts.Repositories;
@@ -9,4 +10,5 @@ public interface ICourseRepository : IRepositoryBase<Course>
     Task<Course?> GetCourseById(Guid id, CancellationToken token);
     Task<Course?> GetCourseByIdTracked(Guid id, CancellationToken token);
     Task<Course?> GetCourseFromUserId(Guid userId, CancellationToken token);
+    Task<CourseParticipantsReadModel?> GetCourseParticipantsByUserId(Guid userId, CancellationToken token);
 }
