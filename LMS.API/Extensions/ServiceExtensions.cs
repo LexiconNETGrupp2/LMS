@@ -1,4 +1,5 @@
-﻿using LMS.Infractructure.Data;
+﻿using Domain.Contracts.Repositories;
+using LMS.Infractructure.Data;
 using LMS.Infractructure.Repositories;
 using LMS.Presentation;
 using LMS.Services;
@@ -88,6 +89,8 @@ public static class ServiceExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICourseRepository, CourseRepository>();
+        services.AddScoped(provider => new Lazy<ICourseRepository>(() => provider.GetRequiredService<ICourseRepository>()));
+        services.AddScoped<IModuleRepository, ModuleRepository>();
     }
 
     public static void AddServiceLayer(this IServiceCollection services)
@@ -96,7 +99,9 @@ public static class ServiceExtensions
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourseService, CourseService>();
+        services.AddScoped<IModuleService, ModuleService>();
         services.AddScoped(provider => new Lazy<IAuthService>(() => provider.GetRequiredService<IAuthService>()));
         services.AddScoped(provider => new Lazy<ICourseService>(() => provider.GetRequiredService<ICourseService>()));
+        services.AddScoped(provider => new Lazy<IModuleService>(() => provider.GetRequiredService<IModuleService>()));
     }
 }

@@ -1,0 +1,12 @@
+﻿@if (Courses is not null && Courses.Any()) {
+    <ul id="courses-overview" class="list-group shadow-sm">
+        @foreach (var course in Courses) {
+            <OverviewCourseRow Course="course" />
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyCollection<CourseDto>? Courses { get; set; }
+}

@@ -1,0 +1,59 @@
+﻿<ul class="list-group shadow-sm p-0">
+    <li class="list-group-item">
+        <h2 class="h2 fs-5">Alla kurser</h2>
+        <p>En översikt över alla aktiva och kommande kurser</p>
+    </li>
+    <li class="list-group-item" style="background-color: #F9FAFB;">
+        <div class="d-flex justify-content-between">
+            <EditForm Model="_searchStr" OnValidSubmit="SearchForCourses" class="d-flex" role="search">
+                <DataAnnotationsValidator />
+                <InputText @bind-Value="_searchStr"
+                           class="form-control search-input"
+                           placeholder="Sök efter kurs...">
+                </InputText>
+                <button class="btn btn-primary ms-2" type="submit">Sök</button>
+            </EditForm>
+            <div>
+                <button class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Ny kurs
+                </button>
+            </div>
+        </div>
+    </li>
+    <li class="list-group-item p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr class="py-1">
+                    <th style="background-color: #F9FAFB;" scope="col"><span class="ps-2">Kursnamn</span></th>
+                    <th style="background-color: #F9FAFB;" scope="col">Period</th>
+                    <th style="background-color: #F9FAFB;" scope="col">Elever</th>
+                    <th style="background-color: #F9FAFB;" scope="col">Moduler</th>
+                    <th style="background-color: #F9FAFB;" scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Courses is not null) {
+                    foreach (var course in Courses) {
+                        <TeacherAllCoursesTableRow Course="course" />
+                    }
+                }
+            </tbody>
+        </table>
+    </li>
+</ul>
+
+@code {
+    [Parameter]
+    public IReadOnlyCollection<CourseDto>? Courses { get; set; }
+    private string _searchStr = "";
+
+    [Parameter]
+    public EventCallback<string> SearchCourses { get; set; }
+
+    private async Task SearchForCourses()
+    {
+        if (!SearchCourses.HasDelegate) return;
+
+        await SearchCourses.InvokeAsync(_searchStr);
+    }
+}
