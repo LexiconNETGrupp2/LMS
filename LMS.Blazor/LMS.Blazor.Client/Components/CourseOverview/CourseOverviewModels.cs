@@ -2,6 +2,7 @@ namespace LMS.Blazor.Client.Components.CourseOverview;
 
 public sealed class CourseOverviewViewModel
 {
+    public string Id { get; init; } = Guid.NewGuid().ToString();
     public string Title { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public string DateRange { get; init; } = string.Empty;
@@ -17,11 +18,12 @@ public sealed class ModuleViewModel
     public int ProgressPercent { get; init; }
     public bool IsExpanded { get; set; }
     public string? Description { get; init; }
-    public IReadOnlyList<ActivityViewModel> Activities { get; init; } = [];
+    public IReadOnlyList<ActivityViewModel> Activities { get; set; } = [];
 }
 
 public sealed class ActivityViewModel
 {
+    public string Id { get; init; } = Guid.NewGuid().ToString();
     public string Type { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
     public string Date { get; init; } = string.Empty;
