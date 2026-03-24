@@ -17,9 +17,9 @@ public class ActivityRepository(ApplicationDbContext context)
             .ToList();
     }
 
-    public async Task<Activity?> GetActivityById(Guid id)
+    public async Task<Activity?> GetActivityById(Guid id, bool trackChanges)
     {
-        return FindByCondition(s => s.Id == id)
+        return FindByCondition(s => s.Id == id, trackChanges)
             .Include(s => s.Module)
             .Include(s => s.Type)
             .FirstOrDefault();

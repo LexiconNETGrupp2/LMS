@@ -1,9 +1,8 @@
 using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
-using LMS.Shared.DTOs;
+using Domain.Models.Exceptions;
 using LMS.Shared.DTOs.ActivityDtos;
-using LMS.Shared.DTOs.CourseDtos;
 using Service.Contracts;
 
 namespace LMS.Services;
@@ -40,7 +39,19 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityDto> CreateActivity(CreateActivityDto request)
     {
-        var activity = _mapper.Map<Activity>(request);
+        var module = await _uow.Modules.GetModuleByIdTrackedAsync(request.ModuleId);
+        if (module == null)
+            throw new NotFoundException("Module not found");
+        // TODO: check start/end is within module and not overlapping with other activities in the same module
+        var activity = new Activity
+        {
+            Name = request.Name,
+            Description = request.Description,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
+            Type = _mapper.Map<ActivityType>(request.Type),
+            Module = module,
+        };
         try {
             _uow.Activities.Create(activity);
             await _uow.CompleteAsync(CancellationToken.None);

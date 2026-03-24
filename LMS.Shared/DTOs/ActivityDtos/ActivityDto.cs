@@ -1,6 +1,6 @@
 ﻿using LMS.Shared.DTOs.CourseDtos;
 
-namespace LMS.Shared.DTOs;
+namespace LMS.Shared.DTOs.ActivityDtos;
 
 public sealed record ActivityDto(
     Guid Id,
