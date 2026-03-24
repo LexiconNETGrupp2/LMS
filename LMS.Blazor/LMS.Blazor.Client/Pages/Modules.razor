@@ -266,6 +266,25 @@
             return;
         }
 
+        var selectedCourse = courses.FirstOrDefault(course => course.Id == moduleForm.CourseId.Value);
+        if (selectedCourse is null)
+        {
+            submitError = "Det gick inte att hitta vald kurs.";
+            return;
+        }
+
+        if (moduleForm.StartDate.Value > moduleForm.EndDate.Value)
+        {
+            submitError = "Startdatum kan inte vara senare än slutdatum.";
+            return;
+        }
+
+        if (moduleForm.StartDate.Value < selectedCourse.StartDate || moduleForm.EndDate.Value > selectedCourse.EndDate)
+        {
+            submitError = $"Modulens datum måste ligga inom kursens period ({selectedCourse.StartDateStr} - {selectedCourse.EndDateStr}).";
+            return;
+        }
+
         isSubmitting = true;
 
         try
@@ -289,20 +308,20 @@
                     moduleForm.CourseId.Value);
 
                 await ApiService.PostAsync<CreateModuleDto, ModuleDto>("api/modules", createDto);
-
-                var courseName = courses.FirstOrDefault(c => c.Id == moduleForm.CourseId.Value)?.Name;
-                actionMessage = string.IsNullOrWhiteSpace(courseName)
-                    ? $"Modulen \"{moduleForm.Name}\" lades till."
-                    : $"Modulen \"{moduleForm.Name}\" lades till i kursen {courseName}.";
+                actionMessage = $"Modulen \"{moduleForm.Name}\" lades till i kursen {selectedCourse.Name}.";
             }
 
             expandedCourseIds.Add(moduleForm.CourseId.Value);
             isModalOpen = false;
             await LoadCoursesAsync();
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
             submitError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            submitError = "Ett oväntat fel inträffade när modulen skulle sparas.";
         }
         finally
         {
@@ -331,9 +350,13 @@
             actionMessage = $"Modulen \"{module.Name}\" togs bort.";
             await LoadCoursesAsync();
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
             loadError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            loadError = "Ett oväntat fel inträffade när modulen skulle tas bort.";
         }
     }
 }
