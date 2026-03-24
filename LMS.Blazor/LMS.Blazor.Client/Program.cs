@@ -1,4 +1,5 @@
 using LMS.Blazor.Client.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 namespace LMS.Blazor.Client;
