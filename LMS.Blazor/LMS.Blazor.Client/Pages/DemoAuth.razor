@@ -182,8 +182,8 @@
     private CourseDto? myCourses;
     private CourseDto? course;
     // Change to get for different accounts or different courses
-    private Guid userId = Guid.Parse("479fec36-7876-48d9-8ca7-641c0b1e930c");
-    private Guid courseId = Guid.Parse("a89a2c99-407a-468c-8ae6-88877ed5d948");
+    private Guid userId = Guid.Parse("ad905f72-9e01-4d0a-a7a9-31618c76713c");
+    private Guid courseId = Guid.Parse("d2cb1bb6-0f7e-4cba-b99e-a67ad833e744");
 
     protected override async Task OnInitializedAsync()
     {
@@ -255,7 +255,7 @@
             Modules: []
         );
 
-        var result = await ApiService.PostAsync<CreateCourseDto, bool>("api/courses/create", createCourseDto);
+        var result = await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
     }
 
     private async Task UpdateCourse()
@@ -265,13 +265,13 @@
             Description: "Created from demoauth",
             null, null
         );
-        string courseId = "78dc2759-824c-4587-b5bd-2d52132e54c1";
-        var result = await ApiService.PatchAsync<UpdateCourseDto, bool>($"api/courses/update/{courseId}", updateCourseDto);
+        string courseId = "d2cb1bb6-0f7e-4cba-b99e-a67ad833e744";
+        var result = await ApiService.PatchAsync<UpdateCourseDto, bool>($"api/courses/{courseId}", updateCourseDto);
     }
 
     private async Task DeleteCourse()
     {
-        string courseId = "78dc2759-824c-4587-b5bd-2d52132e54c1";
-        await ApiService.DeleteAsync($"api/courses/delete/{courseId}");
+        string courseId = "d2cb1bb6-0f7e-4cba-b99e-a67ad833e744";
+        await ApiService.DeleteAsync($"api/courses/{courseId}");
     }
 }

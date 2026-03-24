@@ -83,7 +83,7 @@ public class CoursesController : ControllerBase
         return Ok(courseDto);
     }
 
-    [HttpPost("create")]
+    [HttpPost("")]
     [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Add a course to the database",
@@ -97,7 +97,7 @@ public class CoursesController : ControllerBase
         return success ? Created() : BadRequest();
     }
 
-    [HttpPatch("update/{id:guid}")]
+    [HttpPatch("{id:guid}")]
     [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Update info for a course",
@@ -111,7 +111,7 @@ public class CoursesController : ControllerBase
         return success ? NoContent() : BadRequest();
     }
 
-    [HttpDelete("delete/{id:guid}")]
+    [HttpDelete("{id:guid}")]
     [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Delete a course",
