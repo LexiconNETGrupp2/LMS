@@ -1,0 +1,135 @@
+.modules-page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0.75rem 0 2rem;
+}
+
+.modules-page-title {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.modules-primary-action {
+    min-width: 185px;
+}
+
+.modules-card {
+    border: 0;
+    overflow: hidden;
+}
+
+.modules-accordion {
+    background: #fff;
+}
+
+.modules-course-section + .modules-course-section {
+    border-top: 1px solid #e5e7eb;
+}
+
+.modules-course-toggle {
+    width: 100%;
+    border: 0;
+    background: #fff;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    transition: background-color 0.2s ease;
+}
+
+.modules-course-toggle:hover {
+    background: #f8fafc;
+}
+
+.modules-course-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+    background: #dbeafe;
+}
+
+.modules-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.modules-course-chevron {
+    color: #6b7280;
+    font-size: 1rem;
+}
+
+.modules-course-content {
+    background: #f8fafc;
+    padding: 0 1.25rem 1rem;
+}
+
+.modules-table-wrap {
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+}
+
+.modules-table-wrap thead th {
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modules-period {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #6b7280;
+    font-size: 0.92rem;
+}
+
+.modules-icon-button {
+    padding: 0.15rem 0.35rem;
+    text-decoration: none;
+}
+
+.modules-inline-add-cell {
+    padding: 0.5rem 1rem !important;
+}
+
+.modules-inline-add {
+    width: 100%;
+    justify-content: center;
+    text-decoration: none;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.75rem;
+    color: #2563eb;
+}
+
+.modules-inline-add:hover {
+    background: #eff6ff;
+}
+
+@media (max-width: 767.98px) {
+    .modules-page {
+        padding-top: 0.25rem;
+    }
+
+    .modules-course-toggle,
+    .modules-course-content {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}

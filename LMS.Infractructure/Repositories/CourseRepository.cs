@@ -48,6 +48,14 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .FirstOrDefaultAsync(c => c.Id == id, token);
     }
 
+    public async Task<Course?> GetCourseByIdTracked(Guid id, CancellationToken token)
+    {
+        return await _context.Courses
+                        .Include(c => c.Modules)
+                        .Include(c => c.Students)
+                        .FirstOrDefaultAsync(c => c.Id == id, token);
+    }
+
     public async Task<Course?> GetCourseFromUserId(Guid userId, CancellationToken token)
     {
         string userIdStr = userId.ToString();

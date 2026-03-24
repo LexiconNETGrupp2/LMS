@@ -1,0 +1,38 @@
+.module-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background: rgba(17, 24, 39, 0.45);
+}
+
+.module-modal-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.module-modal-window {
+    width: min(100%, 34rem);
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.module-modal-close {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 767.98px) {
+    .module-modal-window {
+        padding: 1.1rem;
+    }
+}

@@ -8,4 +8,9 @@ public sealed record CourseModuleDto(
     DateOnly StartDate,
     DateOnly EndDate,
     ICollection<ActivityDto> Activities
-);
+)
+{
+    public int ActivitiesCount => Activities?.Count ?? 0;
+    public string StartDateStr => StartDate.ToString("yyyy-MM-dd");
+    public string EndDateStr => EndDate.ToString("yyyy-MM-dd");
+}
