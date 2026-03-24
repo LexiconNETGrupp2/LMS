@@ -1,12 +1,11 @@
 ﻿using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Service.Contracts;
-using System.Net;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 
 namespace LMS.Presentation.Controllers;
@@ -26,18 +25,27 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+        Summary = "Gets all the courses. Requires Teacher role",
+        Description = "Gets all the courses that's in the database"
+    )]
+    [SwaggerResponse(StatusCodes.Status200OK)]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "You need to be a teacher")]
     public async Task<IActionResult> GetAll([FromQuery] AllCoursesParams param, CancellationToken token)
     {
-        // If a student is requesting all courses, return 401
-        if (IsStudent()) {
-            return Unauthorized();
-        }
-
         var courseDtos = await _serviceManager.CourseService.GetAllCourses(param, token);
         return Ok(courseDtos);
     }
 
     [HttpGet("{id:guid}")]
+    [SwaggerOperation(
+        Summary = "Get a course by its ID",
+        Description = "Get's a course by its ID. If a student is requesting a course they're not in, returns a 401"
+    )]
+    [SwaggerResponse(StatusCodes.Status200OK)]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "You need to be a teacher to request a course you're not in")]
+    [SwaggerResponse(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken token)
     {
         // If a student is requesting a course they're not in, return 401
@@ -46,12 +54,20 @@ public class CoursesController : ControllerBase
 
         var courseDto = await _serviceManager.CourseService.GetCourseById(id, currentStudentId, token);
         if (courseDto is null) {
-            return BadRequest();
+            return NotFound();
         }
         return Ok(courseDto);
     }
 
     [HttpGet("user/{id:guid}")]
+    [SwaggerOperation(
+        Summary = "Get a course by a user's ID",
+        Description = "Takes a user's ID and returns the course they're in. " +
+            "Returns 401 if a student is trying to request someone else's course (ID of authorized user != ID in request)"
+    )]
+    [SwaggerResponse(StatusCodes.Status200OK)]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "You can only request your own course")]
+    [SwaggerResponse(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByUserId(Guid id, CancellationToken token)
     {
         // If a student is requesting someone else's courses, return 401
@@ -61,7 +77,52 @@ public class CoursesController : ControllerBase
         }
 
         var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, token);
+        if (courseDto is null) {
+            return NotFound();
+        }
         return Ok(courseDto);
+    }
+
+    [HttpPost("")]
+    [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+        Summary = "Add a course to the database",
+        Description = "Takes a Name, Description, Start Date, End Date, and a list of Modules and creates a course with the data"
+    )]
+    [SwaggerResponse(StatusCodes.Status201Created)]
+    [SwaggerResponse(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
+    {
+        bool success = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
+        return success ? Created() : BadRequest();
+    }
+
+    [HttpPatch("{id:guid}")]
+    [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+        Summary = "Update info for a course",
+        Description = "Can take a new Name, Description, Start Date, and End Date and replaces the non-null parameters"
+    )]
+    [SwaggerResponse(StatusCodes.Status204NoContent)]
+    [SwaggerResponse(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseDto updateCourseDto, CancellationToken token)
+    {
+        bool success = await _serviceManager.CourseService.UpdateCourse(id, updateCourseDto, token);
+        return success ? NoContent() : BadRequest();
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+        Summary = "Delete a course",
+        Description = "Deletes a course by its ID"
+    )]
+    [SwaggerResponse(StatusCodes.Status204NoContent)]
+    [SwaggerResponse(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
+    {
+        bool success = await _serviceManager.CourseService.DeleteCourse(id, token);
+        return success ? NoContent() : NotFound();
     }
 
     [HttpGet("me/participants")]
