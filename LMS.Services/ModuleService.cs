@@ -59,7 +59,7 @@ public class ModuleService : IModuleService
         };
 
         _moduleRepository.Create(module);
-        await _uow.CompleteAsync();
+        await _uow.CompleteAsync(CancellationToken.None);
 
         return _mapper.Map<ModuleDto>(module);
     }
@@ -74,7 +74,7 @@ public class ModuleService : IModuleService
         module.StartDate = updateModuleDto.StartDate;
         module.EndDate = updateModuleDto.EndDate;
 
-        await _uow.CompleteAsync();
+        await _uow.CompleteAsync(CancellationToken.None);
     }
 
     public async Task DeleteModuleAsync(Guid id)
@@ -84,6 +84,6 @@ public class ModuleService : IModuleService
             throw new KeyNotFoundException("Module not found");
 
         _moduleRepository.Delete(module);
-        await _uow.CompleteAsync();
+        await _uow.CompleteAsync(CancellationToken.None);
     }
 }
