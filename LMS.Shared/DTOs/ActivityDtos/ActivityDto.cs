@@ -1,6 +1,6 @@
 ﻿using LMS.Shared.DTOs.CourseDtos;
 
-namespace LMS.Shared.DTOs;
+namespace LMS.Shared.DTOs.ActivityDtos;
 
 public sealed record ActivityDto(
     Guid Id,
@@ -9,5 +9,5 @@ public sealed record ActivityDto(
     DateTime StartDate,
     DateTime EndDate,
     ActivityTypeDto Type,
-    CourseModuleDto Module
+    Guid ModuleId
 );
