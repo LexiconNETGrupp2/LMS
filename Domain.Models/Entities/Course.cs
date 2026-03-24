@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-
+﻿
 namespace Domain.Models.Entities;
 
 public class Course
@@ -10,6 +9,5 @@ public class Course
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
     public ICollection<ApplicationUser> Students { get; set; } = [];
-    public ICollection<IdentityRole> Roles { get; set; } = [];
     public ICollection<Module> Modules { get; set; } = [];
 }
