@@ -35,6 +35,7 @@
             ProgressPercent = 0,
             Modules = result.Modules.Select(s => new ModuleViewModel()
             {
+                Id = s.Id.ToString(),
                 Title = s.Name,
                 DateRange = $"{s.StartDate} - {s.EndDate}",
                 // Expand when current date is between start and end date of the module
