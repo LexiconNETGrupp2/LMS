@@ -1,5 +1,24 @@
-﻿
+﻿<div class="container bg-light">
+    <EditForm Model="_createCourseDto" OnValidSubmit="CreateCourse">
+        <DataAnnotationsValidator />
+
+        <InputText @bind-Value="_createCourseDto.Name"
+                   class="form-control"
+                   placeholder="Kursnamn"
+                   autofocus>
+        </InputText>
+
+    </EditForm>
+</div>
 
 @code {
+    private CreateCourseDto _createCourseDto = new();
 
+    [Parameter]
+    public EventCallback<CreateCourseDto> OnCreate { get; set; }
+
+    private async Task CreateCourse()
+    {
+        
+    } 
 }
