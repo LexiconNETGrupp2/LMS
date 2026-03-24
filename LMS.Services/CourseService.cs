@@ -23,6 +23,9 @@ public class CourseService : ICourseService
     public async Task<bool> CreateCourse(CreateCourseDto createCourseDto, CancellationToken token)
     {
         Course course = _mapper.Map<Course>(createCourseDto);
+        foreach (var module in course.Modules) {
+            module.Course = course;
+        }
         try {
             _uow.CourseRepository.Create(course);
             await _uow.CompleteAsync(token);
