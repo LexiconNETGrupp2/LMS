@@ -1,8 +1,43 @@
-### GET request to example server
+@server_url = http://localhost:5166
 
-POST http://localhost:5166/api/activities
+### Login student
+POST {{server_url}}/api/auth/login
 Accept: application/json
 Content-Type: application/json
+
+{
+  "username": "student@test.com",
+  "password": "{{password}}"
+}
+
+> {%
+  client.global.set("token", response.body.accessToken);
+%}
+
+### Login teacher
+POST {{server_url}}/api/auth/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "teacher@test.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("token", response.body.accessToken);
+%}
+
+### Get all activities
+GET {{server_url}}/api/activities
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Create new activity
+POST {{server_url}}/api/activities
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "New Activity",
