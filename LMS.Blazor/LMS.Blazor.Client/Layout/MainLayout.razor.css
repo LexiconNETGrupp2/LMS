@@ -18,6 +18,7 @@
 
 main {
     flex: 1;
+    background-color: #F9FAFB;
     position: relative;
 }
 

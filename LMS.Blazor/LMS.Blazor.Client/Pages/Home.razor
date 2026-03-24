@@ -4,6 +4,15 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<AuthorizeView Roles="@RolesNames.Teacher">
+    <Authorized>
+        <TeacherDashboard />
+    </Authorized>
+</AuthorizeView>
 
-Welcome to your new app.
+@* <AuthorizeView Roles="@RolesNames.Student">
+    <Authorized>
+        Komponent för StudentDashboard
+    </Authorized>
+</AuthorizeView> *@
+ 
