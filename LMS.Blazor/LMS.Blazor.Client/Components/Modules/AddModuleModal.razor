@@ -1,0 +1,129 @@
+@if (IsOpen)
+{
+    <div class="module-modal-backdrop" @onclick="HandleBackdropClick"></div>
+
+    <div class="module-modal-shell" role="dialog" aria-modal="true" aria-labelledby="module-modal-title">
+        <div class="module-modal-window shadow-lg">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h2 id="module-modal-title" class="h4 mb-1">@(Model.IsEditMode ? "Redigera modul" : "Lägg till modul")</h2>
+                    <p class="text-body-secondary mb-0">
+                        @(Model.IsEditMode ? "Uppdatera modulens namn och period." : "Skapa en ny modul för vald kurs.")
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="btn btn-light module-modal-close"
+                        @onclick="OnClose">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <div class="alert alert-danger">@ErrorMessage</div>
+            }
+
+            <EditForm Model="Model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="alert alert-danger" />
+
+                <div class="mb-3">
+                    <label class="form-label" for="module-course">Välj kurs</label>
+                    <InputSelect id="module-course"
+                                 class="form-select"
+                                 @bind-Value="Model.CourseId"
+                                 disabled="@(LockCourseSelection || IsSubmitting)">
+                        <option value="">Välj en kurs</option>
+                        @foreach (var course in Courses)
+                        {
+                            <option value="@course.Id">@course.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => Model.CourseId" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="module-name">Modulnamn</label>
+                    <InputText id="module-name"
+                               class="form-control"
+                               @bind-Value="Model.Name"
+                               placeholder="T.ex. HTML & CSS"
+                               disabled="@IsSubmitting" />
+                    <ValidationMessage For="() => Model.Name" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="module-start">Startdatum</label>
+                        <InputDate id="module-start"
+                                   class="form-control"
+                                   @bind-Value="Model.StartDate"
+                                   disabled="@IsSubmitting" />
+                        <ValidationMessage For="() => Model.StartDate" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="module-end">Slutdatum</label>
+                        <InputDate id="module-end"
+                                   class="form-control"
+                                   @bind-Value="Model.EndDate"
+                                   disabled="@IsSubmitting" />
+                        <ValidationMessage For="() => Model.EndDate" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="module-description">Beskrivning</label>
+                    <InputTextArea id="module-description"
+                                   class="form-control"
+                                   rows="3"
+                                   @bind-Value="Model.Description"
+                                   placeholder="Beskriv modulen och dess innehåll"
+                                   disabled="@IsSubmitting" />
+                    <ValidationMessage For="() => Model.Description" />
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            @onclick="OnClose"
+                            disabled="@IsSubmitting">
+                        Avbryt
+                    </button>
+                    <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">
+                        @if (IsSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        @(Model.IsEditMode ? "Spara ändringar" : "Lägg till")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool LockCourseSelection { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public IReadOnlyCollection<CourseDto> Courses { get; set; } = [];
+    [Parameter] public ModuleFormModel Model { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+
+    private async Task HandleBackdropClick()
+    {
+        if (!IsSubmitting)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+}

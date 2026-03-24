@@ -1,0 +1,339 @@
+@page "/Modules"
+@attribute [Authorize(Roles = "Teacher")]
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject IApiService ApiService
+@inject IJSRuntime JS
+
+<PageTitle>Moduler</PageTitle>
+
+<div class="modules-page">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="modules-page-title mb-1">Moduler</h1>
+            <p class="text-body-secondary mb-0">Hantera moduler för alla kurser.</p>
+        </div>
+
+        <button type="button" class="btn btn-primary modules-primary-action" @onclick="() => OpenCreateModal()">
+            <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+            Lägg till modul
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(actionMessage))
+    {
+        <div class="alert alert-success">@actionMessage</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(loadError))
+    {
+        <div class="alert alert-danger">@loadError</div>
+    }
+    else if (isLoading)
+    {
+        <div class="modules-loading card shadow-sm">
+            <div class="card-body d-flex align-items-center gap-2">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <span>Laddar kurser och moduler...</span>
+            </div>
+        </div>
+    }
+    else if (courses.Count == 0)
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="mb-0 text-body-secondary">Det finns inga kurser ännu. Skapa en kurs först och lägg sedan till moduler.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <section class="card shadow-sm modules-card">
+            <div class="card-body border-bottom">
+                <h2 class="h5 mb-1">Moduler efter kurs</h2>
+                <p class="text-body-secondary mb-0">Hantera moduler för alla kurser</p>
+            </div>
+
+            <div class="modules-accordion">
+                @foreach (var course in courses)
+                {
+                    var isExpanded = expandedCourseIds.Contains(course.Id);
+
+                    <section class="modules-course-section">
+                        <button type="button"
+                                class="modules-course-toggle"
+                                @onclick="() => ToggleCourse(course.Id)">
+                            <span class="d-flex align-items-center gap-3">
+                                <span class="modules-course-icon">
+                                    <i class="bi bi-layers" aria-hidden="true"></i>
+                                </span>
+                                <span>
+                                    <span class="d-block fw-semibold text-dark">@course.Name</span>
+                                </span>
+                                <span class="modules-chip">@course.Modules.Count moduler</span>
+                            </span>
+
+                            <span class="modules-course-chevron">
+                                <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></i>
+                            </span>
+                        </button>
+
+                        @if (isExpanded)
+                        {
+                            <div class="modules-course-content">
+                                <div class="table-responsive modules-table-wrap">
+                                    <table class="table align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Modulnamn</th>
+                                                <th>Period</th>
+                                                <th>Aktiviteter</th>
+                                                <th class="text-end">Åtgärder</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var module in course.Modules.OrderBy(m => m.StartDate).ThenBy(m => m.Name))
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-semibold text-dark">@module.Name</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="modules-period">
+                                                            <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                                            <span>@module.StartDateStr - @module.EndDateStr</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>@module.ActivitiesCount</td>
+                                                    <td class="text-end">
+                                                        <button type="button"
+                                                                class="btn btn-link text-primary modules-icon-button"
+                                                                title="Redigera modul"
+                                                                @onclick="() => OpenEditModal(course, module)">
+                                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                                        </button>
+                                                        <button type="button"
+                                                                class="btn btn-link text-danger modules-icon-button"
+                                                                title="Ta bort modul"
+                                                                @onclick="() => DeleteModuleAsync(course, module)">
+                                                            <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            <tr>
+                                                <td colspan="4" class="modules-inline-add-cell">
+                                                    <button type="button"
+                                                            class="btn btn-link modules-inline-add"
+                                                            @onclick="() => OpenCreateModal(course.Id)">
+                                                        <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                                                        Lägg till modul i @course.Name
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                    </section>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+<AddModuleModal IsOpen="@isModalOpen"
+                LockCourseSelection="@lockCourseSelection"
+                IsSubmitting="@isSubmitting"
+                ErrorMessage="@submitError"
+                Courses="@courses"
+                Model="@moduleForm"
+                OnClose="CloseModal"
+                OnSubmit="SaveModuleAsync" />
+
+@code {
+    private readonly List<CourseDto> courses = [];
+    private HashSet<Guid> expandedCourseIds = [];
+    private ModuleFormModel moduleForm = new();
+    private bool isLoading = true;
+    private bool isModalOpen;
+    private bool isSubmitting;
+    private bool lockCourseSelection;
+    private string? loadError;
+    private string? submitError;
+    private string? actionMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCoursesAsync();
+    }
+
+    private async Task LoadCoursesAsync()
+    {
+        var expandedBeforeReload = expandedCourseIds.ToHashSet();
+
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var result = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
+
+            courses.Clear();
+            courses.AddRange((result ?? []).OrderBy(course => course.Name));
+
+            expandedCourseIds = courses
+                .Select(course => course.Id)
+                .Where(expandedBeforeReload.Contains)
+                .ToHashSet();
+
+            if (expandedCourseIds.Count == 0 && courses.Count > 0)
+            {
+                expandedCourseIds.Add(courses[0].Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ToggleCourse(Guid courseId)
+    {
+        if (!expandedCourseIds.Add(courseId))
+        {
+            expandedCourseIds.Remove(courseId);
+        }
+    }
+
+    private void OpenCreateModal(Guid? courseId = null)
+    {
+        actionMessage = null;
+        submitError = null;
+        lockCourseSelection = courseId.HasValue;
+        isModalOpen = true;
+
+        var course = courses.FirstOrDefault(c => c.Id == courseId);
+
+        moduleForm = new ModuleFormModel
+        {
+            CourseId = courseId,
+            StartDate = course?.StartDate,
+            EndDate = course?.StartDate
+        };
+    }
+
+    private void OpenEditModal(CourseDto course, CourseModuleDto module)
+    {
+        actionMessage = null;
+        submitError = null;
+        lockCourseSelection = true;
+        isModalOpen = true;
+
+        moduleForm = new ModuleFormModel
+        {
+            ModuleId = module.Id,
+            CourseId = course.Id,
+            Name = module.Name,
+            StartDate = module.StartDate,
+            EndDate = module.EndDate
+        };
+    }
+
+    private Task CloseModal()
+    {
+        if (!isSubmitting)
+        {
+            isModalOpen = false;
+            submitError = null;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveModuleAsync()
+    {
+        actionMessage = null;
+        submitError = null;
+
+        if (!moduleForm.CourseId.HasValue || !moduleForm.StartDate.HasValue || !moduleForm.EndDate.HasValue)
+        {
+            submitError = "Fyll i kurs och datum innan du sparar.";
+            return;
+        }
+
+        isSubmitting = true;
+
+        try
+        {
+            if (moduleForm.IsEditMode && moduleForm.ModuleId.HasValue)
+            {
+                var updateDto = new UpdateModuleDto(
+                    moduleForm.Name.Trim(),
+                    moduleForm.StartDate.Value,
+                    moduleForm.EndDate.Value);
+
+                await ApiService.PutAsync($"api/modules/{moduleForm.ModuleId.Value}", updateDto);
+                actionMessage = $"Modulen \"{moduleForm.Name}\" uppdaterades.";
+            }
+            else
+            {
+                var createDto = new CreateModuleDto(
+                    moduleForm.Name.Trim(),
+                    moduleForm.StartDate.Value,
+                    moduleForm.EndDate.Value,
+                    moduleForm.CourseId.Value);
+
+                await ApiService.PostAsync<CreateModuleDto, ModuleDto>("api/modules", createDto);
+
+                var courseName = courses.FirstOrDefault(c => c.Id == moduleForm.CourseId.Value)?.Name;
+                actionMessage = string.IsNullOrWhiteSpace(courseName)
+                    ? $"Modulen \"{moduleForm.Name}\" lades till."
+                    : $"Modulen \"{moduleForm.Name}\" lades till i kursen {courseName}.";
+            }
+
+            expandedCourseIds.Add(moduleForm.CourseId.Value);
+            isModalOpen = false;
+            await LoadCoursesAsync();
+        }
+        catch (Exception ex)
+        {
+            submitError = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteModuleAsync(CourseDto course, CourseModuleDto module)
+    {
+        actionMessage = null;
+        submitError = null;
+
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"Vill du ta bort modulen \"{module.Name}\" från {course.Name}?");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            await ApiService.DeleteAsync($"api/modules/{module.Id}");
+            expandedCourseIds.Add(course.Id);
+            actionMessage = $"Modulen \"{module.Name}\" togs bort.";
+            await LoadCoursesAsync();
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+        }
+    }
+}
