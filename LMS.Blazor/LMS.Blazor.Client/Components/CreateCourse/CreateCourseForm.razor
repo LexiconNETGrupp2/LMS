@@ -1,25 +1,23 @@
 ﻿<div class="container bg-white">
     <EditForm Model="_createCourseDto" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
         <DataAnnotationsValidator />
-        <div class="form-floating">
+        <div class="mb-3">
+            <label class="form-label" for="course-name">Kursnamn</label>
             <InputText id="course-name"
                        @bind-Value="_createCourseDto.Name"
                        class="form-control form-control-lg"
-                       placeholder=" "
+                       placeholder="namnet på kursen"
                        type="text"
                        autofocus />
-            <label class="form-label" for="course-name">Kursnamn</label>
         </div>
 
-        <div class="form-floating">
+        <div class="mb-3">
+            <label class="form-label" for="course-description">Kursbeskrivning</label>
             <InputTextArea id="course-description" 
                            @bind-Value="_createCourseDto.Description"
-                           placeholder=" "
+                           placeholder="Beskriv kursen"
                            class="form-control form-control-lg"
-                           style="height: calc(initial * 4)"
                            Rows="4" />
-                           @*form-control overrides the height property*@
-            <label class="form-label" for="course-description">Kursbeskrivning</label>
         </div>
     </EditForm>
 </div>
