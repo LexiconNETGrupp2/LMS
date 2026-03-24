@@ -1,13 +1,26 @@
-﻿<div class="container bg-light">
-    <EditForm Model="_createCourseDto" OnValidSubmit="CreateCourse">
+﻿<div class="container bg-white">
+    <EditForm Model="_createCourseDto" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
         <DataAnnotationsValidator />
+        <div class="form-floating">
+            <InputText id="course-name"
+                       @bind-Value="_createCourseDto.Name"
+                       class="form-control form-control-lg"
+                       placeholder=" "
+                       type="text"
+                       autofocus />
+            <label class="form-label" for="course-name">Kursnamn</label>
+        </div>
 
-        <InputText @bind-Value="_createCourseDto.Name"
-                   class="form-control"
-                   placeholder="Kursnamn"
-                   autofocus>
-        </InputText>
-
+        <div class="form-floating">
+            <InputTextArea id="course-description" 
+                           @bind-Value="_createCourseDto.Description"
+                           placeholder=" "
+                           class="form-control form-control-lg"
+                           style="height: calc(initial * 4)"
+                           Rows="4" />
+                           @*form-control overrides the height property*@
+            <label class="form-label" for="course-description">Kursbeskrivning</label>
+        </div>
     </EditForm>
 </div>
 
@@ -20,5 +33,5 @@
     private async Task CreateCourse()
     {
         
-    } 
+    }
 }
