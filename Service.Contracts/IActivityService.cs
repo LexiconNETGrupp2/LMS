@@ -8,4 +8,5 @@ public interface IActivityService
     Task<ActivityDto> CreateActivity(CreateActivityDto request);
     Task<ActivityDto?> GetActivityById(Guid id);
     Task<List<ActivityDto>> GetAllActivities();
+    Task<List<ActivityDto>> GetActivitiesFromModuleId(Guid moduleId);
 }

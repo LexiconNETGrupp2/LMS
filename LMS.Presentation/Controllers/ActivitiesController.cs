@@ -27,6 +27,13 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
         return Ok(activity);
     }
 
+    [HttpGet("module/{moduleId:guid}", Name = nameof(GetActivitiesByModuleId))]
+    public async Task<ActionResult<ActivityDto>> GetActivitiesByModuleId(Guid moduleId)
+    {
+        var activities = await ActivityService.GetActivitiesFromModuleId(moduleId);
+        return Ok(activities);
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateActivity([FromBody] CreateActivityDto request)
     {
