@@ -1,5 +1,6 @@
-using LMS.Shared.DTOs;
+using LMS.Shared.Constants;
 using LMS.Shared.DTOs.ActivityDtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Service.Contracts;
 
@@ -7,11 +8,13 @@ namespace LMS.Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ActivitiesController(IServiceManager serviceManager) : ControllerBase
 {
     private IActivityService ActivityService => serviceManager.ActivityService;
 
     [HttpGet]
+    [Authorize(Roles = RolesNames.Teacher)]
     public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities()
     {
         var activities = await ActivityService.GetAllActivities();
@@ -35,6 +38,7 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     }
 
     [HttpPost]
+    [Authorize(Roles = RolesNames.Teacher)]
     public async Task<IActionResult> CreateActivity([FromBody] CreateActivityDto request)
     {
         var response = await ActivityService.CreateActivity(request);
