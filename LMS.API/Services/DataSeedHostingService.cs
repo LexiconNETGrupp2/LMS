@@ -147,6 +147,11 @@ public class DataSeedHostingService : IHostedService
         IReadOnlyCollection<ApplicationUser> users = faker.Generate(nrOfUsers);
 
         await AddUserToDb(users);
+        foreach (var user in users) {
+            var roleResult = await userManager.AddToRoleAsync(user, StudentRole);
+            if (!roleResult.Succeeded) throw new Exception(string.Join("\n", roleResult.Errors));
+        }
+
         return users;
     }
 
