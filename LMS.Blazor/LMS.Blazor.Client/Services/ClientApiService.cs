@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using System.Text;
 using System.Text.Json;
 
 namespace LMS.Blazor.Client.Services;
@@ -19,7 +20,7 @@ public class ClientApiService : IApiService
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-    }
+    }    
 
     public async Task<T?> GetAsync<T>(string endpoint, CancellationToken ct = default)
     {
@@ -33,6 +34,66 @@ public class ClientApiService : IApiService
 
         response.EnsureSuccessStatusCode();
 
-        return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync(ct), _jsonOptions, ct);
+        return await TryDeserialize<T>(response.Content, ct);
+    }
+
+    public async Task<TResult?> PatchAsync<TParam, TResult>(string endpoint, TParam body, CancellationToken token = default)
+    {
+        using var jsonContent = Serialize(body);
+
+        using var response = await _httpClient.PatchAsync($"api/proxy/{endpoint}", jsonContent, token);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+            response.StatusCode == System.Net.HttpStatusCode.Forbidden) {
+            //_navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        }
+
+        // Not everything can be parsed, so just return null
+        return await TryDeserialize<TResult>(response.Content, token);
+    }
+
+    public async Task<TResult?> PostAsync<TParam, TResult>(string endpoint, TParam body, CancellationToken token = default)
+    {
+        using var jsonContent = Serialize(body);
+
+        using var response = await _httpClient.PostAsync($"api/proxy/{endpoint}", jsonContent, token);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+            response.StatusCode == System.Net.HttpStatusCode.Forbidden) {
+            //_navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        }
+
+        // Not everything can be parsed, so just return null
+        return await TryDeserialize<TResult>(response.Content, token);
+    }
+
+    public async Task DeleteAsync(string endpoint, CancellationToken token = default)
+    {
+        using var response = await _httpClient.DeleteAsync($"api/proxy/{endpoint}", token);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+            response.StatusCode == System.Net.HttpStatusCode.Forbidden) {
+            //_navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        }
+    }
+
+    private StringContent Serialize<T>(T obj)
+    {
+        return new(
+            JsonSerializer.Serialize(obj),
+            Encoding.UTF8,
+            "application/json"
+        );
+    }
+
+    private async Task<T?> TryDeserialize<T>(HttpContent? content, CancellationToken token = default)
+    {
+        if (content is null) return default;
+
+        try {
+            return await JsonSerializer.DeserializeAsync<T>(await content.ReadAsStreamAsync(token), _jsonOptions, token);
+        } catch (Exception) {
+            return default;
+        }
     }
 }
