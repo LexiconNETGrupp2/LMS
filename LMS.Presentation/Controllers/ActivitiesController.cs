@@ -1,6 +1,7 @@
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.ActivityDtos;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Contracts;
 
@@ -15,6 +16,9 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
 
     [HttpGet]
     [Authorize(Roles = RolesNames.Teacher)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities()
     {
         var activities = await ActivityService.GetAllActivities();
@@ -22,6 +26,9 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     }
 
     [HttpGet("{id:guid}", Name = nameof(GetActivityById))]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ActivityDto>> GetActivityById(Guid id)
     {
         var activity = await ActivityService.GetActivityById(id);
@@ -31,6 +38,10 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     }
 
     [HttpGet("module/{moduleId:guid}", Name = nameof(GetActivitiesByModuleId))]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ActivityDto>> GetActivitiesByModuleId(Guid moduleId)
     {
         var activities = await ActivityService.GetActivitiesFromModuleId(moduleId);
@@ -39,6 +50,11 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
 
     [HttpPost]
     [Authorize(Roles = RolesNames.Teacher)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateActivity([FromBody] CreateActivityDto request)
     {
         var response = await ActivityService.CreateActivity(request);
