@@ -1,0 +1,15 @@
+﻿#custom-navbar {
+
+    button {
+        all: unset;
+
+        &:hover {
+            cursor: pointer;
+        }
+    }
+
+    .custom-active {
+        color: #2563eb;
+        border-bottom: 1px solid #2563eb;
+    }
+}
