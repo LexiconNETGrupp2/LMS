@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Contracts;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace LMS.Presentation.Controllers;
 
@@ -19,6 +20,10 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [SwaggerOperation(
+        Summary = "Get all activities",
+        Description = "Retrieves all activities in the system."
+    )]
     public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities()
     {
         var activities = await ActivityService.GetAllActivities();
@@ -29,6 +34,10 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [SwaggerOperation(
+        Summary = "Get activity by ID",
+        Description = "Retrieves a specific activity by its unique identifier."
+    )]
     public async Task<ActionResult<ActivityDto>> GetActivityById(Guid id)
     {
         var activity = await ActivityService.GetActivityById(id);
@@ -42,6 +51,10 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Get activities by module ID",
+        Description = "Retrieves all activities associated with a specific module."
+    )]
     public async Task<ActionResult<ActivityDto>> GetActivitiesByModuleId(Guid moduleId)
     {
         var activities = await ActivityService.GetActivitiesFromModuleId(moduleId);
@@ -55,6 +68,10 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Create a new activity",
+        Description = "Creates a new activity based on the provided data."
+    )]
     public async Task<IActionResult> CreateActivity([FromBody] CreateActivityDto request)
     {
         var response = await ActivityService.CreateActivity(request);
