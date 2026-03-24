@@ -12,16 +12,24 @@ public class ActivityRepository(ApplicationDbContext context)
     {
         return FindAll()
             .Where(s => s.Module.Id == moduleId)
+            .Include(s => s.Module)
+            .Include(s => s.Type)
             .ToList();
     }
 
     public async Task<Activity?> GetActivityById(Guid id)
     {
-        return FindByCondition(s => s.Id == id).FirstOrDefault();
+        return FindByCondition(s => s.Id == id)
+            .Include(s => s.Module)
+            .Include(s => s.Type)
+            .FirstOrDefault();
     }
 
     public async Task<List<Activity>> GetAllActivities()
     {
-        return await FindAll().ToListAsync();
+        return await FindAll()
+            .Include(s => s.Module)
+            .Include(s => s.Type)
+            .ToListAsync();
     }
 }
