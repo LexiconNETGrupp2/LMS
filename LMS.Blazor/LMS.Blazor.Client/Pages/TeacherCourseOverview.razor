@@ -1,0 +1,32 @@
+﻿@page "/CourseOverviewTeacher"
+
+@using LMS.Blazor.Client.Components.TeacherCourseOverview
+<CourseHeader Title="Lexicon LTU"
+              Description="En omfattande utbildning i modern webbutveckling med fokus på JavaScript och React."
+              StartDate="@(new DateTime(2023, 8, 15))"
+              EndDate="@(new DateTime(2023, 12, 15))"
+              BackUrl="/dashboard"
+              BackText="Tillbaka till dashboard"
+              EditButtonText="Redigera kurs"
+              OnEditClicked="HandleEditCourse" />
+
+<CourseTabs Tabs="_tabs" />
+
+@code {
+    private List<CourseTabs.CourseTabItem> _tabs = new()
+    {
+        new() { Label = "Översikt", Url = "/courses/1/overview", IsActive = true },
+        new() { Label = "Moduler", Url = "/courses/1/modules" },
+        new() { Label = "Inlämningar", Url = "/courses/1/assignments" },
+        new() { Label = "Studenter", Url = "/courses/1/students" },
+        new() { Label = "Dokument", Url = "/courses/1/documents" }
+    };
+}
+@code {
+    private void HandleEditCourse()
+    {
+        // Navigate to edit page or open modal
+    }
+
+
+}

@@ -1,0 +1,32 @@
+﻿<nav class="border-bottom mb-4">
+    <ul class="nav nav-tabs border-0">
+        @foreach (var tab in Tabs)
+        {
+            <li class="nav-item">
+                <a href="@tab.Url"
+                       class="nav-link border-0 px-0 me-4 @(tab.IsActive ? "active fw-semibold text-primary border-bottom border-2 border-primary bg-transparent" : "text-secondary bg-transparent")">
+                    @tab.Label
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
+
+@code {
+    [Parameter]
+    public List<CourseTabItem> Tabs { get; set; } = new()
+    {
+        new() { Label = "Översikt", Url = "#", IsActive = true },
+        new() { Label = "Moduler", Url = "#" },
+        new() { Label = "Inlämningar", Url = "#" },
+        new() { Label = "Studenter", Url = "#" },
+        new() { Label = "Dokument", Url = "#" }
+    };
+
+    public class CourseTabItem
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Url { get; set; } = "#";
+        public bool IsActive { get; set; }
+    }
+}

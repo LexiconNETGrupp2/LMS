@@ -1,0 +1,47 @@
+﻿<div class="d-flex flex-column gap-3 mb-4">
+    <div>
+        <a href="@BackUrl" class="text-decoration-none d-inline-flex align-items-center gap-2 small">
+            <i class="bi bi-arrow-left"></i>
+            <span>@BackText</span>
+        </a>
+    </div>
+
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h1 class="h2 fw-bold mb-2">@Title</h1>
+
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p class="text-muted mb-3">@Description</p>
+            }
+
+            <div class="d-flex align-items-center gap-2 text-muted small">
+                <i class="bi bi-calendar-event"></i>
+                <span>@StartDate.ToString("yyyy-MM-dd") - @EndDate.ToString("yyyy-MM-dd")</span>
+            </div>
+        </div>
+
+        @if (ShowEditButton)
+        {
+            <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2" @onclick="OnEditClicked">
+                <i class="bi bi-pencil-square"></i>
+                <span>@EditButtonText</span>
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Kursnamn";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public DateTime StartDate { get; set; } = DateTime.Today;
+    [Parameter] public DateTime EndDate { get; set; } = DateTime.Today.AddMonths(3);
+
+    [Parameter] public string BackUrl { get; set; } = "/";
+    [Parameter] public string BackText { get; set; } = "Tillbaka till dashboard";
+
+    [Parameter] public bool ShowEditButton { get; set; } = true;
+    [Parameter] public string EditButtonText { get; set; } = "Redigera kurs";
+
+    [Parameter] public EventCallback OnEditClicked { get; set; }
+}
