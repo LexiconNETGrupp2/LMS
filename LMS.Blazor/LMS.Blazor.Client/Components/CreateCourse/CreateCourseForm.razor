@@ -5,7 +5,7 @@
             <label class="form-label" for="course-name">Kursnamn</label>
             <InputText id="course-name"
                        @bind-Value="_createCourseDto.Name"
-                       class="form-control form-control-lg"
+                       class="form-control"
                        placeholder="namnet på kursen"
                        type="text"
                        autofocus />
@@ -16,8 +16,26 @@
             <InputTextArea id="course-description" 
                            @bind-Value="_createCourseDto.Description"
                            placeholder="Beskriv kursen"
-                           class="form-control form-control-lg"
+                           class="form-control"
                            Rows="4" />
+        </div>
+
+        <div class="row">
+            <div class="col-6">
+                <label class="form-label" for="course-start-date">Start Date</label>
+                <InputDate @bind-Value="_createCourseDto.StartDate"
+                           class="form-control"
+                           id="course-start-date" />
+            </div>
+            <div class="col-6">
+                <label class="form-label" for="course-start-date">End Date</label>
+                <InputDate @bind-Value="_createCourseDto.EndDate"
+                           class="form-control"
+                           id="course-start-date" />
+            </div>
+        </div>
+        <div>
+            <h3 class="h3 fs-5 fw-bold">Lägg till moduler</h3>
         </div>
     </EditForm>
 </div>
