@@ -1,4 +1,5 @@
-﻿namespace Domain.Models.Entities;
+﻿
+namespace Domain.Models.Entities;
 
 public class Course
 {

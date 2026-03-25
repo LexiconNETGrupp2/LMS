@@ -65,15 +65,8 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
     [SwaggerResponse(StatusCodes.Status404NotFound, "Course not found")]
     public async Task<ActionResult<ModuleDto>> CreateModule(CreateModuleDto createModuleDto)
     {
-        try
-        {
-            var module = await moduleService.CreateModuleAsync(createModuleDto);
-            return CreatedAtAction(nameof(GetModuleById), new { id = module.Id }, module);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var module = await moduleService.CreateModuleAsync(createModuleDto);
+        return CreatedAtAction(nameof(GetModuleById), new { id = module.Id }, module);
     }
 
     [HttpPut("{id:guid}")]
@@ -86,15 +79,8 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
     [SwaggerResponse(StatusCodes.Status404NotFound, "Module not found")]
     public async Task<IActionResult> UpdateModule(Guid id, UpdateModuleDto updateModuleDto)
     {
-        try
-        {
-            await moduleService.UpdateModuleAsync(id, updateModuleDto);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        await moduleService.UpdateModuleAsync(id, updateModuleDto);
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
@@ -107,14 +93,7 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
     [SwaggerResponse(StatusCodes.Status404NotFound, "Module not found")]
     public async Task<IActionResult> DeleteModule(Guid id)
     {
-        try
-        {
-            await moduleService.DeleteModuleAsync(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        await moduleService.DeleteModuleAsync(id);
+        return NoContent();
     }
 }

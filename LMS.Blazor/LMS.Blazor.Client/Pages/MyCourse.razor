@@ -1,100 +1,53 @@
 ﻿@page "/MyCourse"
 @using LMS.Blazor.Client.Components.CourseOverview
+@using System.Security.Claims
+@inject IApiService ApiService
+@attribute [Authorize]
 
 <CourseOverviewView Course="_model" />
 @code {
-    private readonly CourseOverviewViewModel _model = new()
+    [CascadingParameter]
+    private Task<AuthenticationState> _authenticationStateTask { get; set; } = default!;
+    private CourseOverviewViewModel _model = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        Title = "Frontend-utvecklare",
-        Description = "En omfattande utbildning i modern webbutveckling med fokus på JavaScript och React.",
-        DateRange = "2023-08-15 - 2023-12-15",
-        ProgressPercent = 35,
-        Modules = new List<ModuleViewModel>()
+        var authState = await _authenticationStateTask;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return;
+
+        _model = await GetCourse(userId);
+    }
+
+    private async Task<CourseOverviewViewModel> GetCourse(string userId)
+    {
+        var uri = $"api/courses/user/{userId}";
+        var result = await ApiService.GetAsync<CourseDto>(uri);
+        if (result == null)
+            return new();
+        ArgumentNullException.ThrowIfNull(result);
+        return new()
         {
-            new ModuleViewModel
+            Title = result.Name,
+            Description = result.Description,
+            DateRange = $"{result.StartDate} - {result.EndDate}",
+            ProgressPercent = 0,
+            Modules = result.Modules.Select(s => new ModuleViewModel()
             {
-                Title = "HTML & CSS",
-                DateRange = "2023-08-15 - 2023-09-01",
-                ProgressPercent = 100,
-                Activities =
-                new List<ActivityViewModel>() {
-                    new ActivityViewModel
-                    {
-                        Type = "Föreläsning",
-                        Title = "JavaScript grunder",
-                        Date = "2023-09-02",
-                        HasDocument = true,
-                        StatusText = "Genomförd",
-                        StatusIcon = "check2-circle",
-                        StatusTextClass = "text-success",
-                    },
-                }
-
-            },
-            new ModuleViewModel
-            {
-                Title = "JavaScript",
-                DateRange = "2023-09-02 - 2023-09-20",
-                ProgressPercent = 60,
-                IsExpanded = true,
-                Description = "Grunderna i JavaScript programmering",
-                Activities =
-                new List<ActivityViewModel>() {
-                    new ActivityViewModel
-                    {
-                        Type = "Föreläsning",
-                        Title = "JavaScript grunder",
-                        Date = "2023-09-02",
-                        HasDocument = true,
-                        StatusText = "Genomförd",
-                        StatusIcon = "check2-circle",
-                        StatusTextClass = "text-success",
-                    },
-                    new ActivityViewModel
-                    {
-                        Type = "Övning",
-                        Title = "DOM manipulation",
-                        Date = "2023-09-05",
-                        HasDocument = true,
-                        StatusText = "Genomförd",
-                        StatusIcon = "check2-circle",
-                        StatusTextClass = "text-success",
-                    },
-                    new ActivityViewModel
-                    {
-                        Type = "E-learning",
-                        Title = "JavaScript funktioner",
-                        Date = "2023-09-10",
-                        HasDocument = false,
-                        StatusText = "Genomförd",
-                        StatusIcon = "check2-circle",
-                        StatusTextClass = "text-success",
-                    },
-                    new ActivityViewModel
-                    {
-                        Type = "Inlämning",
-                        Title = "JavaScript applikation",
-                        Date = "2023-09-20",
-                        HasDocument = true,
-                        StatusText = "Försenad",
-                        StatusIcon = "exclamation-circle",
-                        StatusTextClass = "text-danger"
-                    },
-                }
-            },
-            new ModuleViewModel
-            {
-                Title = "React",
-                DateRange = "2023-09-21 - 2023-10-15",
-                ProgressPercent = 20
-            },
-            new ModuleViewModel
-            {
-                Title = "Databasdesign",
-                DateRange = "2023-10-16 - 2023-11-05",
-                ProgressPercent = 0
-            },
-        }
-    };
-
+                Id = s.Id.ToString(),
+                Title = s.Name,
+                DateRange = $"{s.StartDate} - {s.EndDate}",
+                // Expand when current date is between start and end date of the module
+                IsExpanded = DateTime.Now >= s.StartDate.ToDateTime(TimeOnly.MinValue) &&
+                             DateTime.Now <= s.EndDate.ToDateTime(TimeOnly.MaxValue),
+                Activities = s.Activities.Select(a => new ActivityViewModel()
+                {
+                    Title = a.Name,
+                    Type = a.Type.Name,
+                    Date = $"{a.StartDate} - {a.EndDate}",
+                }).ToArray(),
+            }).ToArray(),
+        };
+    }
 }

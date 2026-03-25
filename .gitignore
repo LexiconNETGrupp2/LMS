@@ -367,3 +367,6 @@ FodyWeavers.xsd
 
 # Jetbrains Rider
 .idea/
+
+# Jetbrains HttpClient private environment variables
+**/http-client.private.env.json

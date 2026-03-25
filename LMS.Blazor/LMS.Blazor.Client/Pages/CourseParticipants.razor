@@ -1,39 +1,85 @@
 @page "/CourseParticipants"
 @attribute [Authorize(Roles = "Student")]
 @using LMS.Blazor.Client.Components.CourseParticipants
+@using System.Security.Claims
+@inject IApiService ApiService
 
-<CourseParticipantsView Course="_model" />
+@if (_isLoading)
+{
+    <div class="container py-4">
+        <div class="d-flex align-items-center gap-3 text-muted">
+            <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+            <span>Laddar kursdeltagare...</span>
+        </div>
+    </div>
+}
+else
+{
+    <CourseParticipantsView Course="_model" />
+}
 
 @code {
-    private readonly CourseParticipantsViewModel _model = CreateModel();
+    private CourseParticipantsViewModel _model = new();
+    private bool _isLoading = true;
 
-    private static CourseParticipantsViewModel CreateModel()
+
+    protected override async Task OnInitializedAsync()
     {
-        IReadOnlyList<UserDto> participants =
-        [
-            new("alice.andersson@lexicon.se", "Alice", "Andersson"),
-            new("benjamin.berg@lexicon.se", "Benjamin", "Berg"),
-            new("clara.lind@lexicon.se", "Clara", "Lind"),
-            new("david.nordin@lexicon.se", "David", "Nordin"),
-            new("erik.eriksson@lexicon.se", "Erik", "Eriksson")
-        ];
+
+        try
+        {
+            _model = await GetParticipants();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+    }
+
+    private async Task<CourseParticipantsViewModel> GetParticipants()
+    {
+        var uri = $"api/courses/me/participants";
+        var result = await ApiService.GetAsync<CourseParticipantsDto>(uri);
+        if (result == null)
+            return new();
+
+        var participants = result.Students
+            .Select(x => new ParticipantViewModel
+            {
+                FullName = x.FullName,
+                Email = x.Email,
+                Initials = GetInitials(x.FullName),
+                Role = x.Role
+            })
+            .OrderByDescending(x => IsTeacher(x.Role))
+            .ThenBy(x => x.FullName)
+            .ToList();
 
         return new CourseParticipantsViewModel
         {
-            CourseTitle = "JavaScript",
-            Description = "Studenter som deltar i din nuvarande kurs.",
-            Participants = participants.Select(MapParticipant).ToArray()
+            CourseTitle = result.Name,
+            Description = result.Description,
+            Participants = participants
         };
     }
 
-    private static ParticipantViewModel MapParticipant(UserDto user)
-        => new()
-        {
-            FullName = $"{user.FirstName} {user.LastName}",
-            Email = user.Email,
-            Initials = $"{GetInitial(user.FirstName)}{GetInitial(user.LastName)}"
-        };
+    private static bool IsTeacher(string? role) =>
+        string.Equals(role, "Teacher", StringComparison.OrdinalIgnoreCase);
 
-    private static string GetInitial(string value)
-        => string.IsNullOrWhiteSpace(value) ? "?" : value[0].ToString().ToUpperInvariant();
+    private static string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "?";
+
+        var parts = fullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 1)
+            return char.ToUpperInvariant(parts[0][0]).ToString();
+
+        return string.Concat(
+            char.ToUpperInvariant(parts.First()[0]),
+            char.ToUpperInvariant(parts.Last()[0]));
+    }
 }

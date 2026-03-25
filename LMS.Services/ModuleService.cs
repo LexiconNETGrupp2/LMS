@@ -2,6 +2,7 @@
 using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
+using Domain.Models.Exceptions;
 using LMS.Shared.DTOs.ModuleDtos;
 using Service.Contracts;
 
@@ -46,9 +47,17 @@ public class ModuleService : IModuleService
 
     public async Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto)
     {
-        var course = await _courseRepository.GetCourseById(createModuleDto.CourseId, CancellationToken.None);
+        var course = await _courseRepository.GetCourseByIdTracked(createModuleDto.CourseId, CancellationToken.None);
         if (course == null)
-            throw new KeyNotFoundException("Course not found");
+            throw new NotFoundException("Course not found.");
+
+        ValidateName(createModuleDto.Name);
+        ValidateDateRange(createModuleDto.StartDate, createModuleDto.EndDate);
+        ValidateModuleWithinCourse(createModuleDto.StartDate, createModuleDto.EndDate, course);
+        await EnsureModuleDoesNotOverlapAsync(
+            createModuleDto.CourseId,
+            createModuleDto.StartDate,
+            createModuleDto.EndDate);
 
         var module = new Module
         {
@@ -68,7 +77,16 @@ public class ModuleService : IModuleService
     {
         var module = await _moduleRepository.GetModuleByIdTrackedAsync(id);
         if (module == null)
-            throw new KeyNotFoundException("Module not found");
+            throw new NotFoundException("Module not found.");
+
+        ValidateName(updateModuleDto.Name);
+        ValidateDateRange(updateModuleDto.StartDate, updateModuleDto.EndDate);
+        ValidateModuleWithinCourse(updateModuleDto.StartDate, updateModuleDto.EndDate, module.Course);
+        await EnsureModuleDoesNotOverlapAsync(
+            module.Course.Id,
+            updateModuleDto.StartDate,
+            updateModuleDto.EndDate,
+            module.Id);
 
         module.Name = updateModuleDto.Name;
         module.StartDate = updateModuleDto.StartDate;
@@ -81,9 +99,53 @@ public class ModuleService : IModuleService
     {
         var module = await _moduleRepository.GetModuleByIdTrackedAsync(id);
         if (module == null)
-            throw new KeyNotFoundException("Module not found");
+            throw new NotFoundException("Module not found.");
 
         _moduleRepository.Delete(module);
         await _uow.CompleteAsync(CancellationToken.None);
+    }
+
+    private static void ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new BadRequestException("Module name is required.");
+        }
+    }
+
+    private static void ValidateDateRange(DateOnly startDate, DateOnly endDate)
+    {
+        if (startDate > endDate)
+        {
+            throw new BadRequestException("Module start date cannot be later than the end date.");
+        }
+    }
+
+    private static void ValidateModuleWithinCourse(DateOnly startDate, DateOnly endDate, Course course)
+    {
+        if (startDate < course.StartDate || endDate > course.EndDate)
+        {
+            throw new BadRequestException(
+                $"Module dates must stay within the course dates ({course.StartDate:yyyy-MM-dd} - {course.EndDate:yyyy-MM-dd}).");
+        }
+    }
+
+    private async Task EnsureModuleDoesNotOverlapAsync(
+        Guid courseId,
+        DateOnly startDate,
+        DateOnly endDate,
+        Guid? currentModuleId = null)
+    {
+        var existingModules = await _moduleRepository.GetModulesByCourseIdAsync(courseId);
+
+        var hasOverlap = existingModules.Any(module =>
+            module.Id != currentModuleId &&
+            startDate <= module.EndDate &&
+            endDate >= module.StartDate);
+
+        if (hasOverlap)
+        {
+            throw new BadRequestException("Module dates overlap with another module in this course.");
+        }
     }
 }

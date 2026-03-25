@@ -1,4 +1,6 @@
+@using LMS.Shared.DTOs.ActivityDtos
 @namespace LMS.Blazor.Client.Components.CourseOverview
+@inject IApiService ApiService
 
 <div class="accordion-item">
     <div class="accordion-header">
@@ -53,16 +55,23 @@
             <h4 class="h5 mb-3">Aktiviteter</h4>
 
             <div class="list-group list-group-flush border rounded">
-                @foreach (var activity in Module.Activities)
-                {
-                    <ActivityItem Activity="activity" />
-                }
-                @if (!Module.Activities.Any())
-                {
-                    <div class="list-group-item py-3">
-                        <p>Inga aktiviteter tillagda än</p>
-                    </div>
-                }
+                <Virtualize Context="activity" Items="Module.Activities.ToArray()">
+                    <ItemContent>
+                        <ActivityItem Activity="activity"/>
+                    </ItemContent>
+                    <EmptyContent>
+                        <div class="p-4">
+                            <i class="bi bi-activity fs-1 text-muted mb-3"></i>
+                            <p class="text-muted">Inga aktiviteter hittades.</p>
+                        </div>
+                    </EmptyContent>
+                    <Placeholder>
+                        <div class="d-flex align-items-center p-3">
+                            <strong role="status">Laddar aktivitet...</strong>
+                            <div class="spinner-border ms-auto" aria-hidden="true"></div>
+                        </div>
+                    </Placeholder>
+                </Virtualize>
             </div>
         </div>
     </div>
@@ -73,8 +82,36 @@
     [Parameter, EditorRequired]
     public ModuleViewModel Module { get; set; } = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        Module.Activities = await GetActivities();
+    }
+
+    private async Task<List<ActivityViewModel>> GetActivities()
+    {
+        var uri = $"api/activities/module/{Module.Id}";
+        var result = await ApiService.GetAsync<List<ActivityDto>>(uri);
+        if (result == null)
+            return [];
+        return result.Select(s => new ActivityViewModel
+        {
+            Id = s.Id.ToString(),
+            Title = s.Name,
+            Type = s.Type.Name,
+            Date = $"{s.StartDate} - {s.EndDate}",
+        }).ToList();
+    }
+
     private void ToggleExpandModule()
     {
         Module.IsExpanded = !Module.IsExpanded;
+    }
+
+    private async ValueTask<ItemsProviderResult<ActivityViewModel>> LoadActivities(ItemsProviderRequest request)
+    {
+        return new ItemsProviderResult<ActivityViewModel>(Module.Activities
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToArray(), Module.Activities.Count);
     }
 }
