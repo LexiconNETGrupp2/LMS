@@ -1,4 +1,5 @@
 ﻿<div class="container bg-white">
+    <h1 class="h1 fs-3 fw-bold">Skapa kurs</h1>
     <EditForm Model="_createCourseDto" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
         <DataAnnotationsValidator />
         <div class="mb-3">
@@ -13,7 +14,7 @@
 
         <div class="mb-3">
             <label class="form-label" for="course-description">Kursbeskrivning</label>
-            <InputTextArea id="course-description" 
+            <InputTextArea id="course-description"
                            @bind-Value="_createCourseDto.Description"
                            placeholder="Beskriv kursen"
                            class="form-control"
@@ -34,14 +35,22 @@
                            id="course-start-date" />
             </div>
         </div>
+        <h3 class="h3 fs-5 fw-bold border-top py-3">Lägg till moduler</h3>
+        @foreach (var module in _modules) {
+            
+        }
         <div>
-            <h3 class="h3 fs-5 fw-bold">Lägg till moduler</h3>
+            <button class="btn btn-link text-decoration-none">
+                <i class="bi bi-plus-circle"></i>
+                Lägg till modul
+            </button>
         </div>
     </EditForm>
 </div>
 
 @code {
     private CreateCourseDto _createCourseDto = new();
+    private IReadOnlyCollection<CreateModuleDto> _modules = [];
 
     [Parameter]
     public EventCallback<CreateCourseDto> OnCreate { get; set; }
