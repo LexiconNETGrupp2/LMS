@@ -1,71 +1,124 @@
-﻿@page "/Account/Manage"
-
+@page "/Account/Manage"
+@layout MainLayout
 @using System.ComponentModel.DataAnnotations
+@using LMS.Blazor.Client.Layout
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
-@using LMS.Blazor.Data
+@attribute [Authorize]
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Profile</PageTitle>
+<PageTitle>Mitt konto</PageTitle>
 
-<h3>Profile</h3>
-<StatusMessage />
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-7">
+            <div class="mb-4">
+                <h1 class="h3 fw-semibold mb-1">Mitt konto</h1>
+                <p class="text-body-secondary mb-0">Hantera dina personliga uppgifter och din kontoinformation.</p>
+            </div>
 
-<div class="row">
-    <div class="col-xl-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" id="username" class="form-control" placeholder="Choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
-            </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
-                <label for="Input.PhoneNumber" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
-        </EditForm>
+            <StatusMessage Message="@message" />
+
+            @if (isLoaded)
+            {
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4 p-lg-5">
+                        <EditForm Model="Input" method="post" OnValidSubmit="OnValidSubmitAsync" FormName="manage-account">
+                            <DataAnnotationsValidator />
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="first-name" class="form-label fw-semibold">Förnamn</label>
+                                    <InputText id="first-name" @bind-Value="Input.FirstName" class="form-control" />
+                                    <ValidationMessage For="() => Input.FirstName" class="text-danger small d-block mt-1" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="last-name" class="form-label fw-semibold">Efternamn</label>
+                                    <InputText id="last-name" @bind-Value="Input.LastName" class="form-control" />
+                                    <ValidationMessage For="() => Input.LastName" class="text-danger small d-block mt-1" />
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="phone-number" class="form-label fw-semibold">Telefonnummer</label>
+                                    <InputText id="phone-number" @bind-Value="Input.PhoneNumber" class="form-control" />
+                                    <ValidationMessage For="() => Input.PhoneNumber" class="text-danger small d-block mt-1" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">E-postadress</label>
+                                    <input class="form-control" value="@email" readonly />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Användarnamn</label>
+                                    <input class="form-control" value="@username" readonly />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end pt-4">
+                                <button type="submit" class="btn btn-primary px-4">Spara ändringar</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
 @code {
-    private ApplicationUser? user;
+    private string? message;
+    private string? email;
     private string? username;
-    private string? phoneNumber;
+    private ApplicationUser user = default!;
+    private bool isLoaded;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = default!;
+    private InputModel Input { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
-        Input ??= new();
+        user = await GetUserAsync();
 
-        user = await UserManager.GetUserAsync(HttpContext.User);
-        if (user is null)
+        email = await UserManager.GetEmailAsync(user);
+        username = await UserManager.GetUserNameAsync(user);
+
+        if (string.IsNullOrWhiteSpace(Input.FirstName) &&
+            string.IsNullOrWhiteSpace(Input.LastName) &&
+            string.IsNullOrWhiteSpace(Input.PhoneNumber))
         {
-            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
-            return;
+            Input = new InputModel
+            {
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber
+            };
         }
 
-        username = await UserManager.GetUserNameAsync(user);
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
-
-        Input.PhoneNumber ??= phoneNumber;
+        isLoaded = true;
     }
 
     private async Task OnValidSubmitAsync()
     {
-        if (user is null)
+        user = await GetUserAsync();
+
+        var phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        if (Input.FirstName != user.FirstName)
         {
-            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
-            return;
+            user.FirstName = Input.FirstName.Trim();
+        }
+
+        if (Input.LastName != user.LastName)
+        {
+            user.LastName = Input.LastName.Trim();
         }
 
         if (Input.PhoneNumber != phoneNumber)
@@ -73,19 +126,44 @@
             var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             if (!setPhoneResult.Succeeded)
             {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+                message = "Fel: Det gick inte att uppdatera telefonnummer.";
                 return;
             }
         }
 
-        await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        var updateResult = await UserManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            message = "Fel: Det gick inte att uppdatera kontot.";
+            return;
+        }
+
+        RedirectManager.RedirectToCurrentPageWithStatus("Kontot har uppdaterats.", HttpContext);
+    }
+
+    private async Task<ApplicationUser> GetUserAsync()
+    {
+        var currentUser = await UserManager.GetUserAsync(HttpContext.User);
+
+        if (currentUser is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+        }
+
+        return currentUser!;
     }
 
     private sealed class InputModel
     {
-        [Phone]
-        [Display(Name = "Phone number")]
+        [Required(ErrorMessage = "Förnamn krävs.")]
+        [StringLength(50, ErrorMessage = "Förnamn får vara högst 50 tecken.")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Efternamn krävs.")]
+        [StringLength(50, ErrorMessage = "Efternamn får vara högst 50 tecken.")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "Ange ett giltigt telefonnummer.")]
         public string? PhoneNumber { get; set; }
     }
 }

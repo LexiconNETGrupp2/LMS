@@ -1,0 +1,69 @@
+@namespace LMS.Blazor.Client.Components.CourseParticipants
+
+@if (Participants.Count == 0)
+{
+    <div class="border rounded p-4 text-center text-muted">
+        Inga kursdeltagare hittades.
+    </div>
+}
+else
+{
+    @if (Teachers.Count > 0)
+    {
+        <section class="mb-4">
+            <h3 class="h5 fw-semibold mb-3">Lärare</h3>
+
+            <div class="row g-3">
+                @for (int i = 0; i < Teachers.Count; i++)
+                {
+                    var participant = Teachers[i];
+
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <ParticipantCard Participant="participant" AvatarColor="@colors[i % colors.Length]" />
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    @if (Students.Count > 0)
+    {
+        <section>
+            <h3 class="h5 fw-semibold mb-3">Studenter</h3>
+
+            <div class="row g-3">
+                @for (int i = 0; i < Students.Count; i++)
+                {
+                    var participant = Students[i];
+
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <ParticipantCard Participant="participant" AvatarColor="@colors[i % colors.Length]" />
+                    </div>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ParticipantViewModel> Participants { get; set; } = [];
+
+    private readonly string[] colors =
+    [
+        "bg-primary-subtle",
+        "bg-success-subtle",
+        "bg-danger-subtle",
+        "bg-warning-subtle"
+    ];
+
+    private IReadOnlyList<ParticipantViewModel> Teachers =>
+        Participants
+            .Where(p => string.Equals(p.Role, "Teacher", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    private IReadOnlyList<ParticipantViewModel> Students =>
+        Participants
+            .Where(p => !string.Equals(p.Role, "Teacher", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+}

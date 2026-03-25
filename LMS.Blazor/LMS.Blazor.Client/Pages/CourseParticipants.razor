@@ -1,0 +1,85 @@
+@page "/CourseParticipants"
+@attribute [Authorize(Roles = "Student")]
+@using LMS.Blazor.Client.Components.CourseParticipants
+@using System.Security.Claims
+@inject IApiService ApiService
+
+@if (_isLoading)
+{
+    <div class="container py-4">
+        <div class="d-flex align-items-center gap-3 text-muted">
+            <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+            <span>Laddar kursdeltagare...</span>
+        </div>
+    </div>
+}
+else
+{
+    <CourseParticipantsView Course="_model" />
+}
+
+@code {
+    private CourseParticipantsViewModel _model = new();
+    private bool _isLoading = true;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+            _model = await GetParticipants();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+    }
+
+    private async Task<CourseParticipantsViewModel> GetParticipants()
+    {
+        var uri = $"api/courses/me/participants";
+        var result = await ApiService.GetAsync<CourseParticipantsDto>(uri);
+        if (result == null)
+            return new();
+
+        var participants = result.Students
+            .Select(x => new ParticipantViewModel
+            {
+                FullName = x.FullName,
+                Email = x.Email,
+                Initials = GetInitials(x.FullName),
+                Role = x.Role
+            })
+            .OrderByDescending(x => IsTeacher(x.Role))
+            .ThenBy(x => x.FullName)
+            .ToList();
+
+        return new CourseParticipantsViewModel
+        {
+            CourseTitle = result.Name,
+            Description = result.Description,
+            Participants = participants
+        };
+    }
+
+    private static bool IsTeacher(string? role) =>
+        string.Equals(role, "Teacher", StringComparison.OrdinalIgnoreCase);
+
+    private static string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "?";
+
+        var parts = fullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 1)
+            return char.ToUpperInvariant(parts[0][0]).ToString();
+
+        return string.Concat(
+            char.ToUpperInvariant(parts.First()[0]),
+            char.ToUpperInvariant(parts.Last()[0]));
+    }
+}

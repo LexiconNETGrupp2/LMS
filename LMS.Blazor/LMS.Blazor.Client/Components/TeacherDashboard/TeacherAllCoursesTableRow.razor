@@ -1,0 +1,17 @@
+﻿@if (Course is not null) {
+    <tr class="py-2">
+        <td><span class="ps-2">@Course.Name</span></td>
+        <td><span class="text-secondary">@Course.StartDateStr - @Course.EndDateStr</span></td>
+        <td>@Course.NumberOfStudents</td>
+        <td>@Course.Modules.Count</td>
+        <td class="text-end">
+            <a class="text-decoration-none" href="#">Visa</a>
+            <a class="ms-2 text-decoration-none pe-2" href="#">Redigera</a>
+        </td>
+    </tr>
+}
+
+@code {
+    [Parameter]
+    public CourseDto? Course { get; set; }
+}

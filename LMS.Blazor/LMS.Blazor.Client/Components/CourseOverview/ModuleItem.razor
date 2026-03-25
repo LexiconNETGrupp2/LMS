@@ -1,0 +1,117 @@
+@using LMS.Shared.DTOs.ActivityDtos
+@namespace LMS.Blazor.Client.Components.CourseOverview
+@inject IApiService ApiService
+
+<div class="accordion-item">
+    <div class="accordion-header">
+        <button class="accordion-button shadow-none @(Module.IsExpanded ? "" : "collapsed") p-3"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#@Module.Id"
+                aria-expanded="@Module.IsExpanded.ToString().ToLower()"
+                aria-controls="@Module.Id">
+
+            <div class="d-flex justify-content-between align-items-center w-100 gap-3">
+
+                <div class="d-flex flex-column">
+                    <h3 class="h5 mb-1 fw-semibold d-flex align-items-center">
+                        @if (Module.ProgressPercent == 100)
+                        {
+                            <i class="bi bi-check2-circle text-success me-2 fs-4"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-book text-primary me-2 fs-4"></i>
+                        }
+                        @Module.Title
+                    </h3>
+                    <small class="text-muted">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        @Module.DateRange
+                    </small>
+                </div>
+
+                <div class="text-end pe-3" style="min-width: 160px; max-width: 220px;">
+                    <div class="fw-semibold text-muted small mb-1">
+                        @Module.ProgressPercent% avklarat
+                    </div>
+                    <div class="progress progress-sm"
+                         role="progressbar"
+                         aria-label="@($"{Module.Title} framsteg")"
+                         aria-valuenow="@Module.ProgressPercent"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         style="height: 8px;">
+                        <div class="progress-bar"
+                             style="width: @(Module.ProgressPercent)%;"></div>
+                    </div>
+                </div>
+            </div>
+        </button>
+    </div>
+    <div id="@Module.Id" class="accordion-collapse collapse @(Module.IsExpanded ? "show" : "")">
+        <div class="accordion-body">
+            <p class="text-muted mb-3">@Module.Description</p>
+            <h4 class="h5 mb-3">Aktiviteter</h4>
+
+            <div class="list-group list-group-flush border rounded">
+                <Virtualize Context="activity" Items="Module.Activities.ToArray()">
+                    <ItemContent>
+                        <ActivityItem Activity="activity"/>
+                    </ItemContent>
+                    <EmptyContent>
+                        <div class="p-4">
+                            <i class="bi bi-activity fs-1 text-muted mb-3"></i>
+                            <p class="text-muted">Inga aktiviteter hittades.</p>
+                        </div>
+                    </EmptyContent>
+                    <Placeholder>
+                        <div class="d-flex align-items-center p-3">
+                            <strong role="status">Laddar aktivitet...</strong>
+                            <div class="spinner-border ms-auto" aria-hidden="true"></div>
+                        </div>
+                    </Placeholder>
+                </Virtualize>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public ModuleViewModel Module { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Module.Activities = await GetActivities();
+    }
+
+    private async Task<List<ActivityViewModel>> GetActivities()
+    {
+        var uri = $"api/activities/module/{Module.Id}";
+        var result = await ApiService.GetAsync<List<ActivityDto>>(uri);
+        if (result == null)
+            return [];
+        return result.Select(s => new ActivityViewModel
+        {
+            Id = s.Id.ToString(),
+            Title = s.Name,
+            Type = s.Type.Name,
+            Date = $"{s.StartDate} - {s.EndDate}",
+        }).ToList();
+    }
+
+    private void ToggleExpandModule()
+    {
+        Module.IsExpanded = !Module.IsExpanded;
+    }
+
+    private async ValueTask<ItemsProviderResult<ActivityViewModel>> LoadActivities(ItemsProviderRequest request)
+    {
+        return new ItemsProviderResult<ActivityViewModel>(Module.Activities
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToArray(), Module.Activities.Count);
+    }
+}
