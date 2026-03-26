@@ -1,8 +1,119 @@
 ﻿@page "/Users"
+@inject IApiService ApiService
 @attribute [Authorize(Roles = RolesNames.Teacher)]
 
 <PageTitle>Användare</PageTitle>
 
 <h1>Användare</h1>
+<button class="btn btn-primary mb-3">
+    <i class="bi bi-plus"></i> Lägg till användare
+</button>
+
+@if (pageErrors.Any())
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in pageErrors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="card shadow-sm border-0 p-2">
+    <QuickGrid Class="table table-hover" ItemKey="m => m.Id" Items="_users.AsQueryable()" Pagination="pagination">
+        <PropertyColumn Property="@(u => $"{u.FirstName} {u.LastName}")"
+                        Title="Namn"
+                        Sortable="true"
+                        IsDefaultSortColumn="true"
+                        Align="Align.Start" />
+        <PropertyColumn Property="@(u => u.Email)" Title="E-post" Align="Align.Start" />
+        <PropertyColumn Property="@(u => u.Role)" Title="Roll" Sortable="true" Align="Align.Start" />
+        <PropertyColumn Property="@(u => CourseName(u.CourseId))" Title="Kurs" Sortable="true" Align="Align.Start" />
+        <TemplateColumn Context="user" Title="Åtgärder" Align="Align.End">
+            <button class="btn btn-link text-primary p-0">
+                Redigera
+            </button>
+        </TemplateColumn>
+    </QuickGrid>
+    <Paginator State="pagination" />
+</div>
+
 @code {
+    private List<UserModel> _users = [];
+    private readonly PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
+    private List<CourseDto> Courses { get; set; } = [];
+    private readonly List<string> pageErrors = [];
+
+    public class UserModel
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        [Required(ErrorMessage = "Förnamn krävs")]
+        public string FirstName { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Efternamn krävs")]
+        public string LastName { get; set; } = string.Empty;
+        [Required(ErrorMessage = "E-postadress krävs")]
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = RolesNames.Student;
+        [Required(ErrorMessage = "Kurs krävs")]
+        public Guid? CourseId { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourses();
+        await LoadUsers();
+    }
+
+    private async Task LoadCourses()
+    {
+        try
+        {
+            Courses = await ApiService.GetAsync<List<CourseDto>>("api/courses") ?? [];
+        }
+        catch
+        {
+            pageErrors.Add("Kunde inte ladda kurser");
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        // generate dummy users for now
+        Guid RandomCourse() => Courses.Any() ? Courses[Random.Shared.Next(Courses.Count)].Id : Guid.Empty;
+        string RandomRole() => Random.Shared.Next(4) == 0 ? RolesNames.Teacher : RolesNames.Student;
+        _users = new List<UserModel>
+        {
+            new() { FirstName = "Alice", LastName = "Andersson", Email = "alice.andersson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Bob", LastName = "Berg", Email = "bob.berg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Charlie", LastName = "Carlsson", Email = "charlie.carlsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "David", LastName = "Dahl", Email = "david.dahl@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Eva", LastName = "Eriksson", Email = "eva.eriksson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Fiona", LastName = "Fransson", Email = "fiona.fransson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Gustav", LastName = "Gustavsson", Email = "gustav.gustavsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Hanna", LastName = "Holm", Email = "hanna.holm@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Isak", LastName = "Isaksson", Email = "isak.isaksson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Julia", LastName = "Johansson", Email = "julia.johansson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Karl", LastName = "Karlsson", Email = "karl.karlsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Lina", LastName = "Lindberg", Email = "lina.lindberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Mikael", LastName = "Magnusson", Email = "mikael.magnusson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Nina", LastName = "Nilsson", Email = "nina.nilsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Oscar", LastName = "Olofsson", Email = "oscar.olofsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Petra", LastName = "Persson", Email = "petra.persson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Quentin", LastName = "Qvist", Email = "quentin.qvist@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Rebecca", LastName = "Rasmusson", Email = "rebecca.rasmusson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Simon", LastName = "Svensson", Email = "simon.svensson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Tina", LastName = "Thomasson", Email = "tina.thomasson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Ulf", LastName = "Udd", Email = "ulf.udd@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Vera", LastName = "Viklund", Email = "vera.viklund@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "William", LastName = "Wallin", Email = "william.wallin@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Xenia", LastName = "Xenakis", Email = "xenia.xenakis@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Yvonne", LastName = "Ytterberg", Email = "yvonne.ytterberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            new() { FirstName = "Zacharias", LastName = "Zetterberg", Email = "zacharias.zetterberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+        };
+    }
+
+    private string CourseName(Guid? courseId) =>
+        Courses.SingleOrDefault(s => s.Id == courseId)?.Name ?? string.Empty;
 }
