@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LMS.Blazor", "LMS.Blazor\LM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LMS.Blazor.Client", "LMS.Blazor\LMS.Blazor.Client\LMS.Blazor.Client.csproj", "{4FECC27D-EAE8-4CA4-AB7E-73E7ED7B61CC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LMS.Test", "LMS.Test\LMS.Test.csproj", "{467B2332-826E-4878-AF27-5A016A19C656}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,10 @@ Global
 		{4FECC27D-EAE8-4CA4-AB7E-73E7ED7B61CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FECC27D-EAE8-4CA4-AB7E-73E7ED7B61CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FECC27D-EAE8-4CA4-AB7E-73E7ED7B61CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{467B2332-826E-4878-AF27-5A016A19C656}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{467B2332-826E-4878-AF27-5A016A19C656}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{467B2332-826E-4878-AF27-5A016A19C656}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{467B2332-826E-4878-AF27-5A016A19C656}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
