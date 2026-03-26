@@ -1,0 +1,89 @@
+﻿<div class="container py-3">
+  <div class="row mb-3">
+    <div class="col">
+      <h5 class="mb-1">Välkommen tillbaka!</h5>
+      <small class="text-muted">Veckans aktiviteter</small>
+    </div>
+    <div class="col-auto align-self-center">
+      <button class="btn btn-sm btn-outline-primary">Visa alla</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card mb-3">
+        <div class="card-body p-2">
+          <ActivityList Items="@ActivityItems" />
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">Kommande inlämningar</h6>
+              <UpcomingSubmissions Items="@SubmissionItems" />
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">Modulfremsteg</h6>
+              <ModuleProgress Items="@ProgressItems" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@code {
+    // private IReadOnlyCollection<CourseDto>? courses;
+    
+
+    // public sealed record ActivityDto(
+    //     Guid Id,
+    //     string Name,
+    //     string Description,
+    //     DateTime StartDate,
+    //     DateTime EndDate,
+    //     ActivityTypeDto Type,
+    //     Guid ModuleId
+    // );
+
+
+    // Sample static data (replace with injected data/service later)
+    // private List<ActivityDto> ActivityItems = new()
+    // {
+    //     new("Kurs: Introduktion till AI", "Inlämning 2 • 2 dagar", "Ny"),
+    //     new("Quiz: Backendkunskap", "Öppen • 3 dagar"),
+    //     new("Read: React hooks", "Lästid 10 min"),
+    //     new(Guid.NewGuid(), "Forum: Feedback", "3 nya svar")
+    // };
+    private List<ActivityItem> ActivityItems = new()
+    {
+        new("Kurs: Introduktion till AI", "Inlämning 2 • 2 dagar", "Ny"),
+        new("Quiz: Backendkunskap", "Öppen • 3 dagar"),
+        new("Read: React hooks", "Lästid 10 min"),
+        new("Forum: Feedback", "3 nya svar")
+    };
+
+    private List<SubmissionItem> SubmissionItems = new()
+    {
+        new("Sprint specification", "2 dagar kvar", "Hög"),
+        new("Kodexempel", "3 dagar kvar")
+    };
+
+    private List<ProgressItem> ProgressItems = new()
+    {
+        new("Introduktion", 70),
+        new("Avancerade koncept", 25),
+        new("Projekt", 10),
+        new("Reflektion", 5)
+    };
+}

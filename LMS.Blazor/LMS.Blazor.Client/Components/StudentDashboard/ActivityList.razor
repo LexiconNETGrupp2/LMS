@@ -1,0 +1,20 @@
+﻿<ul class="list-group list-group-flush">
+@foreach (var it in Items)
+{
+  <li class="list-group-item py-2 d-flex justify-content-between align-items-start">
+    <div>
+      <div class="fw-semibold">@it.Title</div>
+      <small class="text-muted">@it.Meta</small>
+    </div>
+    @if (!string.IsNullOrEmpty(it.Badge))
+    {
+      <span class="badge bg-primary align-self-center">@it.Badge</span>
+    }
+  </li>
+}
+</ul>
+
+@code {
+    [Parameter]
+    public List<ActivityItem> Items { get; set; } = [];
+}
