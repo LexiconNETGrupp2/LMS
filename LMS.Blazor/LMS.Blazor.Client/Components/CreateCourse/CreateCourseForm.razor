@@ -29,14 +29,16 @@
                 <label class="form-label" for="course-start-date">Start Date</label>
                 <InputDate @bind-Value="Course.StartDate"
                            class="form-control"
-                           id="course-start-date" />
+                           id="course-start-date"
+                           max="@Course.EndDate" />
                 <ValidationMessage For="() => Course.StartDate" />
             </div>
             <div class="col-6">
                 <label class="form-label" for="course-end-date">End Date</label>
                 <InputDate @bind-Value="Course.EndDate"
                            class="form-control"
-                           id="course-end-date" />
+                           id="course-end-date"
+                           min="@Course.StartDate" />
                 <ValidationMessage For="() => Course.EndDate" />
             </div>
         </div>
@@ -48,9 +50,8 @@
                        index="i+1"
                        CourseStart="Course.StartDate"
                        CourseEnd="Course.EndDate"
-                       PreviousModuleEnd="@(i > 0 ? Course.Modules[i - 1].EndDate : Course.StartDate)"
-                       NextModuleStart="@(i == Course.Modules.Count ? Course.Modules[i+1].StartDate : Course.EndDate)" />
-            <ValidationMessage For="() => Course.Modules[i]" />
+                       PreviousModuleEnd="@(i > 0 ? Course.Modules[i - 1].EndDate : null)"
+                       NextModuleStart="@(i == Course.Modules.Count ? Course.Modules[i+1].StartDate : null)" />
         }
 
         <ValidationSummary class="alert alert-danger" />
@@ -75,7 +76,7 @@
     [Parameter]
     public EventCallback OnAddModule { get; set; }
     [Parameter]
-    public EventCallback<Guid?> OnRemoveModule { get; set; }    
+    public EventCallback<Guid?> OnRemoveModule { get; set; }
 
     private async Task CreateCourse()
     {
