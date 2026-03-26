@@ -4,10 +4,43 @@
 
 <PageTitle>Användare</PageTitle>
 
-<h1>Användare</h1>
-<button class="btn btn-primary mb-3">
-    <i class="bi bi-plus"></i> Lägg till användare
-</button>
+<div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="fw-bold fs-3 mb-1">Användare</h1>
+            <div class="text-secondary">Totalt <strong>@FilteredUsers.Count()</strong> användare i systemet</div>
+        </div>
+        <button class="btn btn-primary">
+            <i class="bi bi-plus"></i> Lägg till användare
+        </button>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="flex-grow-1">
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control border-start-0" placeholder="Sök efter namn eller e-post..."
+                   @bind="searchTerm"
+                   @bind:event="oninput" />
+            @if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                <button type="button" class="btn btn-outline-secondary border-start-0" style="z-index:2;"
+                        @onclick="ClearSearch" tabindex="-1">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
+        </div>
+    </div>
+    <div class="btn-group ms-2" role="group">
+        <button type="button" class="btn btn-outline-primary @(roleFilter==null ? "active" : "")"
+                @onclick="() => SetRoleFilter(null)">Alla</button>
+        <button type="button" class="btn btn-outline-primary @(roleFilter==RolesNames.Student ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Student)">Elever</button>
+        <button type="button" class="btn btn-outline-primary @(roleFilter==RolesNames.Teacher ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Teacher)">Lärare</button>
+    </div>
+</div>
 
 @if (pageErrors.Any())
 {
@@ -22,14 +55,18 @@
 }
 
 <div class="card shadow-sm border-0 p-2">
-    <QuickGrid Class="table table-hover" ItemKey="m => m.Id" Items="_users.AsQueryable()" Pagination="pagination">
-        <PropertyColumn Property="@(u => $"{u.FirstName} {u.LastName}")"
+    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" Items="FilteredUsers.AsQueryable()" Pagination="pagination">
+        <PropertyColumn Property="@(u => u.FullName)"
                         Title="Namn"
                         Sortable="true"
                         IsDefaultSortColumn="true"
                         Align="Align.Start" />
-        <PropertyColumn Property="@(u => u.Email)" Title="E-post" Align="Align.Start" />
-        <PropertyColumn Property="@(u => u.Role)" Title="Roll" Sortable="true" Align="Align.Start" />
+        <PropertyColumn Property="@(u => u.Email)" Title="E-post" Sortable="true" Align="Align.Start" />
+        <TemplateColumn Title="Roll" Align="Align.Start">
+            <div class="badge rounded-pill bg-success-subtle text-success">
+                @RoleName(context.Role)
+            </div>
+        </TemplateColumn>
         <PropertyColumn Property="@(u => CourseName(u.CourseId))" Title="Kurs" Sortable="true" Align="Align.Start" />
         <TemplateColumn Context="user" Title="Åtgärder" Align="Align.End">
             <button class="btn btn-link text-primary p-0">
@@ -45,6 +82,8 @@
     private readonly PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
     private List<CourseDto> Courses { get; set; } = [];
     private readonly List<string> pageErrors = [];
+    private string searchTerm = string.Empty;
+    private string? roleFilter = null;
 
     public class UserModel
     {
@@ -53,12 +92,18 @@
         public string FirstName { get; set; } = string.Empty;
         [Required(ErrorMessage = "Efternamn krävs")]
         public string LastName { get; set; } = string.Empty;
+        public string FullName => $"{FirstName} {LastName}";
         [Required(ErrorMessage = "E-postadress krävs")]
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = RolesNames.Student;
         [Required(ErrorMessage = "Kurs krävs")]
         public Guid? CourseId { get; set; }
     }
+
+    private IEnumerable<UserModel> FilteredUsers => _users
+        .Where(u => u.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        .Where(u => roleFilter == null || u.Role == roleFilter);
 
     protected override async Task OnInitializedAsync()
     {
@@ -116,4 +161,24 @@
 
     private string CourseName(Guid? courseId) =>
         Courses.SingleOrDefault(s => s.Id == courseId)?.Name ?? string.Empty;
+
+    private string RoleName(string role) =>
+        role switch
+        {
+            RolesNames.Student => "Elev",
+            RolesNames.Teacher => "Lärare",
+            _ => role
+        };
+
+
+    private void SetRoleFilter(string? role)
+    {
+        roleFilter = role;
+        StateHasChanged();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+    }
 }
