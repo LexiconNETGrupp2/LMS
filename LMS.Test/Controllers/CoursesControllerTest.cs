@@ -184,6 +184,35 @@ public class CoursesControllerTest
         Assert.Equal(expectedStatusCode, statusResult.StatusCode);
     }
 
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task Update_WhenUpdateSucceeds_ReturnsNoContent()
+    {
+        // Arrange
+        var ct = CancellationToken.None;
+        var courseId = Guid.NewGuid();
+        var updateCourseDto = new UpdateCourseDto(
+            Name: "Updated Course",
+            Description: "An updated course for testing",
+            StartDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            EndDate: DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1)
+        );
+
+        var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+            .Setup(s => s.UpdateCourse(courseId, updateCourseDto, ct))
+            .ReturnsAsync(true);
+
+        var controller = CreateController(courseServiceMock);
+
+        // Act
+        var result = await controller.Update(courseId, updateCourseDto, ct);
+
+        // Assert
+        Assert.IsType<NoContentResult>(result);
+        courseServiceMock.Verify(s => s.UpdateCourse(courseId, updateCourseDto, ct), Times.Once);
+    }
+
     [Theory]
     [Trait("Layer", "Controller")]
     [InlineData("invalid-guid", false, StatusCodes.Status401Unauthorized)]
