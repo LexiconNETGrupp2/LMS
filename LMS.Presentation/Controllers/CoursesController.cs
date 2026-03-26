@@ -126,6 +126,13 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet("me/participants")]
+    [SwaggerOperation(
+    Summary = "Get participants in the current user's course",
+    Description = "Retrieves the participants for the course that the currently authenticated user belongs to."
+)]
+    [SwaggerResponse(StatusCodes.Status200OK)]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMyCourseParticipants(CancellationToken token)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
