@@ -6,10 +6,12 @@
 <CreateCourseForm Course="_course"
                   OnAddModule="AddModule"
                   OnRemoveModule="RemoveModule"
-                  OnCreateCourse="SubmitCourse" />
+                  OnCreateCourse="SubmitCourse"
+                  OverlapErrors="_overlapErrors" />
 
 @code {
     private CourseFormModel _course;
+    private List<string> _overlapErrors = [];
 
     protected override void OnInitialized()
     {
@@ -36,16 +38,15 @@
 
     private async Task SubmitCourse()
     {
-        var errors = CheckForOverlap();
-        if (errors.Count > 0) {
-            Console.Write($"Errors occured: {Environment.NewLine}");
-            foreach (var error in errors) {
-                Console.Write($"- {error}");
-                Console.WriteLine();
-                return;
-            }
-
-        }
+        CheckForOverlap();
+        // if (_overlapErrors.Count > 0) {
+        //     Console.Write($"Errors occured: {Environment.NewLine}");
+        //     foreach (var error in _overlapErrors) {
+        //         Console.Write($"- {error}");
+        //         Console.WriteLine();
+        //         return;
+        //     }
+        // }
 
         CreateCourseDto createCourseDto = new() {
             Name = _course.Name,
@@ -64,26 +65,21 @@
         bool success = await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
     }
 
-    private List<string> CheckForOverlap()
+    private void CheckForOverlap()
     {
-        List<string> errors = [];
+        _overlapErrors = [];
         int i = 0;
-        Console.WriteLine($"{_course.StartDate} > {_course.Modules[i].StartDate} ({_course.StartDate > _course.Modules[i].StartDate})");
         if (_course.StartDate > _course.Modules[i].StartDate) {
-            errors.Add($"Module {_course.Modules[i].Name} is starting before the course");
+            _overlapErrors.Add($"Module {_course.Modules[i].Name} is starting before the course");
         }
-        for (i = 1; i < _course.Modules.Count; i++) {
-            Console.WriteLine($"{_course.Modules[i - 1].EndDate} >= {_course.Modules[i].StartDate} ({_course.Modules[i - 1].EndDate >= _course.Modules[i].StartDate})");
+        for (i = 1; i < _course.Modules.Count; i++) {            
             if (_course.Modules[i - 1].EndDate >= _course.Modules[i].StartDate) {
-                errors.Add($"Modules {_course.Modules[i - 1].Name} and {_course.Modules[i].Name} are overlapping");
+                _overlapErrors.Add($"Modules {_course.Modules[i - 1].Name} and {_course.Modules[i].Name} are overlapping");
             }
         }
         i--;
-        Console.WriteLine($"{_course.EndDate} < {_course.Modules[i].EndDate} ({_course.EndDate < _course.Modules[i].EndDate})");
         if (_course.EndDate < _course.Modules[i].EndDate) {
-            errors.Add($"Module {_course.Modules[i].Name} is ending after the course");
+            _overlapErrors.Add($"Module {_course.Modules[i].Name} is ending after the course");
         }
-
-        return errors;
     }
 }

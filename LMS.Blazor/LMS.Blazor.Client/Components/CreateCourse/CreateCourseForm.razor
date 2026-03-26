@@ -55,7 +55,17 @@
         }
 
         <ValidationSummary class="alert alert-danger" />
-
+        @if (OverlapErrors is not null && OverlapErrors.Count > 0)
+        {
+            <div class="alert alert-danger">
+                <ul class="m-0">
+                    @foreach (string error in OverlapErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
         <div>
             <button type="button" class="btn btn-link text-decoration-none float-start" @onclick="AddModule">
                 <i class="bi bi-plus-circle"></i>
@@ -69,6 +79,9 @@
 @code {
     [Parameter]
     public required CourseFormModel Course { get; set; }
+
+    [Parameter]
+    public List<string> OverlapErrors { get; set; } = [];
 
     [Parameter]
     public EventCallback<CourseFormModel> OnCreateCourse { get; set; }
