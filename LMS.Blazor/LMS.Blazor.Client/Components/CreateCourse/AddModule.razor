@@ -1,6 +1,45 @@
-﻿
+﻿<div class="container">
+    <div class="mb-3">
+        <label class="form-label" for="@CreateIdString("name")">Modulnamn</label>
+        <InputText id="@CreateIdString("name")"
+                       class="form-control"
+                       placeholder="Namnet på modulen"
+                       @bind-Value="BindingModel.Name" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="@CreateIdString("desc")">Modulbeskrivning</label>
+        <InputTextArea id="@CreateIdString("desc")"
+                       class="form-control"
+                       @bind-Value="BindingModel.Description"
+                       placeholder="Beskriv modulen"
+                       rows="3" />
+    </div>
+</div>
 
 @code {
-    // [Parameter]
-    // public ModuleFormModel CreateModuleDto { get; set; } = new();
+    private ModuleFormModel _model;
+    [Parameter] public ModuleFormModel BindingModel
+    {
+        get => _model;
+        set
+        {
+            if (_model == value) return;
+            _model = value;
+            BindingModelChanged.InvokeAsync(value);
+        }
+    }
+    [Parameter]
+    public EventCallback<ModuleFormModel> BindingModelChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid?> OnDelete { get; set; }
+
+    private async Task DeleteModule()
+    {
+        if (OnDelete.HasDelegate)
+            await OnDelete.InvokeAsync(BindingModel.ModuleId);
+    }
+
+    private string CreateIdString(string propName)
+        => $"add-module-{propName}-{_model.ModuleId.ToString()?[..8]}";
 }

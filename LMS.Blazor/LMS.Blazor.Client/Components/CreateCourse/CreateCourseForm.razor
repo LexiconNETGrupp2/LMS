@@ -1,13 +1,13 @@
 ﻿<div class="container bg-white">
     <h1 class="h1 fs-3 fw-bold">Skapa kurs</h1>
-    <EditForm Model="_createCourseDto" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
+    <EditForm FormName="CreateCourse" Model="_course" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
         <DataAnnotationsValidator />
         <div class="mb-3">
             <label class="form-label" for="course-name">Kursnamn</label>
             <InputText id="course-name"
-                       @bind-Value="_createCourseDto.Name"
+                       @bind-Value="_course.Name"
                        class="form-control"
-                       placeholder="namnet på kursen"
+                       placeholder="Namnet på kursen"
                        type="text"
                        autofocus />
         </div>
@@ -15,7 +15,7 @@
         <div class="mb-3">
             <label class="form-label" for="course-description">Kursbeskrivning</label>
             <InputTextArea id="course-description"
-                           @bind-Value="_createCourseDto.Description"
+                           @bind-Value="_course.Description"
                            placeholder="Beskriv kursen"
                            class="form-control"
                            Rows="4" />
@@ -24,39 +24,61 @@
         <div class="row">
             <div class="col-6">
                 <label class="form-label" for="course-start-date">Start Date</label>
-                <InputDate @bind-Value="_createCourseDto.StartDate"
+                <InputDate @bind-Value="_course.StartDate"
                            class="form-control"
                            id="course-start-date" />
             </div>
             <div class="col-6">
                 <label class="form-label" for="course-start-date">End Date</label>
-                <InputDate @bind-Value="_createCourseDto.EndDate"
+                <InputDate @bind-Value="_course.EndDate"
                            class="form-control"
                            id="course-start-date" />
             </div>
         </div>
         <h3 class="h3 fs-5 fw-bold border-top py-3">Lägg till moduler</h3>
-        @foreach (var module in _modules) {
-            
+        @for (int i = 0; i < _course.Modules.Count; i++) {
+            <AddModule @bind-BindingModel="_course.Modules[i]"
+                       OnDelete="RemoveModule" />
         }
         <div>
-            <button class="btn btn-link text-decoration-none">
+            <button type="button" class="btn btn-link text-decoration-none float-start" @onclick="AddModule">
                 <i class="bi bi-plus-circle"></i>
                 Lägg till modul
             </button>
+            <button type="submit" class="btn btn-primary float-end">Skapa kurs</button>
         </div>
     </EditForm>
 </div>
 
 @code {
-    private CreateCourseDto _createCourseDto = new();
-    private IReadOnlyCollection<CreateModuleDto> _modules = [];
+    private CourseFormModel _course = new() { Id = Guid.NewGuid() };
 
     [Parameter]
-    public EventCallback<CreateCourseDto> OnCreate { get; set; }
+    public EventCallback<CourseFormModel> OnCreate { get; set; }
 
     private async Task CreateCourse()
     {
-        
+        if (OnCreate.HasDelegate)
+            await OnCreate.InvokeAsync(_course);
+
+        Console.WriteLine($"CourseId: {_course.Name}");
+        foreach (var module in _course.Modules)
+        {
+            Console.WriteLine($"ModuleId: {module.Name}");
+        }
+    }
+
+    private void AddModule()
+    {
+        _course.Modules.Add(new() { ModuleId = Guid.NewGuid() });
+        Console.WriteLine("Adding module");
+    }
+
+    private void RemoveModule(Guid? id)
+    {
+        if (id is null) return;
+        var module = _course.Modules.FirstOrDefault(module => module.ModuleId == id);
+        if (module is null) return;
+        _course.Modules.Remove(module);
     }
 }
