@@ -1,0 +1,45 @@
+﻿<nav class="border-bottom mb-4">
+    <ul class="nav nav-tabs border-0">
+        @foreach (var tab in Tabs)
+        {
+            <li class="nav-item">
+                <button type="button"
+                        class="nav-link border-0 px-0 me-4 fw-semibold @(tab.IsActive ? "active fw-semibold text-primary border-bottom border-2 border-primary bg-transparent" : "text-secondary bg-transparent")"
+                        @onclick="() => SelectTab(tab.Label)">
+                    @tab.Label
+                </button>
+            </li>
+        }
+    </ul>
+</nav>
+
+@code {
+    [Parameter]
+    public List<CourseTabItem> Tabs { get; set; } = new()
+    {
+        new() { Label = "Översikt", IsActive = true },
+        new() { Label = "Moduler" },
+        new() { Label = "Inlämningar" },
+        new() { Label = "Studenter" },
+        new() { Label = "Dokument" }
+    };
+
+    [Parameter]
+    public EventCallback<string> OnTabChanged { get; set; }
+
+    private async Task SelectTab(string label)
+    {
+        foreach (var tab in Tabs)
+        {
+            tab.IsActive = tab.Label == label;
+        }
+
+        await OnTabChanged.InvokeAsync(label);
+    }
+
+    public class CourseTabItem
+    {
+        public string Label { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+    }
+}

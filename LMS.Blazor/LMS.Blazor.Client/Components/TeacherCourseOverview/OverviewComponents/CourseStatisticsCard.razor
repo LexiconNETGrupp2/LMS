@@ -1,0 +1,43 @@
+﻿<div class="card border-0 shadow-sm rounded-4 h-100">
+    <div class="card-body p-4">
+        <h3 class="h4 fw-semibold mb-4">Kursstatistik</h3>
+
+        <div class="row g-3">
+            <div class="col-12 col-sm-6">
+                <StatisticTile Title="Moduler"
+                               Value="@Statistics.Modules"
+                               Icon="bi bi-stack"
+                               BackgroundClass="bg-primary-subtle"
+                               IconColorClass="text-primary" />
+            </div>
+
+            <div class="col-12 col-sm-6">
+                <StatisticTile Title="Aktiviteter"
+                               Value="@Statistics.Activities"
+                               Icon="bi bi-calendar-event"
+                               BackgroundClass="bg-success-subtle"
+                               IconColorClass="text-success" />
+            </div>
+
+            <div class="col-12 col-sm-6">
+                <StatisticTile Title="Studenter"
+                               Value="@Statistics.Students"
+                               Icon="bi bi-people"
+                               BackgroundClass="bg-info-subtle"
+                               IconColorClass="text-info" />
+            </div>
+
+            <div class="col-12 col-sm-6">
+                <StatisticTile Title="Inlämningar"
+                               Value="@Statistics.Submissions"
+                               Icon="bi bi-file-earmark-text"
+                               BackgroundClass="bg-warning-subtle"
+                               IconColorClass="text-warning-emphasis" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public CourseStatisticsModel Statistics { get; set; } = new();
+}

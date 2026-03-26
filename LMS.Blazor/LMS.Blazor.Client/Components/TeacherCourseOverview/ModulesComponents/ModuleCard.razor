@@ -1,0 +1,79 @@
+﻿<div class="accordion-item border-0 shadow-sm rounded-4 overflow-hidden mb-3">
+    <h2 class="accordion-header" id="@($"heading-{Module.Id}")">
+        <button class="accordion-button collapsed px-4 py-3"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="@($"#collapse-{Module.Id}")"
+                aria-expanded="false"
+                aria-controls="@($"collapse-{Module.Id}")">
+
+            <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                <div class="d-flex align-items-center gap-3 min-w-0">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle flex-shrink-0"
+                         style="width: 3rem; height: 3rem;">
+                        <i class="bi bi-stack text-primary"></i>
+                    </div>
+
+                    <div class="min-w-0 text-start">
+                        <div class="fw-semibold fs-5 text-dark">@Module.Title</div>
+                        <div class="text-secondary">
+                            @Module.StartDate.ToString("yyyy-MM-dd") - @Module.EndDate.ToString("yyyy-MM-dd")
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end flex-shrink-0 me-3" style="min-width: 140px;">
+                    <div class="fw-semibold text-dark">@Module.Progress% avklarat</div>
+                    <div class="progress mt-1 rounded-pill" style="height: 0.5rem;">
+                        <div class="progress-bar rounded-pill" style="width:@($"{Module.Progress}%")"></div>
+                    </div>
+                </div>
+            </div>
+        </button>
+    </h2>
+
+    <div id="@($"collapse-{Module.Id}")"
+         class="accordion-collapse collapse @(Module.IsExpanded ? "show" : "")"
+         aria-labelledby="@($"heading-{Module.Id}")">
+        <div class="accordion-body p-4">
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4">
+                <div class="text-secondary fs-6">
+                    @if (!string.IsNullOrWhiteSpace(Module.Description))
+                    {
+                        @Module.Description
+                    }
+                </div>
+
+                <div class="d-flex gap-2 flex-shrink-0">
+                    <button class="btn btn-primary-subtle text-primary rounded-3">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        Redigera
+                    </button>
+
+                    <button class="btn btn-danger-subtle text-danger rounded-3">
+                        <i class="bi bi-trash me-2"></i>
+                        Ta bort
+                    </button>
+                </div>
+            </div>
+
+            <h3 class="h5 fw-semibold mb-3">Aktiviteter</h3>
+
+            <div class="d-flex flex-column gap-3">
+                @foreach (var activity in Module.Activities)
+                {
+                    <ModuleActivityItem Activity="activity" />
+                }
+            </div>
+
+            <button class="btn btn-outline-secondary w-100 border-dashed rounded-3 mt-3">
+                <i class="bi bi-plus-circle me-2"></i>
+                Lägg till aktivitet
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ModuleModel Module { get; set; } = new();
+}

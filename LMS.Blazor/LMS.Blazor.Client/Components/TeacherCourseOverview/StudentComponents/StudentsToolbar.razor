@@ -1,0 +1,20 @@
+﻿<div class="p-4 border-bottom">
+    <div class="row">
+        <div class="col-12 col-md-5 col-lg-4">
+            <input class="form-control form-control-lg rounded-3"
+                   placeholder="Sök efter student..."
+                   value="@SearchText"
+                   @oninput="HandleInput" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string SearchText { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchTextChanged { get; set; }
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        await SearchTextChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+}
