@@ -4,6 +4,7 @@ using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Service.Contracts;
@@ -123,6 +124,100 @@ public class CoursesControllerTest
         // Assert
         Assert.IsType<UnauthorizedResult>(result);
         courseServiceMock.Verify(s => s.GetCourseByUserId(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Create_WhenValid_ReturnsCreated()
+    {
+        // Arrange
+        var ct = CancellationToken.None;
+        var createCourseDto = new CreateCourseDto(
+            Name: "New Course",
+            Description: "A new course for testing",
+            StartDate: DateOnly.FromDateTime(DateTime.UtcNow),
+            EndDate: DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
+            Modules: []
+        );
+
+        var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+            .Setup(s => s.CreateCourse(createCourseDto, ct))
+            .ReturnsAsync(true);
+
+        var controller = CreateController(courseServiceMock);
+
+        // Act
+        var result = await controller.Create(createCourseDto, ct);
+
+        // Assert
+        Assert.IsType<CreatedResult>(result);
+        courseServiceMock.Verify(s => s.CreateCourse(createCourseDto, ct), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(true, StatusCodes.Status204NoContent)]
+    [InlineData(false, StatusCodes.Status404NotFound)]
+    public async Task Delete_WhenCalled_ReturnsExpectedStatusResult(bool deleteSucceeded, int expectedStatusCode)
+    {
+        // Arrange
+        var ct = CancellationToken.None;
+        var courseId = Guid.NewGuid();
+
+        var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+            .Setup(s => s.DeleteCourse(courseId, ct))
+            .ReturnsAsync(deleteSucceeded);
+
+        var controller = CreateController(courseServiceMock);
+
+        // Act
+        var result = await controller.Delete(courseId, ct);
+
+        // Assert
+        var statusResult = Assert.IsAssignableFrom<IStatusCodeActionResult>(result);
+        Assert.Equal(expectedStatusCode, statusResult.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("invalid-guid", false, StatusCodes.Status401Unauthorized)]
+    [InlineData("11111111-1111-1111-1111-111111111111", false, StatusCodes.Status404NotFound)]
+    [InlineData("11111111-1111-1111-1111-111111111111", true, StatusCodes.Status200OK)]
+    public async Task GetMyCourseParticipants_WhenCalled_ReturnsExpectedStatusCode(
+        string userIdClaim,
+        bool hasParticipants,
+        int expectedStatusCode)
+    {
+        // Arrange
+        var ct = CancellationToken.None;
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, userIdClaim),
+            new Claim(ClaimTypes.Role, RolesNames.Student),
+        ], "TestAuthType"));
+
+        var courseServiceMock = new Mock<ICourseService>();
+        if (Guid.TryParse(userIdClaim, out var userId))
+        {
+            courseServiceMock
+                .Setup(s => s.GetCourseParticipantsByUserId(userId, ct))
+                .ReturnsAsync(hasParticipants
+                    ? new CourseParticipantsDto
+                    {
+                        Name = "Test Course",
+                        Description = "Participants",
+                        Students = [],
+                    }
+                    : null);
+        }
+
+        var controller = CreateController(courseServiceMock, principal);
+
+        // Act
+        var result = await controller.GetMyCourseParticipants(ct);
+
+        // Assert
+        var statusResult = Assert.IsAssignableFrom<IStatusCodeActionResult>(result);
+        Assert.Equal(expectedStatusCode, statusResult.StatusCode);
     }
 
     private static CoursesController CreateController(
