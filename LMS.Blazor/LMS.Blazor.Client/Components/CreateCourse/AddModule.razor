@@ -29,7 +29,7 @@
     </div>
     <div class="row">
         <div class="col-6">
-            <label class="form-label" for="@CreateIdString("start")">Start Date</label>
+            <label class="form-label" for="@CreateIdString("start")">Startdatum</label>
             <InputDate @bind-Value="Module.StartDate"
                        class="form-control"
                        id="@CreateIdString("start")"
@@ -39,7 +39,7 @@
             <ValidationMessage For="() => Module.StartDate" />
         </div>
         <div class="col-6">
-            <label class="form-label" for="@CreateIdString("end")">End Date</label>
+            <label class="form-label" for="@CreateIdString("end")">Slutdatum</label>
             <InputDate @bind-Value="Module.EndDate"
                        class="form-control"
                        id="@CreateIdString("end")"
@@ -57,7 +57,7 @@
     [Parameter] public DateOnly? CourseStart { get; set; }
     [Parameter] public DateOnly? CourseEnd { get; set; }
     private string? _minStart;
-    private string? _maxEnd;    
+    private string? _maxEnd;
 
     [Parameter]
     public int index { get; set; }
@@ -75,8 +75,6 @@
 
     private async Task UpdateDate()
     {
-        Console.WriteLine("updated date - AddModule");
-
         var minDate = PreviousModuleEnd?.AddDays(1) < CourseStart ? PreviousModuleEnd?.AddDays(1) : CourseStart;
         _minStart = minDate?.ToString("yyyy-MM-dd");
 

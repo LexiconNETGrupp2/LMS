@@ -1,6 +1,8 @@
 ﻿@page "/create-course"
 @inject IApiService ApiService
 
+@attribute [Authorize(Roles = RolesNames.Teacher)]
+
 <PageTitle>Skapa Kurs</PageTitle>
 
 <CreateCourseForm Course="_course"
@@ -12,8 +14,14 @@
 @code {
     private CourseFormModel _course;
     private List<string> _overlapErrors = [];
+    private bool _isLoading = false;
 
     protected override void OnInitialized()
+    {
+        InitCourse();
+    }
+
+    private void InitCourse()
     {
         _course = new() { Id = Guid.NewGuid() };
         AddModule();
@@ -33,7 +41,6 @@
         var module = _course.Modules.FirstOrDefault(module => module.ModuleId == id);
         if (module is null) return;
         _course.Modules.Remove(module);
-        Console.WriteLine("Removing module");
     }
 
     private async Task SubmitCourse()
@@ -62,7 +69,18 @@
             )).ToList()
         };
 
-        bool success = await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
+        bool success = false;
+        _isLoading = true;
+        try {
+            await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
+            success = true;
+        } catch (Exception) {
+            success = false;
+        }
+        _isLoading = false;
+        if (success) {
+            InitCourse();
+        }
     }
 
     private void CheckForOverlap()
@@ -72,7 +90,7 @@
         if (_course.StartDate > _course.Modules[i].StartDate) {
             _overlapErrors.Add($"Module {_course.Modules[i].Name} is starting before the course");
         }
-        for (i = 1; i < _course.Modules.Count; i++) {            
+        for (i = 1; i < _course.Modules.Count; i++) {
             if (_course.Modules[i - 1].EndDate >= _course.Modules[i].StartDate) {
                 _overlapErrors.Add($"Modules {_course.Modules[i - 1].Name} and {_course.Modules[i].Name} are overlapping");
             }
