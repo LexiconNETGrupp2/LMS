@@ -129,7 +129,7 @@ public class CoursesController : ControllerBase
     [SwaggerOperation(
     Summary = "Get participants in the current user's course",
     Description = "Retrieves the participants for the course that the currently authenticated user belongs to."
-)]
+    )]
     [SwaggerResponse(StatusCodes.Status200OK)]
     [SwaggerResponse(StatusCodes.Status401Unauthorized)]
     [SwaggerResponse(StatusCodes.Status404NotFound)]
@@ -145,6 +145,20 @@ public class CoursesController : ControllerBase
             return NotFound();
 
         return Ok(dto);
+    }
+
+    [HttpGet("{id:guid}/students")]
+    [Authorize(Roles = RolesNames.Teacher)]
+    [SwaggerOperation(
+    Summary = "Get students in the current course",
+    Description = "Retrieves the students for the course. Require Teacher role"
+    )]
+    [SwaggerResponse(StatusCodes.Status200OK)]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetCourseStudents(Guid id, CancellationToken token)
+    {
+        var students = await _serviceManager.CourseService.GetStudentsByCourseId(id, token);
+        return Ok(students);
     }
 
     private bool IsStudent()

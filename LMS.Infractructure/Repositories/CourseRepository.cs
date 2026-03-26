@@ -2,6 +2,7 @@ using Domain.Contracts.Repositories;
 using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
+using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -123,5 +124,32 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                             RoleName = role.Name
                         })
                         .ToListAsync(token);
+    }
+
+    public async Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token)
+    {
+        var students = await (
+            from course in _context.Courses.AsNoTracking()
+            where course.Id == courseId
+
+            from student in course.Students
+
+            join userRole in _context.Set<IdentityUserRole<string>>().AsNoTracking()
+                on student.Id equals userRole.UserId
+
+            join role in _context.Roles.AsNoTracking()
+                on userRole.RoleId equals role.Id
+
+            where role.Name == RolesNames.Student
+
+            select new CourseStudentDto
+            {
+                Id = student.Id,
+                FullName = (student.FirstName + " " + student.LastName).Trim(),
+                Email = student.Email ?? string.Empty
+            }
+        ).ToListAsync(token);
+
+        return students;
     }
 }

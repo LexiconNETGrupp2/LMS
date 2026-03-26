@@ -149,4 +149,9 @@ public class CourseService : ICourseService
             return false;
         }
     }
+
+    public async Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token)
+    {
+        return await _uow.CourseRepository.GetStudentsByCourseId(courseId, token);
+    }
 }

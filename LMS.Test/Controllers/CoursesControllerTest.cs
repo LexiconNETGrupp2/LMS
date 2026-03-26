@@ -256,6 +256,51 @@ public class CoursesControllerTest
         Assert.Equal(expectedStatusCode, statusResult.StatusCode);
     }
 
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task GetCourseStudents_WhenCalled_ReturnsOkWithStudents()
+    {
+        // Arrange
+        var ct = CancellationToken.None;
+        var courseId = Guid.NewGuid();
+
+        IReadOnlyCollection<CourseStudentDto> expectedStudents =
+        [
+            new CourseStudentDto
+        {
+            Id = "student-1",
+            FullName = "Alice Andersson",
+            Email = "alice@example.com"
+        },
+        new CourseStudentDto
+        {
+            Id = "student-2",
+            FullName = "Bob Berg",
+            Email = "bob@example.com"
+        }
+        ];
+
+        var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+            .Setup(s => s.GetStudentsByCourseId(courseId, ct))
+            .ReturnsAsync(expectedStudents);
+
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.Role, RolesNames.Teacher),
+    ], "TestAuthType"));
+
+        var controller = CreateController(courseServiceMock, principal);
+
+        // Act
+        var result = await controller.GetCourseStudents(courseId, ct);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expectedStudents, okResult.Value);
+        courseServiceMock.Verify(s => s.GetStudentsByCourseId(courseId, ct), Times.Once);
+    }
+
     private static CoursesController CreateController(
         Mock<ICourseService> courseServiceMock,
         ClaimsPrincipal? user = null)
