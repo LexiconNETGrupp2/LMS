@@ -51,7 +51,7 @@ public class ModuleService : IModuleService
         if (course == null)
             throw new NotFoundException("Course not found.");
 
-        ValidateName(createModuleDto.Name);
+        ValidateName(createModuleDto.Name.Trim());
         ValidateDateRange(createModuleDto.StartDate, createModuleDto.EndDate);
         ValidateModuleWithinCourse(createModuleDto.StartDate, createModuleDto.EndDate, course);
         await EnsureModuleDoesNotOverlapAsync(
@@ -61,7 +61,8 @@ public class ModuleService : IModuleService
 
         var module = new Module
         {
-            Name = createModuleDto.Name,
+            Name = createModuleDto.Name.Trim(),
+            Description = createModuleDto.Description.Trim(),
             StartDate = createModuleDto.StartDate,
             EndDate = createModuleDto.EndDate,
             Course = course
@@ -79,7 +80,7 @@ public class ModuleService : IModuleService
         if (module == null)
             throw new NotFoundException("Module not found.");
 
-        ValidateName(updateModuleDto.Name);
+        ValidateName(updateModuleDto.Name.Trim());
         ValidateDateRange(updateModuleDto.StartDate, updateModuleDto.EndDate);
         ValidateModuleWithinCourse(updateModuleDto.StartDate, updateModuleDto.EndDate, module.Course);
         await EnsureModuleDoesNotOverlapAsync(
@@ -88,7 +89,8 @@ public class ModuleService : IModuleService
             updateModuleDto.EndDate,
             module.Id);
 
-        module.Name = updateModuleDto.Name;
+        module.Name = updateModuleDto.Name.Trim();
+        module.Description = updateModuleDto.Description.Trim();
         module.StartDate = updateModuleDto.StartDate;
         module.EndDate = updateModuleDto.EndDate;
 
