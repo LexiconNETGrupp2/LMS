@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LMS.Blazor.Client.Components.CreateCourse;
 
+[ValidatableType]
 public class CourseFormModel
 {
     public Guid? Id { get; set; }

@@ -2,8 +2,42 @@
 
 <PageTitle>Skapa Kurs</PageTitle>
 
-<CreateCourseForm />
+<CreateCourseForm Course="_course"
+                  OnAddModule="AddModule"
+                  OnRemoveModule="RemoveModule"
+                  OnCreateCourse="SubmitCourse" />
 
 @code {
+    private CourseFormModel _course;
 
+    protected override void OnInitialized()
+    {
+        _course = new() { Id = Guid.NewGuid() };
+        AddModule();
+    }
+
+    private void AddModule()
+    {
+        _course.Modules.Add(new() { 
+            ModuleId = Guid.NewGuid(),
+            CourseId = _course.Id
+        });
+    }
+
+    private void RemoveModule(Guid? id)
+    {
+        if (id is null) return;
+        var module = _course.Modules.FirstOrDefault(module => module.ModuleId == id);
+        if (module is null) return;
+        _course.Modules.Remove(module);
+        Console.WriteLine("Removing module");
+    }
+
+    private async Task SubmitCourse()
+    {
+        Console.WriteLine($"CourseId: {_course.Name}");
+        foreach (var module in _course.Modules) {
+            Console.WriteLine($"ModuleId: {module.Name}");
+        }
+    }
 }

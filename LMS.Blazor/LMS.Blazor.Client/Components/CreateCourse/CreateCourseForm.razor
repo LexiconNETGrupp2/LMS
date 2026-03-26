@@ -1,45 +1,60 @@
-﻿<div class="container bg-white">
+﻿<div class="container bg-white py-4 rounded">
     <h1 class="h1 fs-3 fw-bold">Skapa kurs</h1>
-    <EditForm FormName="CreateCourse" Model="_course" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
-        <DataAnnotationsValidator />
+    <EditForm FormName="CreateCourse" Model="Course" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
+        <DataAnnotationsValidator />      
+
         <div class="mb-3">
             <label class="form-label" for="course-name">Kursnamn</label>
             <InputText id="course-name"
-                       @bind-Value="_course.Name"
+                       @bind-Value="Course.Name"
                        class="form-control"
                        placeholder="Namnet på kursen"
                        type="text"
                        autofocus />
+            <ValidationMessage For="() => Course.Name" />
         </div>
 
         <div class="mb-3">
             <label class="form-label" for="course-description">Kursbeskrivning</label>
             <InputTextArea id="course-description"
-                           @bind-Value="_course.Description"
+                           @bind-Value="Course.Description"
                            placeholder="Beskriv kursen"
                            class="form-control"
                            Rows="4" />
+            <ValidationMessage For="() => Course.Description" />
         </div>
 
         <div class="row">
             <div class="col-6">
                 <label class="form-label" for="course-start-date">Start Date</label>
-                <InputDate @bind-Value="_course.StartDate"
+                <InputDate @bind-Value="Course.StartDate"
                            class="form-control"
                            id="course-start-date" />
+                <ValidationMessage For="() => Course.StartDate" />
             </div>
             <div class="col-6">
-                <label class="form-label" for="course-start-date">End Date</label>
-                <InputDate @bind-Value="_course.EndDate"
+                <label class="form-label" for="course-end-date">End Date</label>
+                <InputDate @bind-Value="Course.EndDate"
                            class="form-control"
-                           id="course-start-date" />
+                           id="course-end-date" />
+                <ValidationMessage For="() => Course.EndDate" />
             </div>
         </div>
-        <h3 class="h3 fs-5 fw-bold border-top py-3">Lägg till moduler</h3>
-        @for (int i = 0; i < _course.Modules.Count; i++) {
-            <AddModule @bind-BindingModel="_course.Modules[i]"
-                       OnDelete="RemoveModule" />
+
+        <h3 class="h3 fs-5 fw-bold border-top pt-3">Lägg till moduler</h3>
+        @for (int i = 0; i < Course.Modules.Count; i++) {
+            <AddModule Module="Course.Modules[i]"
+                       OnDelete="OnRemoveModule"
+                       index="i+1"
+                       CourseStart="Course.StartDate"
+                       CourseEnd="Course.EndDate"
+                       PreviousModuleEnd="@(i > 0 ? Course.Modules[i - 1].EndDate : Course.StartDate)"
+                       NextModuleStart="@(i == Course.Modules.Count ? Course.Modules[i+1].StartDate : Course.EndDate)" />
+            <ValidationMessage For="() => Course.Modules[i]" />
         }
+
+        <ValidationSummary class="alert alert-danger" />
+
         <div>
             <button type="button" class="btn btn-link text-decoration-none float-start" @onclick="AddModule">
                 <i class="bi bi-plus-circle"></i>
@@ -51,34 +66,26 @@
 </div>
 
 @code {
-    private CourseFormModel _course = new() { Id = Guid.NewGuid() };
+    [Parameter]
+    public required CourseFormModel Course { get; set; }
 
     [Parameter]
-    public EventCallback<CourseFormModel> OnCreate { get; set; }
+    public EventCallback<CourseFormModel> OnCreateCourse { get; set; }
+
+    [Parameter]
+    public EventCallback OnAddModule { get; set; }
+    [Parameter]
+    public EventCallback<Guid?> OnRemoveModule { get; set; }    
 
     private async Task CreateCourse()
     {
-        if (OnCreate.HasDelegate)
-            await OnCreate.InvokeAsync(_course);
-
-        Console.WriteLine($"CourseId: {_course.Name}");
-        foreach (var module in _course.Modules)
-        {
-            Console.WriteLine($"ModuleId: {module.Name}");
-        }
+        if (OnCreateCourse.HasDelegate)
+            await OnCreateCourse.InvokeAsync(Course);
     }
 
-    private void AddModule()
+    private async Task AddModule()
     {
-        _course.Modules.Add(new() { ModuleId = Guid.NewGuid() });
-        Console.WriteLine("Adding module");
-    }
-
-    private void RemoveModule(Guid? id)
-    {
-        if (id is null) return;
-        var module = _course.Modules.FirstOrDefault(module => module.ModuleId == id);
-        if (module is null) return;
-        _course.Modules.Remove(module);
+        if (OnAddModule.HasDelegate)
+            await OnAddModule.InvokeAsync();
     }
 }
