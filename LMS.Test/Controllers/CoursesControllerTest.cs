@@ -14,6 +14,7 @@ namespace LMS.Test.Controllers;
 public class CoursesControllerTest
 {
     [Fact]
+    [Trait("Layer", "Controller")]
     public async Task GetAll_ReturnsOkWithCourses()
     {
         // Arrange
@@ -42,6 +43,7 @@ public class CoursesControllerTest
     }
 
     [Fact]
+    [Trait("Layer", "Controller")]
     public async Task GetById_WhenCourseIsMissing_ReturnsNotFound()
     {
         // Arrange
@@ -64,6 +66,7 @@ public class CoursesControllerTest
     }
 
     [Fact]
+    [Trait("Layer", "Controller")]
     public async Task GetById_WhenRequestingStudentCourse_ReturnsOkWithCourse()
     {
         // Arrange
@@ -102,6 +105,7 @@ public class CoursesControllerTest
     }
 
     [Fact]
+    [Trait("Layer", "Controller")]
     public async Task GetByUserId_WhenStudentRequestsDifferentUser_ReturnsUnauthorized()
     {
         // Arrange
@@ -127,6 +131,7 @@ public class CoursesControllerTest
     }
 
     [Fact]
+    [Trait("Layer", "Controller")]
     public async Task Create_WhenValid_ReturnsCreated()
     {
         // Arrange
@@ -155,6 +160,7 @@ public class CoursesControllerTest
     }
 
     [Theory]
+    [Trait("Layer", "Controller")]
     [InlineData(true, StatusCodes.Status204NoContent)]
     [InlineData(false, StatusCodes.Status404NotFound)]
     public async Task Delete_WhenCalled_ReturnsExpectedStatusResult(bool deleteSucceeded, int expectedStatusCode)
@@ -179,6 +185,7 @@ public class CoursesControllerTest
     }
 
     [Theory]
+    [Trait("Layer", "Controller")]
     [InlineData("invalid-guid", false, StatusCodes.Status401Unauthorized)]
     [InlineData("11111111-1111-1111-1111-111111111111", false, StatusCodes.Status404NotFound)]
     [InlineData("11111111-1111-1111-1111-111111111111", true, StatusCodes.Status200OK)]
