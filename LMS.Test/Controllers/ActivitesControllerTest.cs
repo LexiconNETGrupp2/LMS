@@ -38,20 +38,20 @@ public class ActivitesControllerTest
                     ModuleId: moduleId
                 )
             ];
-        Mock<IActivityService> activityService = new();
-        activityService
-            .Setup(a => a.GetAllActivities())
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.GetAllActivities())
             .ReturnsAsync(expectedActivities);
         
-        var activityController = CreateController(activityService);
+        var activityController = CreateController(activityServiceMock);
 
         // Act
         var result = await activityController.GetAllActivities();
         
         // Assert
-        Assert.IsType<ActionResult<IEnumerable<ActivityDto>>>(result);
-        Assert.NotNull(result.Value);
-        Assert.NotEmpty(result.Value);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Same(expectedActivities, okResult.Value);
+        activityServiceMock.Verify(s => s.GetAllActivities(), Times.Once);
     } 
 
     private static ActivitiesController CreateController(
