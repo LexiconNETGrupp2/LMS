@@ -145,7 +145,7 @@ public class ModuleService : IModuleService
 
         if (hasOverlap)
         {
-            throw new BadRequestException("Module dates overlap with another module in this course.");
+            throw new BadRequestException("Moduldatum överlappar med en annan modul i den här kursen.");
         }
     }
 }
