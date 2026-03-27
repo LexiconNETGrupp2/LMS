@@ -14,29 +14,31 @@ public static class ExceptionMiddlewareExtetensions
             builder.Run(async context =>
             {
                 var contextFeature = context.Features.Get<IExceptionHandlerFeature>();
-                if (contextFeature != null)
+                var exception = contextFeature?.Error;
+
+                var problemDetailsFactory = app.Services.GetRequiredService<ProblemDetailsFactory>();
+
+                var (statusCode, title, detail) = exception switch
                 {
-                    var problemDetailsFactory = app.Services.GetRequiredService<ProblemDetailsFactory>();
-                    var exception = contextFeature.Error;
+                    BadRequestException badRequest => (StatusCodes.Status400BadRequest, badRequest.Title, badRequest.Message),
+                    NotFoundException notFound => (StatusCodes.Status404NotFound, notFound.Title, notFound.Message),
+                    TokenValidationException tokenEx => (tokenEx.StatusCode, "Unauthorized", tokenEx.Message),
+                    DomainException domainEx => (StatusCodes.Status400BadRequest, domainEx.Title, domainEx.Message),
+                    null => (StatusCodes.Status500InternalServerError, "Internal Server Error", "An unexpected error occurred."),
+                    _ => (StatusCodes.Status500InternalServerError, "Internal Server Error", exception.Message)
+                };
 
-                    var (statusCode, title) = exception switch
-                    {
-                        BadRequestException => (StatusCodes.Status400BadRequest, (exception as BadRequestException)!.Title),
-                        NotFoundException => (StatusCodes.Status404NotFound, (exception as NotFoundException)!.Title),
-                        TokenValidationException tokenEx => (tokenEx.StatusCode, "Unauthorized"),
-                        _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
-                    };
+                var problemDetails = problemDetailsFactory.CreateProblemDetails(
+                    context,
+                    statusCode: statusCode,
+                    title: title,
+                    detail: detail,
+                    instance: context.Request.Path);
 
-                    var problemDetails = problemDetailsFactory.CreateProblemDetails(
-                        context,
-                        statusCode,
-                        title: title,
-                        detail: exception.Message,
-                        instance: context.Request.Path);
+                context.Response.StatusCode = statusCode;
+                context.Response.ContentType = "application/problem+json";
+                await context.Response.WriteAsJsonAsync(problemDetails);
 
-                    context.Response.StatusCode = statusCode;
-                    await context.Response.WriteAsJsonAsync(problemDetails);
-                }
             });
         });
     }
