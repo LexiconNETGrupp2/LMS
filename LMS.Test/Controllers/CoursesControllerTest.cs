@@ -136,13 +136,13 @@ public class CoursesControllerTest
     {
         // Arrange
         var ct = CancellationToken.None;
-        var createCourseDto = new CreateCourseDto(
-            Name: "New Course",
-            Description: "A new course for testing",
-            StartDate: DateOnly.FromDateTime(DateTime.UtcNow),
-            EndDate: DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
-            Modules: []
-        );
+        var createCourseDto = new CreateCourseDto {
+            Name = "New Course",
+            Description = "A new course for testing",
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            EndDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
+            Modules = []
+        };
 
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock

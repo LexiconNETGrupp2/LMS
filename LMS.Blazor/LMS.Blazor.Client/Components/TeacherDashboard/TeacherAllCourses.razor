@@ -1,4 +1,6 @@
-﻿<ul class="list-group shadow-sm p-0">
+﻿@inject NavigationManager NavigationManager
+
+<ul class="list-group shadow-sm p-0">
     <li class="list-group-item">
         <h2 class="h2 fs-5">Alla kurser</h2>
         <p>En översikt över alla aktiva och kommande kurser</p>
@@ -14,9 +16,9 @@
                 <button class="btn btn-primary ms-2" type="submit">Sök</button>
             </EditForm>
             <div>
-                <button class="btn btn-primary">
+                <a class="btn btn-primary" @onclick="GoToCreateCoursePage">
                     <i class="bi bi-plus-circle"></i> Ny kurs
-                </button>
+                </a>
             </div>
         </div>
     </li>
@@ -56,4 +58,7 @@
 
         await SearchCourses.InvokeAsync(_searchStr);
     }
+
+    private void GoToCreateCoursePage()
+        => NavigationManager.NavigateTo("/create-course");
 }
