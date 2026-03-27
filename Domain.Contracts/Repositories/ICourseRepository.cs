@@ -11,4 +11,5 @@ public interface ICourseRepository : IRepositoryBase<Course>
     Task<Course?> GetCourseByIdTracked(Guid id, CancellationToken token);
     Task<Course?> GetCourseFromUserId(Guid userId, CancellationToken token);
     Task<CourseParticipantsReadModel?> GetCourseParticipantsByUserId(Guid userId, CancellationToken token);
+    Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token);
 }

@@ -11,4 +11,5 @@ public interface ICourseService
     Task<bool> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token);
     Task<bool> DeleteCourse(Guid id, CancellationToken token);
     Task<CourseParticipantsDto?> GetCourseParticipantsByUserId(Guid id, CancellationToken token);
+    Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token);
 }
