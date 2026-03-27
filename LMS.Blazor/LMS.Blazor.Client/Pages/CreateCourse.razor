@@ -5,6 +5,15 @@
 
 <PageTitle>Skapa Kurs</PageTitle>
 
+@if (_successMessage is not null) {
+    <div class="container">
+        <div class="alert alert-success alert-dismissible" role="alert">
+            <div>@_successMessage</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}
+
 <CreateCourseForm Course="_course"
                   OnAddModule="AddModule"
                   OnRemoveModule="RemoveModule"
@@ -15,6 +24,7 @@
     private CourseFormModel _course;
     private List<string> _overlapErrors = [];
     private bool _isLoading = false;
+    private string? _successMessage;
 
     protected override void OnInitialized()
     {
@@ -45,15 +55,20 @@
 
     private async Task SubmitCourse()
     {
-        CheckForOverlap();
-        // if (_overlapErrors.Count > 0) {
-        //     Console.Write($"Errors occured: {Environment.NewLine}");
-        //     foreach (var error in _overlapErrors) {
-        //         Console.Write($"- {error}");
-        //         Console.WriteLine();
-        //         return;
-        //     }
-        // }
+        _successMessage = null;
+
+        if (_course.Modules.Count > 0) {
+            CheckForOverlap();
+            if (_overlapErrors.Count > 0) return;
+            // if (_overlapErrors.Count > 0) {
+            //     Console.Write($"Errors occured: {Environment.NewLine}");
+            //     foreach (var error in _overlapErrors) {
+            //         Console.Write($"- {error}");
+            //         Console.WriteLine();
+            //         return;
+            //     }
+            // }
+        }
 
         CreateCourseDto createCourseDto = new() {
             Name = _course.Name,
@@ -69,16 +84,17 @@
             )).ToList()
         };
 
-        bool success = false;
+        bool isSuccess = false;
         _isLoading = true;
         try {
             await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
-            success = true;
+            isSuccess = true;
         } catch (Exception) {
-            success = false;
+            isSuccess = false;
         }
         _isLoading = false;
-        if (success) {
+        if (isSuccess) {
+            _successMessage = $"Kurs {_course.Name} sparad";
             InitCourse();
         }
     }
@@ -88,16 +104,16 @@
         _overlapErrors = [];
         int i = 0;
         if (_course.StartDate > _course.Modules[i].StartDate) {
-            _overlapErrors.Add($"Module {_course.Modules[i].Name} is starting before the course");
+            _overlapErrors.Add($"Modul {_course.Modules[i].Name} startar innan kursen");
         }
         for (i = 1; i < _course.Modules.Count; i++) {
             if (_course.Modules[i - 1].EndDate >= _course.Modules[i].StartDate) {
-                _overlapErrors.Add($"Modules {_course.Modules[i - 1].Name} and {_course.Modules[i].Name} are overlapping");
+                _overlapErrors.Add($"Modul {_course.Modules[i].Name} börjar innan {_course.Modules[i - 1].Name} slutar");
             }
         }
-        i--;
+        i = Math.Max(i - 1, 0);
         if (_course.EndDate < _course.Modules[i].EndDate) {
-            _overlapErrors.Add($"Module {_course.Modules[i].Name} is ending after the course");
+            _overlapErrors.Add($"Modul {_course.Modules[i].Name} slutar efter kursen");
         }
     }
 }
