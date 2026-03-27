@@ -18,10 +18,11 @@
                   OnAddModule="AddModule"
                   OnRemoveModule="RemoveModule"
                   OnCreateCourse="SubmitCourse"
+                  IsLoading="_isLoading"
                   OverlapErrors="_overlapErrors" />
 
 @code {
-    private CourseFormModel _course;
+    private CourseFormModel _course = null!;
     private List<string> _overlapErrors = [];
     private bool _isLoading = false;
     private string? _successMessage;
@@ -77,7 +78,7 @@
             EndDate = (DateOnly)_course.EndDate!,
             Modules = _course.Modules.Select(m => new CreateModuleDto(
                 Name: m.Name,
-                //Description: m.Description,
+                Description: m.Description,
                 StartDate: (DateOnly)m.StartDate!,
                 EndDate: (DateOnly)m.EndDate!,
                 CourseId: (Guid)m.CourseId!

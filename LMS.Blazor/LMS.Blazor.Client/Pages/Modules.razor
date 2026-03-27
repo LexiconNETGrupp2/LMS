@@ -239,6 +239,7 @@
             ModuleId = module.Id,
             CourseId = course.Id,
             Name = module.Name,
+            Description = module.Description,
             StartDate = module.StartDate,
             EndDate = module.EndDate
         };
@@ -293,6 +294,7 @@
             {
                 var updateDto = new UpdateModuleDto(
                     moduleForm.Name.Trim(),
+                    moduleForm.Description.Trim(),
                     moduleForm.StartDate.Value,
                     moduleForm.EndDate.Value);
 
@@ -303,6 +305,7 @@
             {
                 var createDto = new CreateModuleDto(
                     moduleForm.Name.Trim(),
+                    moduleForm.Description.Trim(),
                     moduleForm.StartDate.Value,
                     moduleForm.EndDate.Value,
                     moduleForm.CourseId.Value);
@@ -319,7 +322,7 @@
         {
             submitError = ex.Message;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             submitError = "Ett oväntat fel inträffade när modulen skulle sparas.";
         }
@@ -354,7 +357,7 @@
         {
             loadError = ex.Message;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             loadError = "Ett oväntat fel inträffade när modulen skulle tas bort.";
         }
