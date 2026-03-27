@@ -10,6 +10,7 @@ public class UnitOfWork : IUnitOfWork
     public ICourseRepository CourseRepository => _courseRepository.Value;
     public IModuleRepository Modules => field ??= new ModuleRepository(context);
     public IActivityRepository Activities => field ??= new ActivityRepository(context);
+    public IUserRepository Users => field ??= new UserRepository(context);
 
     public UnitOfWork(ApplicationDbContext context, Lazy<ICourseRepository> courseRepository)
     {

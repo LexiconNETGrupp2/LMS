@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
 using Domain.Models.Entities;
-using LMS.Shared.DTOs;
 using LMS.Shared.DTOs.ActivityDtos;
 using LMS.Shared.DTOs.AuthDtos;
 using LMS.Shared.DTOs.CourseDtos;
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.DTOs.UserDtos;
 
 namespace LMS.Infractructure.Data;
 
