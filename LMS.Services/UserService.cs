@@ -23,18 +23,19 @@ public class UserService : IUserService
         return users.Select(MapToUserDto).ToList();
     }
 
-    public async Task<UserDto?> GetUserById(string id)
+    public async Task<UserDto> GetUserById(string id)
     {
         var user = await _uow.Users.GetByIdWithCourseAsync(id, CancellationToken.None);
-        return user is null ? null : MapToUserDto(user);
+        if (user == null)
+            throw new UserNotFoundException();
+        return MapToUserDto(user);
     }
 
-    public async Task DeleteUser(string id, CancellationToken ct)
+    public async Task DeleteUser(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
-        if (user == null) {
-            throw new NotFoundException("User not found");
-        }
+        if (user == null)
+            throw new UserNotFoundException();
         await _userManager.DeleteAsync(user);
     }
 
