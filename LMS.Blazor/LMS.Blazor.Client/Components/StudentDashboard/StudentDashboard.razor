@@ -1,76 +1,86 @@
-﻿<div class="container py-3">
-  <div class="row mb-3">
-    <div class="col">
-      <h5 class="mb-1">Välkommen tillbaka!</h5>
-      <small class="text-muted">Veckans aktiviteter</small>
-    </div>
-    <div class="col-auto align-self-center">
-      <button class="btn btn-sm btn-outline-primary">Visa alla</button>
-    </div>
-  </div>
+﻿@attribute [Authorize]
 
-  <div class="row">
-    <div class="col-lg-8">
-      <div class="card mb-3">
-        <div class="card-body p-2">
-          <ActivityList Items="@ActivityItems" />
+<div class="container py-3">
+    <div class="row mb-3">
+        <div class="col">
+            <h5 class="mb-1">Välkommen tillbaka!</h5>
+            <small class="text-muted">Veckans aktiviteter</small>
         </div>
-      </div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="row g-3">
+    <div class="row mb-3">
         <div class="col-12">
-          <div class="card">
-            <div class="card-body">
-              <h6 class="card-title">Kommande inlämningar</h6>
-              <UpcomingSubmissions Items="@SubmissionItems" />
+            <div class="card mb-0">
+                <div class="card-body p-2">
+                    <ActivityList Activities="activities" ModuleId="moduleId" />
+                </div>
             </div>
-          </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6 col-12">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Kommande inlämningar</h6>
+                    <UpcomingSubmissions Items="@SubmissionItems" />
+                </div>
+            </div>
         </div>
 
-        <div class="col-12">
-          <div class="card">
-            <div class="card-body">
-              <h6 class="card-title">Modulfremsteg</h6>
-              <ModuleProgress Items="@ProgressItems" />
+        <div class="col-lg-6 col-12">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Modulfremsteg</h6>
+                    <ModuleProgress Items="@ProgressItems" />
+                </div>
             </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
 @code {
-    // private IReadOnlyCollection<CourseDto>? courses;
-    
+    private const string guidStr = "11111111-2222-3333-4444-555555555555";
+    private readonly Guid moduleId = Guid.Parse(guidStr); // example module id
 
-    // public sealed record ActivityDto(
-    //     Guid Id,
-    //     string Name,
-    //     string Description,
-    //     DateTime StartDate,
-    //     DateTime EndDate,
-    //     ActivityTypeDto Type,
-    //     Guid ModuleId
-    // );
-
-
-    // Sample static data (replace with injected data/service later)
-    // private List<ActivityDto> ActivityItems = new()
-    // {
-    //     new("Kurs: Introduktion till AI", "Inlämning 2 • 2 dagar", "Ny"),
-    //     new("Quiz: Backendkunskap", "Öppen • 3 dagar"),
-    //     new("Read: React hooks", "Lästid 10 min"),
-    //     new(Guid.NewGuid(), "Forum: Feedback", "3 nya svar")
-    // };
-    private List<ActivityItem> ActivityItems = new()
+    private IEnumerable<ActivityDto> activities = new List<ActivityDto>
     {
-        new("Kurs: Introduktion till AI", "Inlämning 2 • 2 dagar", "Ny"),
-        new("Quiz: Backendkunskap", "Öppen • 3 dagar"),
-        new("Read: React hooks", "Lästid 10 min"),
-        new("Forum: Feedback", "3 nya svar")
+        new ActivityDto(
+            Id: Guid.NewGuid(),
+            Name: "Introduktion till React",
+            Description: "Föreläsning om React - intro",
+            StartDate: new DateTime(2023,9,4,9,0,0),
+            EndDate:   new DateTime(2023,9,4,12,0,0),
+            Type: new ActivityTypeDto("Föreläsning"),
+            ModuleId: Guid.Parse(guidStr)
+        ),
+        new ActivityDto(
+            Id: Guid.NewGuid(),
+            Name: "React komponenter",
+            Description: "Övning: bygge av komponenter",
+            StartDate: new DateTime(2023,9,5,9,0,0),
+            EndDate:   new DateTime(2023,9,5,12,0,0),
+            Type: new ActivityTypeDto("Övning"),
+            ModuleId: Guid.Parse(guidStr)
+        ),
+        new ActivityDto(
+            Id: Guid.NewGuid(),
+            Name: "React Hooks",
+            Description: "E-learning om hooks",
+            StartDate: new DateTime(2023,9,6,9,0,0),
+            EndDate:   new DateTime(2023,9,6,12,0,0),
+            Type: new ActivityTypeDto("E-learning"),
+            ModuleId: Guid.Parse(guidStr)
+        ),
+        new ActivityDto(
+            Id: Guid.NewGuid(),
+            Name: "React applikation",
+            Description: "Inlämning av uppgift",
+            StartDate: new DateTime(2023,9,8,0,0,0),
+            EndDate:   new DateTime(2023,9,8,23,59,0),
+            Type: new ActivityTypeDto("Inlämning"),
+            ModuleId: Guid.Parse(guidStr)
+        )
     };
 
     private List<SubmissionItem> SubmissionItems = new()

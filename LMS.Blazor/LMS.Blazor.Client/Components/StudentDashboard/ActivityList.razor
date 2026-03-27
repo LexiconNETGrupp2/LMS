@@ -1,20 +1,82 @@
-﻿<ul class="list-group list-group-flush">
-@foreach (var it in Items)
-{
-  <li class="list-group-item py-2 d-flex justify-content-between align-items-start">
-    <div>
-      <div class="fw-semibold">@it.Title</div>
-      <small class="text-muted">@it.Meta</small>
+﻿@using System.Globalization
+
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Veckans aktiviteter</h5>
+
+
+        <span class="badge rounded-pill d-inline-flex align-items-center"
+              style="background-color:#eef6ff;color:#0d6efd;font-size:0.95rem;padding:.35rem .65rem;">
+            <i class="bi bi-calendar3 me-1" aria-hidden="true"></i>
+            Vecka @GetIso8601WeekOfYear(DateTime.Now)
+        </span>
+
     </div>
-    @if (!string.IsNullOrEmpty(it.Badge))
-    {
-      <span class="badge bg-primary align-self-center">@it.Badge</span>
-    }
-  </li>
-}
-</ul>
+
+    <div class="card border-0 rounded-0">
+        <div class="card-body py-0 px-0">
+            <div class="w-100 d-flex align-items-center" style="background-color:#eef6ff;color:#0d6efd;padding:.5rem .75rem;">
+                <i class="bi bi-book me-2" aria-hidden="true" style="color:inherit;"></i>
+            <div style="font-size:0.95rem;">Modul: Javascript</div>
+        </div>
+
+            <div class="list-group list-group-flush">
+                @foreach (var a in Activities.Where(x => x.ModuleId == ModuleId).OrderBy(x => x.StartDate))
+                {
+                    <div class="list-group-item px-0 py-2 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <span class="badge rounded-pill me-2" style="@GetBadgeStyle(a.Type.Name)">@a.Type.Name</span>
+                                <div class="fw-medium">@a.Name</div>
+                            </div>
+
+                            <div class="text-end small d-flex align-items-center">
+                                <i class="bi bi-file-earmark-text text-primary me-1" aria-hidden="true"></i>
+                                <div class="text-primary me-3">Dokument</div>
+                                @if (a.Type.Name == "Inlämning")
+                                {
+                                    <div class="small text-warning">Ej inlämnad</div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="text-muted small mt-2 d-flex align-items-center">
+                            <i class="bi bi-calendar3 text-muted me-2" aria-hidden="true"></i>
+                            <div>@a.StartDate.ToString("yyyy-MM-dd")</div>
+
+                            <div class="mx-3"> &middot; </div>
+
+                            <i class="bi bi-clock text-muted me-2" aria-hidden="true"></i>
+                            <div>@a.StartDate.ToString("HH:mm", CultureInfo.InvariantCulture) - @a.EndDate.ToString("HH:mm", CultureInfo.InvariantCulture)</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
-    [Parameter]
-    public List<ActivityItem> Items { get; set; } = [];
+    [Parameter] public IEnumerable<ActivityDto> Activities { get; set; } = Array.Empty<ActivityDto>();
+    [Parameter] public Guid ModuleId { get; set; }
+
+    private string GetBadgeStyle(string typeName) =>
+        "background-color:#eef6ff;color:#0d6efd;font-size:0.75rem;padding:.25rem .5rem;";
+
+    // private string GetBadgeStyle(string typeName) =>
+    //     typeName switch
+    //     {
+    //         "Föreläsning" => "background-color:#eef6ff;color:#0d6efd;font-size:0.75rem;padding:.25rem .5rem;",
+    //         "Övning"      => "background-color:#eef6ff;color:#0d6efd;font-size:0.75rem;padding:.25rem .5rem;",
+    //         "E-learning"  => "background-color:#eef6ff;color:#0d6efd;font-size:0.75rem;padding:.25rem .5rem;",
+    //         "Inlämning"   => "background-color:#ffeedd;color:#d39e00;font-size:0.75rem;padding:.25rem .5rem;",
+    //         _             => "background-color:#f8f9fa;color:#6c757d;font-size:0.75rem;padding:.25rem .5rem;"
+    //     };
+
+    // ISO 8601 week number (Monday as first day, week with Jan 4th is week 1)
+    private int GetIso8601WeekOfYear(DateTime time)
+    {
+        var cal = CultureInfo.InvariantCulture.Calendar;
+        return cal.GetWeekOfYear(time, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+    }
 }
