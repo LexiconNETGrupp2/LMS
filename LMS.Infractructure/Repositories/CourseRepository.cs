@@ -47,6 +47,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         return await _context.Courses
                         .AsNoTracking()
                         .Include(c => c.Modules)
+                            .ThenInclude(m => m.Activities)
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(c => c.Id == id, token);
     }
