@@ -1,4 +1,7 @@
-﻿@page "/CourseOverviewTeacher"
+﻿@page "/CourseOverviewTeacher/{courseId:guid}/{activeTab?}"
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@attribute [Authorize(Roles = RolesNames.Teacher)]
 
 @using LMS.Blazor.Client.Components.TeacherCourseOverview
 @using LMS.Blazor.Client.Components.TeacherCourseOverview.ModulesComponents
@@ -16,7 +19,7 @@
 
 <CourseTabs Tabs="_tabs" OnTabChanged="HandleTabChanged" />
 
-@if (_activeTab == "Översikt")
+@if (ActiveTab == "Översikt")
 {
     <div class="container-fluid px-0">
         <div class="row g-4 mb-4">
@@ -32,21 +35,21 @@
         <RecentActivitiesCard Activities="_activities" />
     </div>
 }
-else if (_activeTab == "Moduler")
+else if (ActiveTab == "Moduler")
 {
     <ModulesSection Modules="_courseModules" />
 }
-else if (_activeTab == "Inlämningar")
+else if (ActiveTab == "Inlämningar")
 {
     <div class="alert alert-light border rounded-4">
         Inlämningar kommer här.
     </div>
 }
-else if (_activeTab == "Studenter")
+else if (ActiveTab == "Studenter")
 {
     <StudentsSection Students="_students" />
 }
-else if (_activeTab == "Dokument")
+else if (ActiveTab == "Dokument")
 {
     <div class="alert alert-light border rounded-4">
         Dokument kommer här.
@@ -54,7 +57,10 @@ else if (_activeTab == "Dokument")
 }
 
 @code {
-    private string _activeTab = "Översikt";
+    [Parameter]
+    public Guid CourseId { get; set; }
+    [Parameter]
+    public string ActiveTab { get; set; } = "Översikt";
 
     private List<CourseTabs.CourseTabItem> _tabs = new()
     {
@@ -72,11 +78,11 @@ else if (_activeTab == "Dokument")
         new() { Name = "React", Progress = 20 }
     };
 
-    private CourseStatisticsModel _statistics = new()
+    private CourseStatisticsModel _statistics => new()
     {
         Modules = 3,
         Activities = 11,
-        Students = 5,
+        Students = _students.Count,
         Submissions = 3
     };
 
@@ -155,44 +161,25 @@ else if (_activeTab == "Dokument")
         }
     };
 
-    private List<StudentListItemModel> _students = new()
+    private List<StudentListItemModel> _students = [];
+
+    protected override async Task OnInitializedAsync()
     {
-        new()
+        _students = await LoadCourseStudents(CourseId);
+    }
+
+    private async Task<List<StudentListItemModel>> LoadCourseStudents(Guid courseId)
+    {
+        var uri = $"api/courses/{courseId}/students";
+        var students = await ApiService.GetAsync<List<CourseStudentDto>>(uri) ?? [];
+        return students.Select(s => new StudentListItemModel
         {
-            Name = "Anna Andersson",
-            Email = "anna.andersson@example.com",
-            ProgressPercent = 78,
-            LastActive = new DateTime(2023, 9, 10)
-        },
-        new()
-        {
-            Name = "Erik Eriksson",
-            Email = "erik.eriksson@example.com",
-            ProgressPercent = 65,
-            LastActive = new DateTime(2023, 9, 9)
-        },
-        new()
-        {
-            Name = "Maria Svensson",
-            Email = "maria.svensson@example.com",
-            ProgressPercent = 92,
-            LastActive = new DateTime(2023, 9, 11)
-        },
-        new()
-        {
-            Name = "Johan Nilsson",
-            Email = "johan.nilsson@example.com",
-            ProgressPercent = 45,
-            LastActive = new DateTime(2023, 9, 8)
-        },
-        new()
-        {
-            Name = "Sara Lindberg",
-            Email = "sara.lindberg@example.com",
-            ProgressPercent = 83,
-            LastActive = new DateTime(2023, 9, 10)
-        }
-    };
+            Name = s.FullName,
+            Email = s.Email,
+            ProgressPercent = Random.Shared.Next(0, 100), // TODO: Replace with real progress data
+            LastActive = new DateTime(2000, 1, 1), // TODO: Replace with real last active data
+        }).ToList();
+    }
 
     private void HandleEditCourse()
     {
@@ -201,6 +188,7 @@ else if (_activeTab == "Dokument")
 
     private void HandleTabChanged(string tabLabel)
     {
-        _activeTab = tabLabel;
+        ActiveTab = tabLabel;
+        Navigation.NavigateTo($"/CourseOverviewTeacher/{CourseId}/{ActiveTab}");
     }
 }
