@@ -2,6 +2,7 @@ using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
+using Domain.Models.Exceptions;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ public class CourseService : ICourseService
             return true;
         } catch (Exception ex) {
             _logger.LogWarning("Error when adding course {CourseId} to database: {ExMessage}", course.Id, ex.Message);
-            return false;
+            throw new BadRequestException(ex.Message);
         }
     }    
 
@@ -47,13 +48,12 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto?> GetCourseById(Guid id, string? currentStudentId, CancellationToken token)
     {
-        var course = await _uow.CourseRepository.GetCourseById(id, token);
-        if (course is null) return null;
+        var course = await _uow.CourseRepository.GetCourseById(id, token)
+            ?? throw new CourseNotFoundException(id);
         
         var userIds = course.Students.Select(u => u.Id);
         if (currentStudentId is not null && !userIds.Contains(currentStudentId))
-            return null;
-
+            throw new UserUnauthorizedException();
 
         var courseDto = _mapper.Map<CourseDto>(course);
         return courseDto;
@@ -61,17 +61,17 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto?> GetCourseByUserId(Guid id, CancellationToken token)
     {
-        var course = await _uow.CourseRepository.GetCourseFromUserId(id, token);
-        if (course is null) return null;
+        var course = await _uow.CourseRepository.GetCourseFromUserId(id, token)
+            ?? throw new CourseNotFoundException(id);
+
         var courseDto = _mapper.Map<CourseDto>(course);
         return courseDto;
     }
 
     public async Task<CourseParticipantsDto?> GetCourseParticipantsByUserId(Guid id, CancellationToken token)
     {
-        var courseParticipants = await _uow.CourseRepository.GetCourseParticipantsByUserId(id, token);
-        if (courseParticipants is null)
-            return null;
+        var courseParticipants = await _uow.CourseRepository.GetCourseParticipantsByUserId(id, token)
+            ?? throw new CourseNotFoundException(id);
 
         var roleByUserId = courseParticipants.ParticipantRoles
                         .GroupBy(role => role.UserId)
@@ -109,8 +109,8 @@ public class CourseService : ICourseService
 
     public async Task<bool> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
-        Course? course = await _uow.CourseRepository.GetCourseById(id, token); 
-        if (course is null) return false;
+        Course? course = await _uow.CourseRepository.GetCourseById(id, token)
+            ?? throw new CourseNotFoundException(id);
         
         if (updateCourseDto.Name is not null) {
             course.Name = updateCourseDto.Name;
@@ -131,14 +131,14 @@ public class CourseService : ICourseService
             return true;
         } catch (Exception ex) {
             _logger.LogWarning("Error when updating course {CourseId}: {ExMessage}", id, ex.Message);
-            return false;
+            throw new BadRequestException(ex.Message);
         }
     }
 
     public async Task<bool> DeleteCourse(Guid id, CancellationToken token)
     {
-        Course? course = await _uow.CourseRepository.GetCourseById(id, token);
-        if (course is null) return false;
+        Course? course = await _uow.CourseRepository.GetCourseById(id, token)
+            ?? throw new CourseNotFoundException(id);
 
         try {
             _uow.CourseRepository.Delete(course);
@@ -146,7 +146,7 @@ public class CourseService : ICourseService
             return true;
         } catch (Exception ex) {
             _logger.LogWarning("Could not delete course {CourseId}: {ExMessage}", id, ex.Message);
-            return false;
+            throw new BadRequestException(ex.Message);
         }
     }
 

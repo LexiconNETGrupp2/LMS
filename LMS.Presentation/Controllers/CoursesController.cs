@@ -50,12 +50,10 @@ public class CoursesController : ControllerBase
     {
         // If a student is requesting a course they're not in, return 401
         string? currentStudentId = null;
-        if (IsStudent()) currentStudentId = GetCurrentUserId();
+        if (IsStudent()) 
+            currentStudentId = GetCurrentUserId();
 
         var courseDto = await _serviceManager.CourseService.GetCourseById(id, currentStudentId, token);
-        if (courseDto is null) {
-            return NotFound();
-        }
         return Ok(courseDto);
     }
 
@@ -73,12 +71,18 @@ public class CoursesController : ControllerBase
         // If a student is requesting someone else's courses, return 401
         if (IsStudentGettingUnauthorizedCourse(id)) 
         {
-            return Unauthorized();
+            return Unauthorized(new ProblemDetails {
+                Title = "Unauthorized",
+                Detail = "You're not authorized to get this course"
+            });
         }
 
         var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, token);
         if (courseDto is null) {
-            return NotFound();
+            return NotFound(new ProblemDetails {
+                Title = "Course not found",
+                Detail = $"No course with id '{id}' was found."
+            });
         }
         return Ok(courseDto);
     }
@@ -94,7 +98,9 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
     {
         bool success = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
-        return success ? Created() : BadRequest();
+        return success ? Created() : BadRequest(new ProblemDetails {
+            Title = "Course could not be created"
+        });
     }
 
     [HttpPatch("{id:guid}")]
@@ -108,7 +114,10 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseDto updateCourseDto, CancellationToken token)
     {
         bool success = await _serviceManager.CourseService.UpdateCourse(id, updateCourseDto, token);
-        return success ? NoContent() : BadRequest();
+        return success ? NoContent() : BadRequest(new ProblemDetails {
+            Title = "Course could not be updated",
+            Detail = $"Course with id '{id}' could not be updated"
+        });
     }
 
     [HttpDelete("{id:guid}")]
@@ -122,7 +131,10 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Delete(Guid id, CancellationToken token)
     {
         bool success = await _serviceManager.CourseService.DeleteCourse(id, token);
-        return success ? NoContent() : NotFound();
+        return success ? NoContent() : NotFound(new ProblemDetails {
+            Title = "Course could not be deleted",
+            Detail = $"Course with id '{id}' could not be deleted"
+        });
     }
 
     [HttpGet("me/participants")]
@@ -137,12 +149,14 @@ public class CoursesController : ControllerBase
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (!Guid.TryParse(userIdClaim, out var userId))
-            return Unauthorized();
+        if (!Guid.TryParse(userIdClaim, out var userId)) {
+            return Unauthorized(new ProblemDetails {
+                Title = "Unauthorized",
+                Detail = "You're not allowed get the participants for this course"
+            });
+        }
 
         var dto = await _serviceManager.CourseService.GetCourseParticipantsByUserId(userId, token);
-        if (dto is null)
-            return NotFound();
 
         return Ok(dto);
     }
