@@ -1,12 +1,11 @@
-﻿using Domain.Models.Entities;
+﻿using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.DTOs.ActivityDtos;
+using LMS.Test.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Service.Contracts;
-using System.Security.Claims;
 
 namespace LMS.Test.Controllers;
 
@@ -19,31 +18,15 @@ public class ActivitesControllerTest
         // Arrange
         Guid moduleId = Guid.NewGuid();
         List<ActivityDto> expectedActivities = [
-                new(
-                    Id: Guid.NewGuid(),
-                    Name: "aktivitet 1",
-                    Description: "aaa",
-                    StartDate: DateTime.Now,
-                    EndDate: DateTime.Now.AddHours(2),
-                    Type: new(Name: "Document"),
-                    ModuleId: moduleId
-                ),
-                new(
-                    Id: Guid.NewGuid(),
-                    Name: "aktivitet 2",
-                    Description: "bbb",
-                    StartDate: DateTime.Now.AddHours(2),
-                    EndDate: DateTime.Now.AddHours(4),
-                    Type: new(Name: "Document"),
-                    ModuleId: moduleId
-                )
+                ActivityHelpers.GenerateActivityDto(moduleId),
+                ActivityHelpers.GenerateActivityDto(moduleId)
             ];
         Mock<IActivityService> activityServiceMock = new();
         activityServiceMock
             .Setup(s => s.GetAllActivities())
             .ReturnsAsync(expectedActivities);
         
-        var activityController = CreateController(activityServiceMock);
+        ActivitiesController activityController = ActivityHelpers.CreateController(activityServiceMock);
 
         // Act
         var result = await activityController.GetAllActivities();
@@ -52,23 +35,118 @@ public class ActivitesControllerTest
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Same(expectedActivities, okResult.Value);
         activityServiceMock.Verify(s => s.GetAllActivities(), Times.Once);
-    } 
+    }
 
-    private static ActivitiesController CreateController(
-        Mock<IActivityService> activityServiceMock,
-        ClaimsPrincipal? user = null)
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task GetActivityById_ReturnsOkWithActivity()
     {
-        var serviceManagerMock = new Mock<IServiceManager>();
-        serviceManagerMock.SetupGet(s => s.ActivityService).Returns(activityServiceMock.Object);
+        ActivityDto activityDto = ActivityHelpers.GenerateActivityDto();
+        Guid activityId = activityDto.Id;
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.GetActivityById(activityId))
+            .ReturnsAsync(activityDto);
+        ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
 
-        var controller = new ActivitiesController(serviceManagerMock.Object) {
-            ControllerContext = new ControllerContext {
-                HttpContext = new DefaultHttpContext {
-                    User = user ?? new ClaimsPrincipal(new ClaimsIdentity()),
-                }
-            },
-        };
+        var response = await controller.GetActivityById(activityId);
 
-        return controller;
+        var okResult = Assert.IsType<OkObjectResult>(response.Result);
+        Assert.Equal(activityDto, okResult.Value);
+        activityServiceMock.Verify(s => s.GetActivityById(activityId), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task GetActivityById_Whenunknown_ReturnsNotFound()
+    {
+        Guid id = Guid.NewGuid();
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.GetActivityById(id))
+            .ReturnsAsync((ActivityDto?)null);
+        
+        ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
+
+        var response = await controller.GetActivityById(id);
+
+        var notFoundResult = Assert.IsType<NotFoundResult>(response.Result);
+        Assert.Equal(StatusCodes.Status404NotFound, notFoundResult.StatusCode);
+        activityServiceMock.Verify(s => s.GetActivityById(id), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task GetActivitiesByModuleId_WhenCalled_ReturnsOkWithActivities()
+    {
+        Guid moduleId = Guid.NewGuid();
+        List<ActivityDto> activities = [
+            ActivityHelpers.GenerateActivityDto(moduleId),
+            ActivityHelpers.GenerateActivityDto(moduleId),
+            ActivityHelpers.GenerateActivityDto(moduleId)
+        ];
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.GetActivitiesFromModuleId(moduleId))
+            .ReturnsAsync(activities);
+        ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
+
+        var reponse = await controller.GetActivitiesByModuleId(moduleId);
+
+        var okResult = Assert.IsType<OkObjectResult>(reponse.Result);
+        Assert.Same(activities, okResult.Value);
+        activityServiceMock.Verify(s => s.GetActivitiesFromModuleId(moduleId), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task CreateActivity_WhenValid_ReturnsCreated()
+    {
+        Guid moduleId = Guid.NewGuid();
+        CreateActivityDto createActivityDto = ActivityHelpers.GenerateCreateActivityDto(moduleId);
+        ActivityDto activityDto = ActivityHelpers.GenerateActivityDto(moduleId);
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.CreateActivity(createActivityDto))
+            .ReturnsAsync(activityDto);
+        ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
+
+        var response = await controller.CreateActivity(createActivityDto);
+
+        var createdResult = Assert.IsType<CreatedAtActionResult>(response);
+        Assert.Equal(activityDto, createdResult.Value);
+        activityServiceMock.Verify(s => s.CreateActivity(createActivityDto), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task CreateActivity_WhenModuleNotFound_ThrowsNotFoundException()
+    {
+        CreateActivityDto createActivityDto = ActivityHelpers.GenerateCreateActivityDto();
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.CreateActivity(createActivityDto))
+            .Throws(new NotFoundException("Module not found"));
+        ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
+
+        await Assert.ThrowsAsync<NotFoundException>(
+            async () => await controller.CreateActivity(createActivityDto)
+        );
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task CreateActivity_WhenInvalid_ThrowsException()
+    {
+        CreateActivityDto createActivityDto = ActivityHelpers.GenerateCreateActivityDto();
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.CreateActivity(createActivityDto))
+            .Throws(new Exception("Something went wrong"));
+        ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
+
+        await Assert.ThrowsAsync<Exception>(
+            async () => await controller.CreateActivity(createActivityDto)
+        );
     }
 }
