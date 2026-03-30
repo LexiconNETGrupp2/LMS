@@ -119,9 +119,15 @@ else
             }
             else
             {
-                _statistics = new();
-                _moduleProgress = new();
+                NavigationManager.NavigateTo("/not-found");
+                return;
             }
+
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/not-found");
+            return;
         }
         finally
         {
