@@ -3,5 +3,5 @@
 public class CourseNotFoundException : NotFoundException
 {
     public CourseNotFoundException() : base("Course not found") { }
-    public CourseNotFoundException(Guid id) : base($"Course {id} not found") { }
+    public CourseNotFoundException(Guid id) : base($"No course with '{id}' was found.") { }
 }

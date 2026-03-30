@@ -6,7 +6,7 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext context;
     
-    public ICourseRepository CourseRepository => field ??= new CourseRepository(context);
+    public ICourseRepository Courses => field ??= new CourseRepository(context);
     public IModuleRepository Modules => field ??= new ModuleRepository(context);
     public IActivityRepository Activities => field ??= new ActivityRepository(context);
     public IUserRepository Users => field ??= new UserRepository(context);

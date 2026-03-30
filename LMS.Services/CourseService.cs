@@ -30,7 +30,7 @@ public class CourseService : ICourseService
             module.Course = course;
         }
         try {
-            _uow.CourseRepository.Create(course);
+            _uow.Courses.Create(course);
             await _uow.CompleteAsync(token);
             return true;
         } catch (Exception ex) {
@@ -41,14 +41,14 @@ public class CourseService : ICourseService
 
     public async Task<IReadOnlyCollection<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
-        IReadOnlyCollection<Course> courses = await _uow.CourseRepository.GetAllCourses(param, token);
+        IReadOnlyCollection<Course> courses = await _uow.Courses.GetAllCourses(param, token);
         var courseDtos = _mapper.Map<IReadOnlyCollection<CourseDto>>(courses);
         return courseDtos ?? [];
     }
 
     public async Task<CourseDto?> GetCourseById(Guid id, string? currentStudentId, CancellationToken token)
     {
-        var course = await _uow.CourseRepository.GetCourseById(id, token)
+        var course = await _uow.Courses.GetCourseById(id, token)
             ?? throw new CourseNotFoundException(id);
         
         var userIds = course.Students.Select(u => u.Id);
@@ -61,7 +61,7 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto?> GetCourseByUserId(Guid id, CancellationToken token)
     {
-        var course = await _uow.CourseRepository.GetCourseFromUserId(id, token)
+        var course = await _uow.Courses.GetCourseFromUserId(id, token)
             ?? throw new CourseNotFoundException(id);
 
         var courseDto = _mapper.Map<CourseDto>(course);
@@ -70,7 +70,7 @@ public class CourseService : ICourseService
 
     public async Task<CourseParticipantsDto?> GetCourseParticipantsByUserId(Guid id, CancellationToken token)
     {
-        var courseParticipants = await _uow.CourseRepository.GetCourseParticipantsByUserId(id, token)
+        var courseParticipants = await _uow.Courses.GetCourseParticipantsByUserId(id, token)
             ?? throw new CourseNotFoundException(id);
 
         var roleByUserId = courseParticipants.ParticipantRoles
@@ -109,7 +109,7 @@ public class CourseService : ICourseService
 
     public async Task<bool> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
-        Course? course = await _uow.CourseRepository.GetCourseById(id, token)
+        Course? course = await _uow.Courses.GetCourseById(id, token)
             ?? throw new CourseNotFoundException(id);
         
         if (updateCourseDto.Name is not null) {
@@ -126,7 +126,7 @@ public class CourseService : ICourseService
         }
 
         try {
-            _uow.CourseRepository.Update(course);
+            _uow.Courses.Update(course);
             await _uow.CompleteAsync(token);
             return true;
         } catch (Exception ex) {
@@ -137,11 +137,11 @@ public class CourseService : ICourseService
 
     public async Task<bool> DeleteCourse(Guid id, CancellationToken token)
     {
-        Course? course = await _uow.CourseRepository.GetCourseById(id, token)
+        Course? course = await _uow.Courses.GetCourseById(id, token)
             ?? throw new CourseNotFoundException(id);
 
         try {
-            _uow.CourseRepository.Delete(course);
+            _uow.Courses.Delete(course);
             await _uow.CompleteAsync(token);
             return true;
         } catch (Exception ex) {
@@ -152,6 +152,6 @@ public class CourseService : ICourseService
 
     public async Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token)
     {
-        return await _uow.CourseRepository.GetStudentsByCourseId(courseId, token);
+        return await _uow.Courses.GetStudentsByCourseId(courseId, token);
     }
 }

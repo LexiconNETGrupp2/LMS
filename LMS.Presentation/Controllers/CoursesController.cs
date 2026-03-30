@@ -77,13 +77,7 @@ public class CoursesController : ControllerBase
             });
         }
 
-        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, token);
-        if (courseDto is null) {
-            return NotFound(new ProblemDetails {
-                Title = "Course not found",
-                Detail = $"No course with id '{id}' was found."
-            });
-        }
+        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, token);        
         return Ok(courseDto);
     }
 
@@ -98,9 +92,7 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
     {
         bool success = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
-        return success ? Created() : BadRequest(new ProblemDetails {
-            Title = "Course could not be created"
-        });
+        return Created();
     }
 
     [HttpPatch("{id:guid}")]
@@ -114,10 +106,7 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseDto updateCourseDto, CancellationToken token)
     {
         bool success = await _serviceManager.CourseService.UpdateCourse(id, updateCourseDto, token);
-        return success ? NoContent() : BadRequest(new ProblemDetails {
-            Title = "Course could not be updated",
-            Detail = $"Course with id '{id}' could not be updated"
-        });
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
@@ -131,10 +120,7 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Delete(Guid id, CancellationToken token)
     {
         bool success = await _serviceManager.CourseService.DeleteCourse(id, token);
-        return success ? NoContent() : NotFound(new ProblemDetails {
-            Title = "Course could not be deleted",
-            Detail = $"Course with id '{id}' could not be deleted"
-        });
+        return NoContent();
     }
 
     [HttpGet("me/participants")]
