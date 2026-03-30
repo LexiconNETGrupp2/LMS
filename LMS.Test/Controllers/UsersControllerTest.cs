@@ -1,4 +1,5 @@
 using LMS.Presentation.Controllers;
+using LMS.Shared;
 using LMS.Shared.DTOs.UserDtos;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -15,28 +16,36 @@ public class UsersControllerTest
         // Arrange
         var ct = CancellationToken.None;
         var userServiceMock = new Mock<IUserService>();
-        List<UserDto> expectedUsers = [
-            new()
+        var expectedUsers = new PagedResult<UserDto>
+        {
+            Page = 1,
+            PageSize = 20,
+            TotalItems = 1,
+            Items = new List<UserDto>()
             {
-                Id = Guid.NewGuid().ToString(),
-                Email = "test@example.com",
-                FirstName = "Test",
-                LastName = "Testsson",
+                new()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Email = "test@example.com",
+                    FirstName = "Test",
+                    LastName = "Testsson",
+                },
             },
-        ];
+        };
+        PagedQuery query = new() { Page = 1, PageSize = 20 };
         userServiceMock
-            .Setup(s => s.GetAllUsers(ct))
+            .Setup(s => s.GetAllUsers(query, ct))
             .ReturnsAsync(expectedUsers);
 
         var controller = CreateController(userServiceMock);
 
         // Act
-        var result = await controller.GetAll();
+        var result = await controller.GetAll(query);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Same(expectedUsers, okResult.Value);
-        userServiceMock.Verify(s => s.GetAllUsers(ct), Times.Once);
+        userServiceMock.Verify(s => s.GetAllUsers(query, ct), Times.Once);
     }
 
     [Fact]

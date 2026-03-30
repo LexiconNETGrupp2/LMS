@@ -1,3 +1,4 @@
+using LMS.Shared;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.UserDtos;
 using Microsoft.AspNetCore.Authorization;
@@ -16,9 +17,9 @@ public class UsersController(IServiceManager serviceManager) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyCollection<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyCollection<UserDto>>> GetAll()
+    public async Task<ActionResult<IReadOnlyCollection<UserDto>>> GetAll([FromQuery] PagedQuery query)
     {
-        var users = await UserService.GetAllUsers();
+        var users = await UserService.GetAllUsers(query);
         return Ok(users);
     }
 
