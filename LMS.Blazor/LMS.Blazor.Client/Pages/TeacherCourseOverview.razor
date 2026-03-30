@@ -73,7 +73,7 @@ else
 }
 
 @code {
-    [Parameter] 
+    [Parameter]
     public Guid CourseId { get; set; }
 
     [Parameter]
@@ -184,27 +184,7 @@ else
             .ToList();
     }
 
-    private List<ActivityModel> _activities = new()
-    {
-        // new()
-        // {
-        //     Title = "Anna Andersson lämnade in uppgift \"JavaScript applikation\"",
-        //     Time = "2 timmar sedan",
-        //     Type = ActivityType.Submission
-        // },
-        // new()
-        // {
-        //     Title = "Nytt material uppladdat: \"React Komponenter Övningar\"",
-        //     Time = "4 timmar sedan",
-        //     Type = ActivityType.Document
-        // },
-        // new()
-        // {
-        //     Title = "Modul \"React\" startade",
-        //     Time = "1 dag sedan",
-        //     Type = ActivityType.Module
-        // }
-    };
+    private List<ActivityModel> _activities = [];
 
     private List<ModuleModel> _courseModules = new()
     {
@@ -259,44 +239,25 @@ else
         }
     };
 
-    private List<StudentListItemModel> _students = new()
+    private List<StudentListItemModel> _students = [];
+
+    protected override async Task OnInitializedAsync()
     {
-        new()
+        _students = await LoadCourseStudents(CourseId);
+    }
+
+    private async Task<List<StudentListItemModel>> LoadCourseStudents(Guid courseId)
+    {
+        var uri = $"api/courses/{courseId}/students";
+        var students = await ApiService.GetAsync<List<CourseStudentDto>>(uri) ?? [];
+        return students.Select(s => new StudentListItemModel
         {
-            Name = "Anna Andersson",
-            Email = "anna.andersson@example.com",
-            ProgressPercent = 78,
-            LastActive = new DateTime(2023, 9, 10)
-        },
-        new()
-        {
-            Name = "Erik Eriksson",
-            Email = "erik.eriksson@example.com",
-            ProgressPercent = 65,
-            LastActive = new DateTime(2023, 9, 9)
-        },
-        new()
-        {
-            Name = "Maria Svensson",
-            Email = "maria.svensson@example.com",
-            ProgressPercent = 92,
-            LastActive = new DateTime(2023, 9, 11)
-        },
-        new()
-        {
-            Name = "Johan Nilsson",
-            Email = "johan.nilsson@example.com",
-            ProgressPercent = 45,
-            LastActive = new DateTime(2023, 9, 8)
-        },
-        new()
-        {
-            Name = "Sara Lindberg",
-            Email = "sara.lindberg@example.com",
-            ProgressPercent = 83,
-            LastActive = new DateTime(2023, 9, 10)
-        }
-    };
+            Name = s.FullName,
+            Email = s.Email,
+            ProgressPercent = Random.Shared.Next(0, 100), // TODO: Replace with real progress data
+            LastActive = new DateTime(2000, 1, 1), // TODO: Replace with real last active data
+        }).ToList();
+    }
 
     private void HandleEditCourse()
     {
