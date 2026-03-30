@@ -1,4 +1,4 @@
-﻿@page "/CourseOverviewTeacher/{courseId:guid}/{activeTab?}"
+﻿@page "/Course/{courseId:guid}/{activeTab?}"
 @inject IApiService ApiService
 @inject NavigationManager Navigation
 @attribute [Authorize(Roles = RolesNames.Teacher)]
@@ -19,7 +19,7 @@
 
 <CourseTabs Tabs="_tabs" OnTabChanged="HandleTabChanged" />
 
-@if (ActiveTab == "Översikt")
+@if (string.IsNullOrEmpty(ActiveTab) || ActiveTab == "Översikt")
 {
     <div class="container-fluid px-0">
         <div class="row g-4 mb-4">
@@ -189,6 +189,6 @@ else if (ActiveTab == "Dokument")
     private void HandleTabChanged(string tabLabel)
     {
         ActiveTab = tabLabel;
-        Navigation.NavigateTo($"/CourseOverviewTeacher/{CourseId}/{ActiveTab}");
+        Navigation.NavigateTo($"/Course/{CourseId}/{ActiveTab}");
     }
 }
