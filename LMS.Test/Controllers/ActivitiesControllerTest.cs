@@ -9,7 +9,7 @@ using Service.Contracts;
 
 namespace LMS.Test.Controllers;
 
-public class ActivitesControllerTest
+public class ActivitiesControllerTest
 {
     [Fact]
     [Trait("Layer", "Controller")]
