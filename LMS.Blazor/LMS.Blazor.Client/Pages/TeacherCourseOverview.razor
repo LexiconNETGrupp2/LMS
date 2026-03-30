@@ -1,105 +1,209 @@
-﻿@page "/CourseOverviewTeacher"
+﻿@page "/courses/{CourseId:guid}/{ActiveTab?}"
+@inject IApiService ApiService
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = RolesNames.Teacher)]
 
 @using LMS.Blazor.Client.Components.TeacherCourseOverview
 @using LMS.Blazor.Client.Components.TeacherCourseOverview.ModulesComponents
 @using LMS.Blazor.Client.Components.TeacherCourseOverview.OverviewComponents
 @using LMS.Blazor.Client.Components.TeacherCourseOverview.StudentComponents
 
-<CourseHeader Title="Lexicon LTU"
-              Description="En omfattande utbildning i modern webbutveckling med fokus på JavaScript och React."
-              StartDate="@(new DateTime(2023, 8, 15))"
-              EndDate="@(new DateTime(2023, 12, 15))"
-              BackUrl="/"
-              BackText="Tillbaka till dashboard"
-              EditButtonText="Redigera kurs"
-              OnEditClicked="HandleEditCourse" />
-
-<CourseTabs Tabs="_tabs" OnTabChanged="HandleTabChanged" />
-
-@if (_activeTab == "Översikt")
+@if (_isLoading)
 {
-    <div class="container-fluid px-0">
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-xl-6">
-                <CourseProgressCard Progress="35" Modules="_moduleProgress" />
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border" role="status" aria-hidden="true"></div>
+        <span class="ms-3">Laddar kurs...</span>
+    </div>
+}
+else if (_course is null)
+{
+    <div class="alert alert-warning rounded-4">
+        Kursen kunde inte hittas.
+    </div>
+}
+else
+{
+    <CourseHeader Title="@_course.Name"
+                  Description="@_course.Description"
+                  StartDate="@_course.StartDate"
+                  EndDate="@_course.EndDate"
+                  BackUrl="/"
+                  BackText="Tillbaka till dashboard"
+                  EditButtonText="Redigera kurs"
+                  OnEditClicked="HandleEditCourse" />
+
+    <CourseTabs Tabs="_tabs" OnTabChanged="HandleTabChanged" />
+
+    @if (_activeTab == TabOverview)
+    {
+        <div class="container-fluid px-0">
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-xl-6">
+                    <CourseProgressCard Progress="0" Modules="_moduleProgress" />
+                </div>
+
+                <div class="col-12 col-xl-6">
+                    <CourseStatisticsCard Statistics="_statistics" />
+                </div>
             </div>
 
-            <div class="col-12 col-xl-6">
-                <CourseStatisticsCard Statistics="_statistics" />
-            </div>
+            <RecentActivitiesCard Activities="_activities" />
         </div>
-
-        <RecentActivitiesCard Activities="_activities" />
-    </div>
-}
-else if (_activeTab == "Moduler")
-{
-    <ModulesSection Modules="_courseModules" />
-}
-else if (_activeTab == "Inlämningar")
-{
-    <div class="alert alert-light border rounded-4">
-        Inlämningar kommer här.
-    </div>
-}
-else if (_activeTab == "Studenter")
-{
-    <StudentsSection Students="_students" />
-}
-else if (_activeTab == "Dokument")
-{
-    <div class="alert alert-light border rounded-4">
-        Dokument kommer här.
-    </div>
+    }
+    else if (_activeTab == TabModules)
+    {
+        <ModulesSection Modules="_courseModules" />
+    }
+    else if (_activeTab == TabSubmissions)
+    {
+        <div class="alert alert-light border rounded-4">
+            Inlämningar kommer här.
+        </div>
+    }
+    else if (_activeTab == TabStudents)
+    {
+        <StudentsSection Students="_students" />
+    }
+    else if (_activeTab == TabDocuments)
+    {
+        <div class="alert alert-light border rounded-4">
+            Dokument kommer här.
+        </div>
+    }
 }
 
 @code {
-    private string _activeTab = "Översikt";
+    [Parameter] 
+    public Guid CourseId { get; set; }
 
-    private List<CourseTabs.CourseTabItem> _tabs = new()
+    [Parameter]
+    public string? ActiveTab { get; set; }
+
+    private const string TabOverview = "overview";
+    private const string TabModules = "modules";
+    private const string TabSubmissions = "submissions";
+    private const string TabStudents = "students";
+    private const string TabDocuments = "documents";
+
+    private CourseDto? _course;
+    private CourseStatisticsModel _statistics = new();
+    private List<ModuleProgressModel> _moduleProgress = new();
+    private List<CourseTabs.CourseTabItem> _tabs = new();
+
+    private bool _isLoading = true;
+    private string _activeTab = TabOverview;
+    private Guid _loadedCourseId;
+
+    protected override async Task OnParametersSetAsync()
     {
-        new() { Label = "Översikt", IsActive = true },
-        new() { Label = "Moduler" },
-        new() { Label = "Inlämningar" },
-        new() { Label = "Studenter" },
-        new() { Label = "Dokument" }
+        _activeTab = NormalizeTab(ActiveTab);
+        BuildTabs();
+
+        var shouldLoadCourse = _course is null || _loadedCourseId != CourseId;
+
+        if (!shouldLoadCourse)
+            return;
+
+        _isLoading = true;
+        _course = null;
+
+        try
+        {
+            _course = await GetCourse(CourseId);
+            _loadedCourseId = CourseId;
+
+            if (_course is not null)
+            {
+                _statistics = BuildStatistics(_course);
+                _moduleProgress = BuildModuleProgress(_course);
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/not-found");
+                return;
+            }
+
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/not-found");
+            return;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task<CourseDto?> GetCourse(Guid courseId)
+    {
+        var uri = $"api/courses/{courseId}";
+        return await ApiService.GetAsync<CourseDto>(uri);
+    }
+
+    private static string NormalizeTab(string? tab) => tab?.ToLowerInvariant() switch
+    {
+        TabModules => TabModules,
+        TabSubmissions => TabSubmissions,
+        TabStudents => TabStudents,
+        TabDocuments => TabDocuments,
+        TabOverview => TabOverview,
+        _ => TabOverview
     };
 
-    private List<ModuleProgressModel> _moduleProgress = new()
+    private void BuildTabs()
     {
-        new() { Name = "HTML & CSS", Progress = 100 },
-        new() { Name = "JavaScript", Progress = 60 },
-        new() { Name = "React", Progress = 20 }
-    };
+        _tabs = new()
+        {
+            new() { Label = "Översikt", Value = TabOverview, IsActive = _activeTab == TabOverview },
+            new() { Label = "Moduler", Value = TabModules, IsActive = _activeTab == TabModules },
+            new() { Label = "Inlämningar", Value = TabSubmissions, IsActive = _activeTab == TabSubmissions },
+            new() { Label = "Studenter", Value = TabStudents, IsActive = _activeTab == TabStudents },
+            new() { Label = "Dokument", Value = TabDocuments, IsActive = _activeTab == TabDocuments }
+        };
+    }
 
-    private CourseStatisticsModel _statistics = new()
+    private CourseStatisticsModel BuildStatistics(CourseDto course)
     {
-        Modules = 3,
-        Activities = 11,
-        Students = 5,
-        Submissions = 3
-    };
+        return new CourseStatisticsModel
+        {
+            Modules = course.Modules?.Count ?? 0,
+            Activities = course.Modules?.Sum(m => m.Activities?.Count ?? 0) ?? 0,
+            Students = course.NumberOfStudents
+        };
+    }
+
+    private List<ModuleProgressModel> BuildModuleProgress(CourseDto course)
+    {
+        return course.Modules
+            .Select(module => new ModuleProgressModel
+            {
+                Name = module.Name,
+                Progress = 0
+            })
+            .ToList();
+    }
 
     private List<ActivityModel> _activities = new()
     {
-        new()
-        {
-            Title = "Anna Andersson lämnade in uppgift \"JavaScript applikation\"",
-            Time = "2 timmar sedan",
-            Type = ActivityType.Submission
-        },
-        new()
-        {
-            Title = "Nytt material uppladdat: \"React Komponenter Övningar\"",
-            Time = "4 timmar sedan",
-            Type = ActivityType.Document
-        },
-        new()
-        {
-            Title = "Modul \"React\" startade",
-            Time = "1 dag sedan",
-            Type = ActivityType.Module
-        }
+        // new()
+        // {
+        //     Title = "Anna Andersson lämnade in uppgift \"JavaScript applikation\"",
+        //     Time = "2 timmar sedan",
+        //     Type = ActivityType.Submission
+        // },
+        // new()
+        // {
+        //     Title = "Nytt material uppladdat: \"React Komponenter Övningar\"",
+        //     Time = "4 timmar sedan",
+        //     Type = ActivityType.Document
+        // },
+        // new()
+        // {
+        //     Title = "Modul \"React\" startade",
+        //     Time = "1 dag sedan",
+        //     Type = ActivityType.Module
+        // }
     };
 
     private List<ModuleModel> _courseModules = new()
@@ -199,8 +303,9 @@ else if (_activeTab == "Dokument")
         // Navigate to edit page or open modal
     }
 
-    private void HandleTabChanged(string tabLabel)
+    private void HandleTabChanged(string tabValue)
     {
-        _activeTab = tabLabel;
+        var normalizedTab = NormalizeTab(tabValue);
+        NavigationManager.NavigateTo($"/courses/{CourseId}/{normalizedTab}");
     }
 }
