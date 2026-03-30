@@ -25,17 +25,15 @@ public class UserService : IUserService
 
     public async Task<UserDto> GetUserById(string id)
     {
-        var user = await _uow.Users.GetByIdWithCourseAsync(id, CancellationToken.None);
-        if (user == null)
-            throw new UserNotFoundException();
+        var user = await _uow.Users.GetByIdWithCourseAsync(id, CancellationToken.None)
+            ?? throw new UserNotFoundException();
         return MapToUserDto(user);
     }
 
     public async Task DeleteUser(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
-        if (user == null)
-            throw new UserNotFoundException();
+        var user = await _userManager.FindByIdAsync(id)
+            ?? throw new UserNotFoundException();
         await _userManager.DeleteAsync(user);
     }
 
