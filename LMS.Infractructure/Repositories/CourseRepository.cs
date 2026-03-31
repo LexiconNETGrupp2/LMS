@@ -40,28 +40,20 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .ToListAsync(token);
     }
 
-    public async Task<Course?> GetCourseById(Guid id, CancellationToken token)
+    public async Task<Course?> GetCourseById(Guid id, bool trackChanges, CancellationToken token)
     {
-        return await FindAll(trackChanges: false)
+        return await FindAll(trackChanges: trackChanges)
                         .Include(c => c.Modules)
                             .ThenInclude(m => m.Activities)
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(c => c.Id == id, token);
     }
 
-    public async Task<Course?> GetCourseByIdTracked(Guid id, CancellationToken token)
-    {
-        return await FindAll(trackChanges: false)
-                        .Include(c => c.Modules)
-                        .Include(c => c.Students)
-                        .FirstOrDefaultAsync(c => c.Id == id, token);
-    }
-
-    public async Task<Course?> GetCourseFromUserId(Guid userId, CancellationToken token)
+    public async Task<Course?> GetCourseFromUserId(Guid userId, bool trackChanges, CancellationToken token)
     {
         var userIdStr = userId.ToString();
 
-        return await FindAll(trackChanges: false)
+        return await FindAll(trackChanges: trackChanges)
                         .AsNoTracking()
                         .Where(c => c.Students.FirstOrDefault(u => u.Id == userIdStr) != null)
                         .Include(c => c.Modules)
@@ -73,7 +65,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
     {
         var userIdStr = userId.ToString();
 
-        var courseData = await _context.Courses
+        var courseData = await FindAll(trackChanges: false)
                         .AsNoTracking()
                         .Where(c => c.Students.Any(u => u.Id == userIdStr))
                         .Include(c => c.Students)

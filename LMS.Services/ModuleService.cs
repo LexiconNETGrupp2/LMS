@@ -46,7 +46,7 @@ public class ModuleService : IModuleService
 
     public async Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto)
     {
-        var course = await _courseRepository.GetCourseByIdTracked(createModuleDto.CourseId, CancellationToken.None)
+        var course = await _courseRepository.GetCourseById(createModuleDto.CourseId, trackChanges: true, CancellationToken.None)
             ?? throw new CourseNotFoundException(createModuleDto.CourseId);
 
         ValidateName(createModuleDto.Name.Trim());

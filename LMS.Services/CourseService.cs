@@ -48,7 +48,7 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto?> GetCourseById(Guid id, string? currentStudentId, CancellationToken token)
     {
-        var course = await _uow.Courses.GetCourseById(id, token)
+        var course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
             ?? throw new CourseNotFoundException(id);
         
         var userIds = course.Students.Select(u => u.Id);
@@ -61,7 +61,7 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto?> GetCourseByUserId(Guid id, CancellationToken token)
     {
-        var course = await _uow.Courses.GetCourseFromUserId(id, token)
+        var course = await _uow.Courses.GetCourseFromUserId(id, trackChanges: false, token)
             ?? throw new CourseNotFoundException(id);
 
         var courseDto = _mapper.Map<CourseDto>(course);
@@ -109,7 +109,7 @@ public class CourseService : ICourseService
 
     public async Task UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
-        Course? course = await _uow.Courses.GetCourseById(id, token)
+        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
             ?? throw new CourseNotFoundException(id);
         
         if (updateCourseDto.Name is not null) {
@@ -136,7 +136,7 @@ public class CourseService : ICourseService
 
     public async Task DeleteCourse(Guid id, CancellationToken token)
     {
-        Course? course = await _uow.Courses.GetCourseById(id, token)
+        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
             ?? throw new CourseNotFoundException(id);
 
         try {
