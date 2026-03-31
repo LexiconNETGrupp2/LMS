@@ -1,8 +1,7 @@
 using AutoMapper;
+using Domain.Contracts.Queries;
 using Domain.Contracts.Repositories;
-using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
-using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.Extensions.Logging;
 using Service.Contracts;
@@ -12,12 +11,18 @@ namespace LMS.Services;
 public class CourseService : ICourseService
 {
     private readonly IUnitOfWork _uow;
+    private readonly IParticipantQuery _participantQuery;
     private readonly IMapper _mapper;
     private readonly ILogger<CourseService> _logger;
 
-    public CourseService(IUnitOfWork uow, IMapper mapper, ILogger<CourseService> logger)
+    public CourseService(
+        IUnitOfWork uow,
+        IParticipantQuery participantQuery,
+        IMapper mapper,
+        ILogger<CourseService> logger)
     {
         _uow = uow;
+        _participantQuery = participantQuery;
         _mapper = mapper;
         _logger = logger;
     }
@@ -69,43 +74,8 @@ public class CourseService : ICourseService
 
     public async Task<CourseParticipantsDto?> GetCourseParticipantsByUserId(Guid id, CancellationToken token)
     {
-        var courseParticipants = await _uow.CourseRepository.GetCourseParticipantsByUserId(id, token);
-        if (courseParticipants is null)
-            return null;
-
-        var roleByUserId = courseParticipants.ParticipantRoles
-                        .GroupBy(role => role.UserId)
-                        .ToDictionary(
-                            group => group.Key,
-                            group => group.Select(role => role.RoleName)
-                                          .Where(roleName => !string.IsNullOrWhiteSpace(roleName))
-                                          .OrderBy(GetRolePriority)
-                                          .ThenBy(roleName => roleName)
-                                          .FirstOrDefault() ?? string.Empty);
-
-        return new CourseParticipantsDto
-        {
-            Name = courseParticipants.Name,
-            Description = courseParticipants.Description,
-            Students = courseParticipants.Participants
-                        .Select(participant => new CourseParticipantDto
-                        {
-                            Id = participant.Id,
-                            FullName = $"{participant.FirstName} {participant.LastName}".Trim(),
-                            Email = participant.Email ?? string.Empty,
-                            Role = roleByUserId.GetValueOrDefault(participant.Id, string.Empty)
-                        })
-                        .ToList()
-        };
+        return await _participantQuery.GetCourseParticipantsByUserId(id, token);
     }
-
-    private static int GetRolePriority(string? roleName) =>
-        roleName switch
-        {
-            RolesNames.Teacher => 0,
-            RolesNames.Student => 1,
-            _ => 2
-        };
 
     public async Task<bool> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
@@ -152,6 +122,6 @@ public class CourseService : ICourseService
 
     public async Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token)
     {
-        return await _uow.CourseRepository.GetStudentsByCourseId(courseId, token);
+        return await _participantQuery.GetStudentsByCourseId(courseId, token);
     }
 }

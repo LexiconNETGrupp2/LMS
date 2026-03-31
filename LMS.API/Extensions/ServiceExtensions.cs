@@ -1,5 +1,7 @@
-﻿using Domain.Contracts.Repositories;
+﻿using Domain.Contracts.Queries;
+using Domain.Contracts.Repositories;
 using LMS.Infractructure.Data;
+using LMS.Infractructure.Queries;
 using LMS.Infractructure.Repositories;
 using LMS.Presentation;
 using LMS.Services;
@@ -89,6 +91,7 @@ public static class ServiceExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICourseRepository, CourseRepository>();
+        services.AddScoped<IParticipantQuery, ParticipantQuery>();
         services.AddScoped(provider => new Lazy<ICourseRepository>(() => provider.GetRequiredService<ICourseRepository>()));
         services.AddScoped<IModuleRepository, ModuleRepository>();
         services.AddScoped<IActivityRepository, ActivityRepository>();
