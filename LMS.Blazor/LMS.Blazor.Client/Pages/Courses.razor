@@ -1,10 +1,10 @@
-@page "/Modules"
+@page "/courses"
 @attribute [Authorize(Roles = "Teacher")]
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @inject IApiService ApiService
 @inject IJSRuntime JS
 
-<PageTitle>Moduler</PageTitle>
+<PageTitle>Kurser</PageTitle>
 
 <div class="modules-page">
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
