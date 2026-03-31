@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.Constants;
@@ -55,7 +54,7 @@ public class CoursesControllerTest
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.GetCourseById(courseId, null, ct))
-            .ThrowsAsync(new CourseNotFoundException());
+            .Throws(new CourseNotFoundException());
 
         var controller = CreateController(courseServiceMock);
         // Act
@@ -168,7 +167,8 @@ public class CoursesControllerTest
 
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
-            .Setup(s => s.DeleteCourse(courseId, ct));
+            .Setup(s => s.DeleteCourse(courseId, ct))
+            .ReturnsAsync(true);
 
         var controller = CreateController(courseServiceMock);
 

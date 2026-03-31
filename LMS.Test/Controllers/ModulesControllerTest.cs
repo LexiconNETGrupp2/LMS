@@ -53,7 +53,7 @@ public class ModulesControllerTest
         var moduleServiceMock = new Mock<IModuleService>();
         moduleServiceMock
             .Setup(s => s.GetModuleByIdAsync(moduleId))
-            .ThrowsAsync(new ModuleNotFoundException(moduleId));
+            .Throws(new ModuleNotFoundException(moduleId));
 
         var controller = CreateController(moduleServiceMock);
 
