@@ -141,11 +141,18 @@ public class CoursesControllerTest
             EndDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
             Modules = []
         };
-
+        var courseDto = new CourseDto {
+            Id = Guid.NewGuid(),
+            Name = "New Course",
+            Description = "A new course for testing",
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            EndDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
+            Modules = []
+        };
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.CreateCourse(createCourseDto, ct))
-            .ReturnsAsync(true);
+            .ReturnsAsync(courseDto);
 
         var controller = CreateController(courseServiceMock);
 
@@ -168,7 +175,7 @@ public class CoursesControllerTest
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.DeleteCourse(courseId, ct))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         var controller = CreateController(courseServiceMock);
 
@@ -230,7 +237,7 @@ public class CoursesControllerTest
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.UpdateCourse(courseId, updateCourseDto, ct))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         var controller = CreateController(courseServiceMock);
 
