@@ -48,7 +48,7 @@ public class CourseService : ICourseService
 
     public async Task<PagedResult<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
-        var result = await _uow.CourseRepository.GetAllCourses(param, token);
+        var result = await _uow.Courses.GetAllCourses(param, token);
         return new PagedResult<CourseDto>
         {
             Page = result.Page,
