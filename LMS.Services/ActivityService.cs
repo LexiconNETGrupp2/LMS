@@ -21,8 +21,8 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityDto?> GetActivityById(Guid id)
     {
-        var activity = await _uow.Activities.GetActivityById(id);
-        if (activity == null) return null;
+        var activity = await _uow.Activities.GetActivityById(id)
+            ?? throw new ActivityNotFoundException(id);
         return _mapper.Map<ActivityDto>(activity);
     }
 
@@ -46,9 +46,8 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityDto> CreateActivity(CreateActivityDto request)
     {
-        var module = await _uow.Modules.GetModuleByIdTrackedAsync(request.ModuleId);
-        if (module == null)
-            throw new NotFoundException("Module not found");
+        var module = await _uow.Modules.GetModuleByIdTrackedAsync(request.ModuleId)
+            ?? throw new ModuleNotFoundException(request.ModuleId);
         // TODO: check start/end is within module and not overlapping with other activities in the same module
         var activity = new Activity
         {
@@ -64,7 +63,7 @@ public class ActivityService : IActivityService
             await _uow.CompleteAsync(CancellationToken.None);
             return _mapper.Map<ActivityDto>(activity);
         } catch (Exception ex) {
-            throw new Exception($"Error creating activity: {ex.Message}");
+            throw new BadRequestException(ex.Message);
         }
     }
 }

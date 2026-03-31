@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
@@ -54,7 +55,7 @@ public class CoursesControllerTest
 
     [Fact]
     [Trait("Layer", "Controller")]
-    public async Task GetById_WhenCourseIsMissing_ReturnsNotFound()
+    public async Task GetById_WhenCourseIsMissing_ThrowsCourseNotFound()
     {
         // Arrange
         var ct = CancellationToken.None;
@@ -63,15 +64,12 @@ public class CoursesControllerTest
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.GetCourseById(courseId, null, ct))
-            .ReturnsAsync((CourseDto?)null);
+            .Throws(new CourseNotFoundException());
 
         var controller = CreateController(courseServiceMock);
-
         // Act
-        var result = await controller.GetById(courseId, ct);
-
         // Assert
-        Assert.IsType<NotFoundResult>(result);
+        await Assert.ThrowsAsync<CourseNotFoundException>(async () => await controller.GetById(courseId, ct));
         courseServiceMock.Verify(s => s.GetCourseById(courseId, null, ct), Times.Once);
     }
 
@@ -136,7 +134,7 @@ public class CoursesControllerTest
         var result = await controller.GetByUserId(requestedUserId, ct);
 
         // Assert
-        Assert.IsType<UnauthorizedResult>(result);
+        Assert.IsType<UnauthorizedObjectResult>(result);
         courseServiceMock.Verify(s => s.GetCourseByUserId(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -153,11 +151,18 @@ public class CoursesControllerTest
             EndDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
             Modules = []
         };
-
+        var courseDto = new CourseDto {
+            Id = Guid.NewGuid(),
+            Name = "New Course",
+            Description = "A new course for testing",
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            EndDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
+            Modules = []
+        };
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.CreateCourse(createCourseDto, ct))
-            .ReturnsAsync(true);
+            .ReturnsAsync(courseDto);
 
         var controller = CreateController(courseServiceMock);
 
@@ -169,11 +174,9 @@ public class CoursesControllerTest
         courseServiceMock.Verify(s => s.CreateCourse(createCourseDto, ct), Times.Once);
     }
 
-    [Theory]
-    [Trait("Layer", "Controller")]
-    [InlineData(true, StatusCodes.Status204NoContent)]
-    [InlineData(false, StatusCodes.Status404NotFound)]
-    public async Task Delete_WhenCalled_ReturnsExpectedStatusResult(bool deleteSucceeded, int expectedStatusCode)
+    [Fact]
+    [Trait("Layer", "Controller")]    
+    public async Task Delete_WhenSucceeded_ReturnsNoContentStatusResult()
     {
         // Arrange
         var ct = CancellationToken.None;
@@ -182,7 +185,7 @@ public class CoursesControllerTest
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.DeleteCourse(courseId, ct))
-            .ReturnsAsync(deleteSucceeded);
+            .Returns(Task.CompletedTask);
 
         var controller = CreateController(courseServiceMock);
 
@@ -190,8 +193,41 @@ public class CoursesControllerTest
         var result = await controller.Delete(courseId, ct);
 
         // Assert
-        var statusResult = Assert.IsAssignableFrom<IStatusCodeActionResult>(result);
-        Assert.Equal(expectedStatusCode, statusResult.StatusCode);
+        var statusResult = Assert.IsAssignableFrom<NoContentResult>(result);
+        Assert.Equal(StatusCodes.Status204NoContent, statusResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_WhenNotFound_ThrowsCourseNotFoundException()
+    {
+        
+        var ct = CancellationToken.None;
+        var courseId = Guid.NewGuid();
+
+        var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+            .Setup(s => s.DeleteCourse(courseId, ct))
+            .Throws(new CourseNotFoundException(courseId));
+
+        var controller = CreateController(courseServiceMock);
+        await Assert.ThrowsAsync<CourseNotFoundException>(async () => await  controller.Delete(courseId, ct));
+        courseServiceMock.Verify(s => s.DeleteCourse(courseId, ct), Times.Once);
+    }
+
+    [Fact]
+    public async Task Delete_WhenFailed_ThrowsBadRequestException()
+    {
+        var ct = CancellationToken.None;
+        var courseId = Guid.NewGuid();
+
+        var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+            .Setup(s => s.DeleteCourse(courseId, ct))
+            .Throws(new BadRequestException("Course could not be deleted"));
+
+        var controller = CreateController(courseServiceMock);
+        await Assert.ThrowsAsync<BadRequestException>(async () => await controller.Delete(courseId, ct));
+        courseServiceMock.Verify(s => s.DeleteCourse(courseId, ct), Times.Once);
     }
 
     [Fact]
@@ -211,7 +247,7 @@ public class CoursesControllerTest
         var courseServiceMock = new Mock<ICourseService>();
         courseServiceMock
             .Setup(s => s.UpdateCourse(courseId, updateCourseDto, ct))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         var controller = CreateController(courseServiceMock);
 
@@ -226,7 +262,6 @@ public class CoursesControllerTest
     [Theory]
     [Trait("Layer", "Controller")]
     [InlineData("invalid-guid", false, StatusCodes.Status401Unauthorized)]
-    [InlineData("11111111-1111-1111-1111-111111111111", false, StatusCodes.Status404NotFound)]
     [InlineData("11111111-1111-1111-1111-111111111111", true, StatusCodes.Status200OK)]
     public async Task GetMyCourseParticipants_WhenCalled_ReturnsExpectedStatusCode(
         string userIdClaim,
@@ -264,6 +299,27 @@ public class CoursesControllerTest
         // Assert
         var statusResult = Assert.IsAssignableFrom<IStatusCodeActionResult>(result);
         Assert.Equal(expectedStatusCode, statusResult.StatusCode);
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task GetMyCourseParticipants_WhenCourseNotFound_ThrowsCourseNotFoundException()
+    {
+        var userIdClaim = "11111111-1111-1111-1111-111111111111";
+        var ct = CancellationToken.None;
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, userIdClaim),
+            new Claim(ClaimTypes.Role, RolesNames.Student),
+        ], "TestAuthType"));
+        var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+                .Setup(s => s.GetCourseParticipantsByUserId(Guid.Parse(userIdClaim), ct))
+                .Throws(new CourseNotFoundException());
+        var controller = CreateController(courseServiceMock, principal);
+
+        await Assert.ThrowsAsync<CourseNotFoundException>(async () => await controller.GetMyCourseParticipants(ct));
+        courseServiceMock.Verify(s => s.GetCourseParticipantsByUserId(Guid.Parse(userIdClaim), ct), Times.Once);
     }
 
     [Fact]

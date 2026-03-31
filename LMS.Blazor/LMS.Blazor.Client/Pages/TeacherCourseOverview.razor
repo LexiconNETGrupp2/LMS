@@ -15,14 +15,19 @@
         <span class="ms-3">Laddar kurs...</span>
     </div>
 }
-else if (_course is null)
-{
-    <div class="alert alert-warning rounded-4">
-        Kursen kunde inte hittas.
-    </div>
-}
 else
 {
+    @if (pageErrors.Any())
+    {
+        <div class="alert alert-danger">
+            <ul class="list-unstyled mb-0">
+                @foreach (var error in pageErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
     <CourseHeader Title="@_course.Name"
                   Description="@_course.Description"
                   StartDate="@_course.StartDate"
@@ -85,48 +90,43 @@ else
     private const string TabStudents = "students";
     private const string TabDocuments = "documents";
 
-    private CourseDto? _course;
+    private CourseDto _course = new();
     private CourseStatisticsModel _statistics = new();
     private List<ModuleProgressModel> _moduleProgress = new();
     private List<CourseTabs.CourseTabItem> _tabs = new();
+    private List<StudentListItemModel> _students = [];
 
     private bool _isLoading = true;
     private string _activeTab = TabOverview;
     private Guid _loadedCourseId;
+    private readonly List<string> pageErrors = [];
 
     protected override async Task OnParametersSetAsync()
     {
         _activeTab = NormalizeTab(ActiveTab);
         BuildTabs();
 
-        var shouldLoadCourse = _course is null || _loadedCourseId != CourseId;
+        var shouldLoadCourse = _loadedCourseId != CourseId;
 
         if (!shouldLoadCourse)
             return;
 
         _isLoading = true;
-        _course = null;
 
         try
         {
             _course = await GetCourse(CourseId);
             _loadedCourseId = CourseId;
 
-            if (_course is not null)
-            {
-                _statistics = BuildStatistics(_course);
-                _moduleProgress = BuildModuleProgress(_course);
-            }
-            else
-            {
-                NavigationManager.NavigateTo("/not-found");
-                return;
-            }
+            _statistics = BuildStatistics(_course);
+            _moduleProgress = BuildModuleProgress(_course);
+
+            _students = await LoadCourseStudents(CourseId);
 
         }
         catch
         {
-            NavigationManager.NavigateTo("/not-found");
+            pageErrors.Add("Kunde inte ladda kursen");
             return;
         }
         finally
@@ -135,10 +135,10 @@ else
         }
     }
 
-    private async Task<CourseDto?> GetCourse(Guid courseId)
+    private async Task<CourseDto> GetCourse(Guid courseId)
     {
         var uri = $"api/courses/{courseId}";
-        return await ApiService.GetAsync<CourseDto>(uri);
+        return await ApiService.GetAsync<CourseDto>(uri) ?? new();
     }
 
     private static string NormalizeTab(string? tab) => tab?.ToLowerInvariant() switch
@@ -238,13 +238,6 @@ else
             IsExpanded = false
         }
     };
-
-    private List<StudentListItemModel> _students = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        _students = await LoadCourseStudents(CourseId);
-    }
 
     private async Task<List<StudentListItemModel>> LoadCourseStudents(Guid courseId)
     {

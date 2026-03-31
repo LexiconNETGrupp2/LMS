@@ -42,8 +42,6 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
     public async Task<ActionResult<ActivityDto>> GetActivityById(Guid id)
     {
         var activity = await ActivityService.GetActivityById(id);
-        if (activity == null)
-            return NotFound();
         return Ok(activity);
     }
 
