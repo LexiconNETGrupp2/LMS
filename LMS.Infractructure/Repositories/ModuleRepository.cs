@@ -1,6 +1,8 @@
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
+using LMS.Infractructure.Extensions;
+using LMS.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Repositories;
@@ -14,12 +16,12 @@ public class ModuleRepository : RepositoryBase<Module>, IModuleRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyCollection<Module>> GetAllModulesAsync()
+    public async Task<PagedResult<Module>> GetAllModulesAsync(PagedQuery query)
     {
         return await _context.Modules
             .AsNoTracking()
             .Include(m => m.Course)
-            .ToListAsync();
+            .ToPagedResultAsync(query);
     }
 
     public async Task<Module?> GetModuleByIdAsync(Guid id)

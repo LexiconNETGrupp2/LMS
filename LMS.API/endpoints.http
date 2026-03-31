@@ -52,3 +52,8 @@ Authorization: Bearer {{token}}
 GET {{server_url}}/api/users?page=2&pageSize=10
 Accept: application/json
 Authorization: Bearer {{token}}
+
+### Get paged modules
+GET {{server_url}}/api/modules?page=1&pageSize=10
+Accept: application/json
+Authorization: Bearer {{token}}

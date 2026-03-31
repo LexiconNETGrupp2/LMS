@@ -1,3 +1,4 @@
+using LMS.Shared;
 using LMS.Shared.DTOs.ModuleDtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,15 +15,16 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
 {
     private readonly IServiceManager _serviceManager = serviceManager;
     private IModuleService moduleService => _serviceManager.ModuleService;
+
     [HttpGet]
     [SwaggerOperation(
         Summary = "Get all modules",
         Description = "Retrieves all modules in the system."
     )]
     [SwaggerResponse(StatusCodes.Status200OK, "List of modules", typeof(IEnumerable<ModuleDto>))]
-    public async Task<ActionResult<IEnumerable<ModuleDto>>> GetAllModules()
+    public async Task<ActionResult<IEnumerable<ModuleDto>>> GetAllModules([FromQuery] PagedQuery query)
     {
-        var modules = await moduleService.GetAllModulesAsync();
+        var modules = await moduleService.GetAllModulesAsync(query);
         return Ok(modules);
     }
 

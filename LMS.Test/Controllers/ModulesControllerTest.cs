@@ -1,4 +1,5 @@
 using LMS.Presentation.Controllers;
+using LMS.Shared;
 using LMS.Shared.DTOs.ModuleDtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,21 +26,29 @@ public class ModulesControllerTest
                 Guid.NewGuid(),
                 "Course 1")
         };
+        var query = new PagedQuery { Page = 1, PageSize = 10 };
 
         var moduleServiceMock = new Mock<IModuleService>();
         moduleServiceMock
-            .Setup(s => s.GetAllModulesAsync())
-            .ReturnsAsync(expectedModules);
+            .Setup(s => s.GetAllModulesAsync(query))
+            .ReturnsAsync(new PagedResult<ModuleDto>
+            {
+                Page = expectedModules.Count,
+                PageSize = query.PageSize,
+                TotalItems = expectedModules.Count,
+                Items = expectedModules,
+            });
 
         var controller = CreateController(moduleServiceMock);
 
         // Act
-        var result = await controller.GetAllModules();
+        var result = await controller.GetAllModules(query);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        Assert.Same(expectedModules, okResult.Value);
-        moduleServiceMock.Verify(s => s.GetAllModulesAsync(), Times.Once);
+        var response = Assert.IsType<PagedResult<ModuleDto>>(okResult.Value);
+        Assert.Same(expectedModules, response.Items);
+        moduleServiceMock.Verify(s => s.GetAllModulesAsync(query), Times.Once);
     }
 
     [Fact]
