@@ -36,9 +36,6 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
     public async Task<ActionResult<ModuleDto>> GetModuleById(Guid id)
     {
         var module = await moduleService.GetModuleByIdAsync(id);
-        if (module == null)
-            return NotFound();
-
         return Ok(module);
     }
 

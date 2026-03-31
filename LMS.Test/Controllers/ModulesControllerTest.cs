@@ -1,3 +1,4 @@
+using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.DTOs.ModuleDtos;
 using Microsoft.AspNetCore.Http;
@@ -44,7 +45,7 @@ public class ModulesControllerTest
 
     [Fact]
     [Trait("Layer", "Controller")]
-    public async Task GetModuleById_WhenMissing_ReturnsNotFound()
+    public async Task GetModuleById_WhenMissing_ThrowsNotFound()
     {
         // Arrange
         var moduleId = Guid.NewGuid();
@@ -52,15 +53,16 @@ public class ModulesControllerTest
         var moduleServiceMock = new Mock<IModuleService>();
         moduleServiceMock
             .Setup(s => s.GetModuleByIdAsync(moduleId))
-            .ReturnsAsync((ModuleDto?)null);
+            .Throws(new ModuleNotFoundException(moduleId));
 
         var controller = CreateController(moduleServiceMock);
 
-        // Act
-        var result = await controller.GetModuleById(moduleId);
+        // Act       
 
         // Assert
-        Assert.IsType<NotFoundResult>(result.Result);
+        await Assert.ThrowsAsync<ModuleNotFoundException>(async () => 
+            await controller.GetModuleById(moduleId)
+        );
         moduleServiceMock.Verify(s => s.GetModuleByIdAsync(moduleId), Times.Once);
     }
 
