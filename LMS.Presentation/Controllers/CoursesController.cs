@@ -91,8 +91,8 @@ public class CoursesController : ControllerBase
     [SwaggerResponse(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
     {
-        bool success = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
-        return Created();
+        CourseDto courseDto = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
+        return Created("", courseDto);
     }
 
     [HttpPatch("{id:guid}")]
@@ -105,7 +105,7 @@ public class CoursesController : ControllerBase
     [SwaggerResponse(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseDto updateCourseDto, CancellationToken token)
     {
-        bool success = await _serviceManager.CourseService.UpdateCourse(id, updateCourseDto, token);
+        await _serviceManager.CourseService.UpdateCourse(id, updateCourseDto, token);
         return NoContent();
     }
 
@@ -119,7 +119,7 @@ public class CoursesController : ControllerBase
     [SwaggerResponse(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken token)
     {
-        bool success = await _serviceManager.CourseService.DeleteCourse(id, token);
+        await _serviceManager.CourseService.DeleteCourse(id, token);
         return NoContent();
     }
 

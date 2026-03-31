@@ -23,7 +23,7 @@ public class CourseService : ICourseService
         _logger = logger;
     }
 
-    public async Task<bool> CreateCourse(CreateCourseDto createCourseDto, CancellationToken token)
+    public async Task<CourseDto> CreateCourse(CreateCourseDto createCourseDto, CancellationToken token)
     {
         Course course = _mapper.Map<Course>(createCourseDto);
         foreach (var module in course.Modules) {
@@ -32,7 +32,7 @@ public class CourseService : ICourseService
         try {
             _uow.Courses.Create(course);
             await _uow.CompleteAsync(token);
-            return true;
+            return _mapper.Map<CourseDto>(course);
         } catch (Exception ex) {
             _logger.LogWarning("Error when adding course {CourseId} to database: {ExMessage}", course.Id, ex.Message);
             throw new BadRequestException(ex.Message);
@@ -107,7 +107,7 @@ public class CourseService : ICourseService
             _ => 2
         };
 
-    public async Task<bool> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
+    public async Task UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
         Course? course = await _uow.Courses.GetCourseById(id, token)
             ?? throw new CourseNotFoundException(id);
@@ -128,14 +128,13 @@ public class CourseService : ICourseService
         try {
             _uow.Courses.Update(course);
             await _uow.CompleteAsync(token);
-            return true;
         } catch (Exception ex) {
             _logger.LogWarning("Error when updating course {CourseId}: {ExMessage}", id, ex.Message);
             throw new BadRequestException(ex.Message);
         }
     }
 
-    public async Task<bool> DeleteCourse(Guid id, CancellationToken token)
+    public async Task DeleteCourse(Guid id, CancellationToken token)
     {
         Course? course = await _uow.Courses.GetCourseById(id, token)
             ?? throw new CourseNotFoundException(id);
@@ -143,7 +142,6 @@ public class CourseService : ICourseService
         try {
             _uow.Courses.Delete(course);
             await _uow.CompleteAsync(token);
-            return true;
         } catch (Exception ex) {
             _logger.LogWarning("Could not delete course {CourseId}: {ExMessage}", id, ex.Message);
             throw new BadRequestException(ex.Message);
