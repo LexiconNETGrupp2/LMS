@@ -1,4 +1,4 @@
-namespace LMS.Shared;
+namespace LMS.Shared.Pagination;
 
 public record PagedResult<T>
 {

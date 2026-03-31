@@ -1,10 +1,9 @@
 using AutoMapper;
 using Domain.Contracts.Repositories;
-using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
-using LMS.Shared;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
+using LMS.Shared.Pagination;
 using Microsoft.Extensions.Logging;
 using Service.Contracts;
 

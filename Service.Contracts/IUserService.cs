@@ -1,5 +1,5 @@
-using LMS.Shared;
 using LMS.Shared.DTOs.UserDtos;
+using LMS.Shared.Pagination;
 
 namespace Service.Contracts;
 public interface IUserService

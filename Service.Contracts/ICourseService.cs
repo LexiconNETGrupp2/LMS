@@ -1,5 +1,5 @@
-﻿using LMS.Shared;
-using LMS.Shared.DTOs.CourseDtos;
+﻿using LMS.Shared.DTOs.CourseDtos;
+using LMS.Shared.Pagination;
 
 namespace Service.Contracts;
 

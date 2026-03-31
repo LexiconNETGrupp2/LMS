@@ -1,6 +1,5 @@
-
-using LMS.Shared;
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.Pagination;
 
 namespace Service.Contracts;
 

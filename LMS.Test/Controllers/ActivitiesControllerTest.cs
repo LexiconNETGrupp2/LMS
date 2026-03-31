@@ -1,7 +1,7 @@
 ﻿using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
-using LMS.Shared;
 using LMS.Shared.DTOs.ActivityDtos;
+using LMS.Shared.Pagination;
 using LMS.Test.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

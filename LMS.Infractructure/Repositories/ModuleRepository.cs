@@ -2,7 +2,7 @@ using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
 using LMS.Infractructure.Extensions;
-using LMS.Shared;
+using LMS.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Repositories;

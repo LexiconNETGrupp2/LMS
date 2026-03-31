@@ -1,7 +1,7 @@
 using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
-using LMS.Shared;
 using LMS.Shared.DTOs.CourseDtos;
+using LMS.Shared.Pagination;
 
 namespace Domain.Contracts.Repositories;
 

@@ -1,4 +1,4 @@
-using LMS.Shared;
+using LMS.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Extensions;

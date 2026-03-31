@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace LMS.Shared;
+namespace LMS.Shared.Pagination;
 
 public record PagedQuery
 {

@@ -1,5 +1,5 @@
-using LMS.Shared;
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

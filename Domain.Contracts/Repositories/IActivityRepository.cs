@@ -1,5 +1,5 @@
 using Domain.Models.Entities;
-using LMS.Shared;
+using LMS.Shared.Pagination;
 
 namespace Domain.Contracts.Repositories;
 

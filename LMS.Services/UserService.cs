@@ -1,8 +1,8 @@
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
-using LMS.Shared;
 using LMS.Shared.DTOs.UserDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Identity;
 using Service.Contracts;
 

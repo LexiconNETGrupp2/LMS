@@ -1,10 +1,9 @@
-
 using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
-using LMS.Shared;
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.Pagination;
 using Service.Contracts;
 
 namespace LMS.Services;

@@ -1,6 +1,6 @@
 using LMS.Presentation.Controllers;
-using LMS.Shared;
 using LMS.Shared.DTOs.UserDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Service.Contracts;

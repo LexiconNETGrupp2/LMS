@@ -1,8 +1,8 @@
 ﻿using System.Security.Claims;
 using LMS.Presentation.Controllers;
-using LMS.Shared;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
