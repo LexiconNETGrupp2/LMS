@@ -2,6 +2,8 @@ using Domain.Contracts.Repositories;
 using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
+using LMS.Infractructure.Extensions;
+using LMS.Shared;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +20,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyCollection<Course>> GetAllCourses(AllCoursesParams param, CancellationToken token)
+    public async Task<PagedResult<Course>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
         var query = _context.Courses
                         .AsNoTracking()
@@ -39,7 +41,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
 
         return await query.Include(c => c.Modules)
                         .Include(c => c.Students)
-                        .ToListAsync(token);
+                        .ToPagedResultAsync(param, token);
     }
 
     public async Task<Course?> GetCourseById(Guid id, CancellationToken token)

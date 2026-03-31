@@ -2,6 +2,7 @@ using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
+using LMS.Shared;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.Extensions.Logging;
@@ -38,11 +39,16 @@ public class CourseService : ICourseService
         }
     }    
 
-    public async Task<IReadOnlyCollection<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
+    public async Task<PagedResult<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
-        IReadOnlyCollection<Course> courses = await _uow.CourseRepository.GetAllCourses(param, token);
-        var courseDtos = _mapper.Map<IReadOnlyCollection<CourseDto>>(courses);
-        return courseDtos ?? [];
+        var result = await _uow.CourseRepository.GetAllCourses(param, token);
+        return new PagedResult<CourseDto>
+        {
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalItems = result.TotalItems,
+            Items = _mapper.Map<List<CourseDto>>(result.Items),
+        };
     }
 
     public async Task<CourseDto?> GetCourseById(Guid id, string? currentStudentId, CancellationToken token)

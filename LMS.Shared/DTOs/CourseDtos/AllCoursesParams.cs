@@ -4,4 +4,4 @@ public record AllCoursesParams(
     string? Search,
     DateOnly? AfterDate,
     DateOnly? BeforeDate
-);
+) : PagedQuery;

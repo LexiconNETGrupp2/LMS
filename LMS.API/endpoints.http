@@ -58,3 +58,8 @@ Authorization: Bearer {{token}}
 GET {{server_url}}/api/activities?page=1&pageSize=10
 Accept: application/json
 Authorization: Bearer {{token}}
+
+### Get paged courses
+GET {{server_url}}/api/courses?page=1&pageSize=10
+Accept: application/json
+Authorization: Bearer {{token}}

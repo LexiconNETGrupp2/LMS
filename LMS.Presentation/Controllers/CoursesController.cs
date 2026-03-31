@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Service.Contracts;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
+using LMS.Shared;
 
 namespace LMS.Presentation.Controllers;
 
