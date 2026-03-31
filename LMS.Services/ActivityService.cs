@@ -2,6 +2,7 @@ using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
+using LMS.Shared;
 using LMS.Shared.DTOs.ActivityDtos;
 using Service.Contracts;
 
@@ -25,10 +26,16 @@ public class ActivityService : IActivityService
         return _mapper.Map<ActivityDto>(activity);
     }
 
-    public async Task<List<ActivityDto>> GetAllActivities()
+    public async Task<PagedResult<ActivityDto>> GetAllActivities(PagedQuery query)
     {
-        var activities = await _uow.Activities.GetAllActivities();
-        return _mapper.Map<List<ActivityDto>>(activities);
+        var result = await _uow.Activities.GetAllActivities(query);
+        return new PagedResult<ActivityDto>
+        {
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalItems = result.TotalItems,
+            Items = _mapper.Map<List<ActivityDto>>(result.Items),
+        };
     }
 
     public async Task<List<ActivityDto>> GetActivitiesFromModuleId(Guid moduleId)

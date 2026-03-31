@@ -1,6 +1,8 @@
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
+using LMS.Infractructure.Extensions;
+using LMS.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Repositories;
@@ -25,11 +27,11 @@ public class ActivityRepository(ApplicationDbContext context)
             .FirstOrDefault();
     }
 
-    public async Task<List<Activity>> GetAllActivities()
+    public async Task<PagedResult<Activity>> GetAllActivities(PagedQuery query)
     {
         return await FindAll()
             .Include(s => s.Module)
             .Include(s => s.Type)
-            .ToListAsync();
+            .ToPagedResultAsync(query);
     }
 }

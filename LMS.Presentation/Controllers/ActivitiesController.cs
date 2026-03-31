@@ -1,3 +1,4 @@
+using LMS.Shared;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.ActivityDtos;
 using Microsoft.AspNetCore.Authorization;
@@ -24,9 +25,9 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
         Summary = "Get all activities",
         Description = "Retrieves all activities in the system."
     )]
-    public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities()
+    public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities([FromQuery] PagedQuery query)
     {
-        var activities = await ActivityService.GetAllActivities();
+        var activities = await ActivityService.GetAllActivities(query);
         return Ok(activities);
     }
 
