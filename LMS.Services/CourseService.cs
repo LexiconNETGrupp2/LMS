@@ -79,28 +79,35 @@ public class CourseService : ICourseService
         return await _participantQuery.GetCourseParticipantsByUserId(id, token);
     }
 
-    public async Task<bool> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
+    public async Task UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
         Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
-            ?? throw new CourseNotFoundException(id);
-        
-        if (updateCourseDto.Name is not null) {
+           ?? throw new CourseNotFoundException(id);
+
+        if (updateCourseDto.Name is not null)
+        {
             course.Name = updateCourseDto.Name;
         }
-        if (updateCourseDto.Description is not null) {
+        if (updateCourseDto.Description is not null)
+        {
             course.Description = updateCourseDto.Description;
         }
-        if (updateCourseDto.StartDate is not null) {
+        if (updateCourseDto.StartDate is not null)
+        {
             course.StartDate = (DateOnly)updateCourseDto.StartDate;
         }
-        if (updateCourseDto.EndDate is not null) {
+        if (updateCourseDto.EndDate is not null)
+        {
             course.EndDate = (DateOnly)updateCourseDto.EndDate;
         }
 
-        try {
+        try
+        {
             _uow.Courses.Update(course);
             await _uow.CompleteAsync(token);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             _logger.LogWarning("Error when updating course {CourseId}: {ExMessage}", id, ex.Message);
             throw new BadRequestException(ex.Message);
         }
@@ -111,10 +118,13 @@ public class CourseService : ICourseService
         Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
             ?? throw new CourseNotFoundException(id);
 
-        try {
+        try
+        {
             _uow.Courses.Delete(course);
             await _uow.CompleteAsync(token);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             _logger.LogWarning("Could not delete course {CourseId}: {ExMessage}", id, ex.Message);
             throw new BadRequestException(ex.Message);
         }
