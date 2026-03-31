@@ -2,11 +2,7 @@
 
 public class ActivityNotFoundException : NotFoundException
 {
-    public ActivityNotFoundException() 
-        : base("Module not found")
-    { }
+    public ActivityNotFoundException() : base("Activity not found") { }
 
-    public ActivityNotFoundException(Guid id)
-        : base($"No module with id '{id}' was found")
-    { }
+    public ActivityNotFoundException(Guid id) : base($"No activity with id '{id}' was found") { }
 }
