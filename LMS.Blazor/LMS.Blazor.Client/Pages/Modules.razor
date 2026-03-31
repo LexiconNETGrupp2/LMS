@@ -1,4 +1,5 @@
 @page "/Modules"
+@using LMS.Shared
 @attribute [Authorize(Roles = "Teacher")]
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @inject IApiService ApiService
@@ -177,10 +178,10 @@
 
         try
         {
-            var result = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
+            var result = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
 
             courses.Clear();
-            courses.AddRange((result ?? []).OrderBy(course => course.Name));
+            courses.AddRange((result?.Items ?? []).OrderBy(course => course.Name));
 
             expandedCourseIds = courses
                 .Select(course => course.Id)

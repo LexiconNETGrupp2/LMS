@@ -1,4 +1,5 @@
-﻿@inject IApiService ApiService
+﻿@using LMS.Shared
+@inject IApiService ApiService
 @inject NavigationManager NavigationManager
 @attribute [Authorize]
 
@@ -25,7 +26,8 @@
     {
         // AFAIK this component can only load if the current user is a teacher + api also has validation
         
-        courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>($"api/courses?beforeDate={_today}");
+        var response = await ApiService.GetAsync<PagedResult<CourseDto>>($"api/courses?beforeDate={_today}");
+        courses = response?.Items ?? [];
         await SetActiveCourses();
     }
 
@@ -38,6 +40,7 @@
 
     private async Task SearchForCourses(string search)
     {
-        courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>($"api/courses?search={search}");
+        var response = await ApiService.GetAsync<PagedResult<CourseDto>>($"api/courses?search={search}");
+        courses = response?.Items ?? [];
     }
 }

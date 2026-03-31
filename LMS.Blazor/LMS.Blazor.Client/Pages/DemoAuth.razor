@@ -1,4 +1,5 @@
 ﻿@page "/demoauth"
+@using LMS.Shared
 @inject IApiService ApiService
 @* @rendermode InteractiveWebAssembly *@                                               @* true *@
 @* @rendermode @(new InteractiveWebAssemblyRenderMode)  *@                             @* true *@
@@ -213,7 +214,8 @@
 
         isLoading = true;
         try {
-            courses = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
+            var response = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
+            courses = response?.Items;
             if (courses is not null) {
                 foreach (var c in courses) {
                     Console.WriteLine($"{c.StartDate} {c.EndDate}");
