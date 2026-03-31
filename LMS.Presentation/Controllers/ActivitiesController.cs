@@ -1,5 +1,6 @@
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.ActivityDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -24,9 +25,9 @@ public class ActivitiesController(IServiceManager serviceManager) : ControllerBa
         Summary = "Get all activities",
         Description = "Retrieves all activities in the system."
     )]
-    public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities()
+    public async Task<ActionResult<IEnumerable<ActivityDto>>> GetAllActivities([FromQuery] PagedQuery query)
     {
-        var activities = await ActivityService.GetAllActivities();
+        var activities = await ActivityService.GetAllActivities(query);
         return Ok(activities);
     }
 

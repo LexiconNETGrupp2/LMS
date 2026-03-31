@@ -1,6 +1,7 @@
 ﻿using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.DTOs.ActivityDtos;
+using LMS.Shared.Pagination;
 using LMS.Test.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -20,20 +21,28 @@ public class ActivitiesControllerTest
                 ActivityHelpers.GenerateActivityDto(moduleId),
                 ActivityHelpers.GenerateActivityDto(moduleId)
             ];
+        var query = new PagedQuery { Page = 1, PageSize = 10 };
         Mock<IActivityService> activityServiceMock = new();
         activityServiceMock
-            .Setup(s => s.GetAllActivities())
-            .ReturnsAsync(expectedActivities);
-        
+            .Setup(s => s.GetAllActivities(query))
+            .ReturnsAsync(new PagedResult<ActivityDto>
+            {
+                Page = expectedActivities.Count,
+                PageSize =  query.PageSize,
+                TotalItems = expectedActivities.Count,
+                Items = expectedActivities,
+            });
+
         ActivitiesController activityController = ActivityHelpers.CreateController(activityServiceMock);
 
         // Act
-        var result = await activityController.GetAllActivities();
-        
+        var result = await activityController.GetAllActivities(query);
+
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        Assert.Same(expectedActivities, okResult.Value);
-        activityServiceMock.Verify(s => s.GetAllActivities(), Times.Once);
+        var response = Assert.IsType<PagedResult<ActivityDto>>(okResult.Value);
+        Assert.Same(expectedActivities, response.Items);
+        activityServiceMock.Verify(s => s.GetAllActivities(query), Times.Once);
     }
 
     [Fact]

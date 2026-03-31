@@ -3,6 +3,7 @@ using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -23,14 +24,22 @@ public class CoursesControllerTest
         var param = new AllCoursesParams(
             Search: null,
             AfterDate: null,
-            BeforeDate: null
-        );
+            BeforeDate: null)
+        {
+            Page = 1,
+            PageSize = 10,
+        };
 
         var courseServiceMock = new Mock<ICourseService>();
-        IReadOnlyCollection<CourseDto> expectedCourses = [];
+        IReadOnlyList<CourseDto> expectedCourses = [];
         courseServiceMock
             .Setup(s => s.GetAllCourses(param, ct))
-            .ReturnsAsync(expectedCourses);
+            .ReturnsAsync(new PagedResult<CourseDto> {
+                Page = param.Page,
+                TotalItems = expectedCourses.Count,
+                PageSize = param.PageSize,
+                Items = expectedCourses,
+            });
 
         var controller = CreateController(courseServiceMock);
 
@@ -39,7 +48,8 @@ public class CoursesControllerTest
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Same(expectedCourses, okResult.Value);
+        var response = Assert.IsType<PagedResult<CourseDto>>(okResult.Value);
+        Assert.Same(expectedCourses, response.Items);
         courseServiceMock.Verify(s => s.GetAllCourses(param, ct), Times.Once);
     }
 

@@ -1,9 +1,9 @@
-
 using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.Pagination;
 using Service.Contracts;
 
 namespace LMS.Services;
@@ -25,10 +25,16 @@ public class ModuleService : IModuleService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<ModuleDto>> GetAllModulesAsync()
+    public async Task<PagedResult<ModuleDto>> GetAllModulesAsync(PagedQuery query)
     {
-        var modules = await _moduleRepository.GetAllModulesAsync();
-        return _mapper.Map<IEnumerable<ModuleDto>>(modules);
+        var result = await _moduleRepository.GetAllModulesAsync(query);
+        return new PagedResult<ModuleDto>
+        {
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalItems = result.TotalItems,
+            Items = _mapper.Map<IReadOnlyList<ModuleDto>>(result.Items),
+        };
     }
 
     public async Task<ModuleDto?> GetModuleByIdAsync(Guid id)
