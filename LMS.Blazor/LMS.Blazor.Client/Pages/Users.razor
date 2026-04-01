@@ -1,4 +1,6 @@
 ﻿@page "/Users"
+@using LMS.Blazor.Client.Components.User
+@using LMS.Shared.DTOs.AuthDtos
 @using LMS.Shared.Pagination
 @inject IApiService ApiService
 @attribute [Authorize(Roles = RolesNames.Teacher)]
@@ -11,11 +13,16 @@
             <h1 class="fw-bold fs-3 mb-1">Användare</h1>
             <div class="text-secondary">Totalt <strong>@FilteredUsers.Count()</strong> användare i systemet</div>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" @onclick="ToggleCreateForm">
             <i class="bi bi-plus"></i> Lägg till användare
         </button>
     </div>
 </div>
+
+@if (showCreateForm)
+{
+    <CreateUser OnUserCreated="OnUserCreated" CourseOptions="CourseOptions" />
+}
 
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div class="flex-grow-1">
@@ -85,6 +92,8 @@
     private readonly List<string> pageErrors = [];
     private string searchTerm = string.Empty;
     private string? roleFilter = null;
+    private Dictionary<Guid, string> CourseOptions => Courses.ToDictionary(c => c.Id, c => c.Name);
+    private bool showCreateForm = false;
 
     public class UserModel
     {
@@ -182,5 +191,22 @@
     private void ClearSearch()
     {
         searchTerm = string.Empty;
+    }
+
+    private void ToggleCreateForm()
+    {
+        showCreateForm = !showCreateForm;
+    }
+
+    private void OnUserCreated(UserRegistrationDto user)
+    {
+        _users.Add(new UserModel
+        {
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            Role = user.Role ?? string.Empty,
+            CourseId = user.CourseId,
+        });
     }
 }
