@@ -12,6 +12,12 @@
         <div>
             <h1 class="modules-page-title mb-1">Kurser</h1>
             <p class="text-body-secondary mb-0">Hantera kurser och dess moduler.</p>
+            <span class="mt-1">
+                <label class="user-select-none">
+                    <input class="form-check-input" type="checkbox" @onchange="ToggleShowingCourses" checked="@showOldCourses" />
+                    Show old courses
+                </label>
+            </span>
         </div>
         <div>            
             <button type="button" class="btn btn-primary modules-primary-action me-2" @onclick="() => OpenCreateModal()">
@@ -31,8 +37,7 @@
                 <button class="btn btn-primary ms-2" type="submit">Sök</button>
             </EditForm>
         </div>
-    </div>
-
+    </div>    
     @if (!string.IsNullOrWhiteSpace(actionMessage))
     {
         <div class="alert alert-success">@actionMessage</div>
@@ -189,7 +194,9 @@
                 OnSubmit="SaveModuleAsync" />
 
 @code {
-    private readonly List<CourseDto> courses = [];
+    private List<CourseDto> courses = [];
+    private List<CourseDto> allCourses = [];
+    private List<CourseDto> activeCourses = [];
     private HashSet<Guid> expandedCourseIds = [];
     private ModuleFormModel moduleForm = new();
     private bool isLoading = true;
@@ -200,6 +207,7 @@
     private string? submitError;
     private string? actionMessage;
     private string searchStr = "";
+    private bool showOldCourses = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -217,10 +225,9 @@
         {
             var uri = "api/courses";
             if (search is not null) uri += $"?search={search}";
-            var result = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>(uri);
-
-            courses.Clear();
-            courses.AddRange((result ?? []).OrderBy(course => course.Name));
+            allCourses = (await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>(uri) ?? []).ToList();
+            activeCourses = allCourses.Where(c => c.EndDate > DateOnly.FromDateTime(DateTime.Now)).ToList();
+            ToggleShowingCourses();
 
             expandedCourseIds = courses
                 .Select(course => course.Id)
@@ -240,6 +247,13 @@
         {
             isLoading = false;
         }
+    }
+
+    private void ToggleShowingCourses()
+    {
+        showOldCourses = !showOldCourses;
+        courses = showOldCourses ? allCourses : activeCourses;
+        courses = courses.OrderBy(course => course.Name).ToList();
     }
 
     private async Task SearchForCourses() => await LoadCoursesAsync(searchStr);
