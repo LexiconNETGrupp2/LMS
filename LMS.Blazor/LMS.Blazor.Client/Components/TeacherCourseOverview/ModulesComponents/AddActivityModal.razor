@@ -1,0 +1,132 @@
+@if (IsOpen)
+{
+    <div class="activity-modal-backdrop" @onclick="HandleBackdropClick"></div>
+
+    <div class="activity-modal-shell" role="dialog" aria-modal="true" aria-labelledby="activity-modal-title">
+        <div class="activity-modal-window shadow-lg">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h2 id="activity-modal-title" class="h4 mb-1">@(Model.IsEditMode ? "Redigera aktivitet" : "Lägg till aktivitet")</h2>
+                    <p class="text-body-secondary mb-0">
+                        @(Model.IsEditMode ? "Uppdatera aktivitetens information." : "Skapa en ny aktivitet i modulen.")
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="btn btn-light activity-modal-close"
+                        @onclick="OnClose">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <div class="alert alert-danger">@ErrorMessage</div>
+            }
+
+            <EditForm Model="Model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="alert alert-danger" />
+
+                <div class="mb-3">
+                    <label class="form-label" for="activity-module">Modul</label>
+                    <input id="activity-module" class="form-control" value="@Model.ModuleName" disabled />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="activity-name">Aktivitetsnamn</label>
+                    <InputText id="activity-name"
+                               class="form-control"
+                               @bind-Value="Model.Name"
+                               placeholder="T.ex. Introduktion"
+                               disabled="@IsSubmitting" />
+                    <ValidationMessage For="() => Model.Name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="activity-description">Beskrivning</label>
+                    <InputTextArea id="activity-description"
+                                   class="form-control"
+                                   rows="3"
+                                   @bind-Value="Model.Description"
+                                   placeholder="Beskriv aktivitetens innehåll"
+                                   disabled="@IsSubmitting" />
+                    <ValidationMessage For="() => Model.Description" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="activity-start">Startdatum och tid</label>
+                        <InputText id="activity-start"
+                                   class="form-control"
+                                   type="datetime-local"
+                                   @bind-Value="Model.StartDateTimeLocal"
+                                   disabled="@IsSubmitting" />
+                        <ValidationMessage For="() => Model.StartDateTimeLocal" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="activity-end">Slutdatum och tid</label>
+                        <InputText id="activity-end"
+                                   class="form-control"
+                                   type="datetime-local"
+                                   @bind-Value="Model.EndDateTimeLocal"
+                                   disabled="@IsSubmitting" />
+                        <ValidationMessage For="() => Model.EndDateTimeLocal" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="activity-type">Typ</label>
+                    <InputSelect id="activity-type"
+                                 class="form-select"
+                                 @bind-Value="Model.TypeName"
+                                 disabled="@IsSubmitting">
+                        <option value="Lecture">Föreläsning</option>
+                        <option value="Exercise">Övning</option>
+                        <option value="Assignment">Inlämning</option>
+                    </InputSelect>
+                    <ValidationMessage For="() => Model.TypeName" />
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            @onclick="OnClose"
+                            disabled="@IsSubmitting">
+                        Avbryt
+                    </button>
+                    <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">
+                        @if (IsSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        @(Model.IsEditMode ? "Spara ändringar" : "Lägg till")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public ActivityFormModel Model { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+
+    private async Task HandleBackdropClick()
+    {
+        if (!IsSubmitting)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+}
