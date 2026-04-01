@@ -16,7 +16,7 @@
             <span class="mt-1">
                 <label class="user-select-none">
                     <input class="form-check-input" type="checkbox" @onchange="ToggleShowingCourses" checked="@showOldCourses" />
-                    Show old courses
+                    Visa kurser som har slutat
                 </label>
             </span>
         </div>
@@ -227,7 +227,8 @@
             var result = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
             allCourses = result?.Items.ToList() ?? [];
             activeCourses = allCourses.Where(c => c.EndDate >= DateOnly.FromDateTime(DateTime.Now)).ToList();
-            ToggleShowingCourses();
+            courses = showOldCourses ? allCourses : activeCourses;
+            courses = courses.OrderBy(course => course.Name).ToList();
 
             expandedCourseIds = courses
                 .Select(course => course.Id)
