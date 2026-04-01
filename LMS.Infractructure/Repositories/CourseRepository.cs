@@ -1,9 +1,10 @@
 using Domain.Contracts.Repositories;
-using Domain.Contracts.Repositories.Models;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
+using LMS.Infractructure.Extensions;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,11 +19,9 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyCollection<Course>> GetAllCourses(AllCoursesParams param, CancellationToken token)
+    public async Task<PagedResult<Course>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
-        var query = _context.Courses
-                        .AsNoTracking()
-                        .AsQueryable();
+        var query = FindAll(trackChanges: false);
 
         if (param.AfterDate is not null) {
             query = query.Where(c => c.StartDate <= param.AfterDate);
@@ -33,124 +32,39 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         }
 
         if (param.Search is not null) {
-            query = query.Where(c => c.Name.Contains(param.Search) || 
+            query = query.Where(c => c.Name.Contains(param.Search) ||
                                 c.Description.Contains(param.Search));
         }
 
-        return await query.Include(c => c.Modules)
-                        .Include(c => c.Students)
-                        .ToListAsync(token);
-    }
-
-    public async Task<Course?> GetCourseById(Guid id, CancellationToken token)
-    {
-        return await _context.Courses
-                        .AsNoTracking()
+        return await query
                         .Include(c => c.Modules)
                             .ThenInclude(m => m.Activities)
+                                .ThenInclude(a => a.Type)
                         .Include(c => c.Students)
-                        .FirstOrDefaultAsync(c => c.Id == id, token);
+                        .ToPagedResultAsync(param, token);
     }
 
-    public async Task<Course?> GetCourseByIdTracked(Guid id, CancellationToken token)
+    public async Task<Course?> GetCourseById(Guid id, bool trackChanges, CancellationToken token)
     {
-        return await _context.Courses
+        return await FindAll(trackChanges: trackChanges)
                         .Include(c => c.Modules)
+                            .ThenInclude(m => m.Activities)
+                                .ThenInclude(a => a.Type)
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(c => c.Id == id, token);
     }
 
-    public async Task<Course?> GetCourseFromUserId(Guid userId, CancellationToken token)
+    public async Task<Course?> GetCourseFromUserId(Guid userId, bool trackChanges, CancellationToken token)
     {
         var userIdStr = userId.ToString();
 
-        return await _context.Courses
+        return await FindAll(trackChanges: trackChanges)
                         .AsNoTracking()
                         .Where(c => c.Students.FirstOrDefault(u => u.Id == userIdStr) != null)
                         .Include(c => c.Modules)
+                            .ThenInclude(m => m.Activities)
+                                .ThenInclude(a => a.Type)
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(token);
-    }
-
-    public async Task<CourseParticipantsReadModel?> GetCourseParticipantsByUserId(Guid userId, CancellationToken token)
-    {
-        var userIdStr = userId.ToString();
-
-        var courseData = await _context.Courses
-                        .AsNoTracking()
-                        .Where(c => c.Students.Any(u => u.Id == userIdStr))
-                        .Include(c => c.Students)
-                        .FirstOrDefaultAsync(token);
-
-        if (courseData is null)
-            return null;
-
-        var participants = courseData.Students
-                           .Select(student => new CourseParticipantReadModel
-                           {
-                               Id = student.Id,
-                               FirstName = student.FirstName.Trim(),
-                               LastName = student.LastName.Trim(),
-                               Email = student.Email ?? string.Empty
-                           })
-                           .ToList();
-
-        var participantIds = participants.Select(participant => participant.Id).ToList();
-        var participantRoles = await GetParticipantRolesAsync(participantIds, token);
-
-        return new CourseParticipantsReadModel
-        {
-            CourseId = courseData.Id,
-            Name = courseData.Name,
-            Description = courseData.Description,
-            Participants = participants,
-            ParticipantRoles = participantRoles
-        };
-    }
-
-    private async Task<IReadOnlyCollection<CourseParticipantRoleReadModel>> GetParticipantRolesAsync(
-        IReadOnlyCollection<string> participantIds,
-        CancellationToken token)
-    {
-        if (participantIds.Count == 0)
-            return [];
-
-        return await (
-                        from userRole in _context.Set<IdentityUserRole<string>>().AsNoTracking()
-                        join role in _context.Roles.AsNoTracking() on userRole.RoleId equals role.Id
-                        where participantIds.Contains(userRole.UserId)
-                        select new CourseParticipantRoleReadModel
-                        {
-                            UserId = userRole.UserId,
-                            RoleName = role.Name
-                        })
-                        .ToListAsync(token);
-    }
-
-    public async Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token)
-    {
-        var students = await (
-            from course in _context.Courses.AsNoTracking()
-            where course.Id == courseId
-
-            from student in course.Students
-
-            join userRole in _context.Set<IdentityUserRole<string>>().AsNoTracking()
-                on student.Id equals userRole.UserId
-
-            join role in _context.Roles.AsNoTracking()
-                on userRole.RoleId equals role.Id
-
-            where role.Name == RolesNames.Student
-
-            select new CourseStudentDto
-            {
-                Id = student.Id,
-                FullName = (student.FirstName + " " + student.LastName).Trim(),
-                Email = student.Email ?? string.Empty
-            }
-        ).ToListAsync(token);
-
-        return students;
     }
 }

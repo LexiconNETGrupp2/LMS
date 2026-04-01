@@ -1,8 +1,8 @@
 ﻿using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.DTOs.ActivityDtos;
+using LMS.Shared.Pagination;
 using LMS.Test.Helpers;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Service.Contracts;
@@ -21,20 +21,28 @@ public class ActivitiesControllerTest
                 ActivityHelpers.GenerateActivityDto(moduleId),
                 ActivityHelpers.GenerateActivityDto(moduleId)
             ];
+        var query = new PagedQuery { Page = 1, PageSize = 10 };
         Mock<IActivityService> activityServiceMock = new();
         activityServiceMock
-            .Setup(s => s.GetAllActivities())
-            .ReturnsAsync(expectedActivities);
-        
+            .Setup(s => s.GetAllActivities(query))
+            .ReturnsAsync(new PagedResult<ActivityDto>
+            {
+                Page = expectedActivities.Count,
+                PageSize =  query.PageSize,
+                TotalItems = expectedActivities.Count,
+                Items = expectedActivities,
+            });
+
         ActivitiesController activityController = ActivityHelpers.CreateController(activityServiceMock);
 
         // Act
-        var result = await activityController.GetAllActivities();
-        
+        var result = await activityController.GetAllActivities(query);
+
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        Assert.Same(expectedActivities, okResult.Value);
-        activityServiceMock.Verify(s => s.GetAllActivities(), Times.Once);
+        var response = Assert.IsType<PagedResult<ActivityDto>>(okResult.Value);
+        Assert.Same(expectedActivities, response.Items);
+        activityServiceMock.Verify(s => s.GetAllActivities(query), Times.Once);
     }
 
     [Fact]
@@ -58,20 +66,17 @@ public class ActivitiesControllerTest
 
     [Fact]
     [Trait("Layer", "Controller")]
-    public async Task GetActivityById_Whenunknown_ReturnsNotFound()
+    public async Task GetActivityById_Whenunknown_ThrowsActivityNotFoundexception()
     {
         Guid id = Guid.NewGuid();
         Mock<IActivityService> activityServiceMock = new();
         activityServiceMock
             .Setup(s => s.GetActivityById(id))
-            .ReturnsAsync((ActivityDto?)null);
+            .Throws(new ActivityNotFoundException(id));
         
         ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
 
-        var response = await controller.GetActivityById(id);
-
-        var notFoundResult = Assert.IsType<NotFoundResult>(response.Result);
-        Assert.Equal(StatusCodes.Status404NotFound, notFoundResult.StatusCode);
+        await Assert.ThrowsAsync<ActivityNotFoundException>(async () => await controller.GetActivityById(id));
         activityServiceMock.Verify(s => s.GetActivityById(id), Times.Once);
     }
 
@@ -136,16 +141,16 @@ public class ActivitiesControllerTest
 
     [Fact]
     [Trait("Layer", "Controller")]
-    public async Task CreateActivity_WhenInvalid_ThrowsException()
+    public async Task CreateActivity_WhenInvalid_ThrowsBadrequestException()
     {
         CreateActivityDto createActivityDto = ActivityHelpers.GenerateCreateActivityDto();
         Mock<IActivityService> activityServiceMock = new();
         activityServiceMock
             .Setup(s => s.CreateActivity(createActivityDto))
-            .Throws(new Exception("Something went wrong"));
+            .Throws(new BadRequestException("Could not create activity"));
         ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
 
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<BadRequestException>(
             async () => await controller.CreateActivity(createActivityDto)
         );
     }

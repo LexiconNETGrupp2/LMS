@@ -1,9 +1,9 @@
-
 using AutoMapper;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.Pagination;
 using Service.Contracts;
 
 namespace LMS.Services;
@@ -17,26 +17,31 @@ public class ModuleService : IModuleService
 
     public ModuleService(
         IUnitOfWork uow,
-        IModuleRepository moduleRepository,
-        ICourseRepository courseRepository,
         IMapper mapper)
     {
         _uow = uow;
-        _moduleRepository = moduleRepository;
-        _courseRepository = courseRepository;
+        _moduleRepository = _uow.Modules;
+        _courseRepository = _uow.Courses;
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<ModuleDto>> GetAllModulesAsync()
+    public async Task<PagedResult<ModuleDto>> GetAllModulesAsync(PagedQuery query)
     {
-        var modules = await _moduleRepository.GetAllModulesAsync();
-        return _mapper.Map<IEnumerable<ModuleDto>>(modules);
+        var result = await _moduleRepository.GetAllModulesAsync(query);
+        return new PagedResult<ModuleDto>
+        {
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalItems = result.TotalItems,
+            Items = _mapper.Map<IReadOnlyList<ModuleDto>>(result.Items),
+        };
     }
 
     public async Task<ModuleDto?> GetModuleByIdAsync(Guid id)
     {
-        var module = await _moduleRepository.GetModuleByIdAsync(id);
-        return module is null ? null : _mapper.Map<ModuleDto>(module);
+        var module = await _moduleRepository.GetModuleByIdAsync(id)
+            ?? throw new ModuleNotFoundException(id);
+        return _mapper.Map<ModuleDto>(module);
     }
 
     public async Task<IEnumerable<ModuleDto>> GetModulesByCourseIdAsync(Guid courseId)
@@ -47,9 +52,8 @@ public class ModuleService : IModuleService
 
     public async Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto)
     {
-        var course = await _courseRepository.GetCourseByIdTracked(createModuleDto.CourseId, CancellationToken.None);
-        if (course == null)
-            throw new NotFoundException("Course not found.");
+        var course = await _courseRepository.GetCourseById(createModuleDto.CourseId, trackChanges: true, CancellationToken.None)
+            ?? throw new CourseNotFoundException(createModuleDto.CourseId);
 
         ValidateName(createModuleDto.Name.Trim());
         ValidateDateRange(createModuleDto.StartDate, createModuleDto.EndDate);
@@ -76,9 +80,8 @@ public class ModuleService : IModuleService
 
     public async Task UpdateModuleAsync(Guid id, UpdateModuleDto updateModuleDto)
     {
-        var module = await _moduleRepository.GetModuleByIdTrackedAsync(id);
-        if (module == null)
-            throw new NotFoundException("Module not found.");
+        var module = await _moduleRepository.GetModuleByIdTrackedAsync(id)
+            ?? throw new ModuleNotFoundException(id);
 
         ValidateName(updateModuleDto.Name.Trim());
         ValidateDateRange(updateModuleDto.StartDate, updateModuleDto.EndDate);
@@ -99,9 +102,8 @@ public class ModuleService : IModuleService
 
     public async Task DeleteModuleAsync(Guid id)
     {
-        var module = await _moduleRepository.GetModuleByIdTrackedAsync(id);
-        if (module == null)
-            throw new NotFoundException("Module not found.");
+        var module = await _moduleRepository.GetModuleByIdTrackedAsync(id)
+            ?? throw new ModuleNotFoundException(id);
 
         _moduleRepository.Delete(module);
         await _uow.CompleteAsync(CancellationToken.None);

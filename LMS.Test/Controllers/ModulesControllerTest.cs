@@ -1,5 +1,7 @@
+using Domain.Models.Exceptions;
 using LMS.Presentation.Controllers;
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -25,26 +27,34 @@ public class ModulesControllerTest
                 Guid.NewGuid(),
                 "Course 1")
         };
+        var query = new PagedQuery { Page = 1, PageSize = 10 };
 
         var moduleServiceMock = new Mock<IModuleService>();
         moduleServiceMock
-            .Setup(s => s.GetAllModulesAsync())
-            .ReturnsAsync(expectedModules);
+            .Setup(s => s.GetAllModulesAsync(query))
+            .ReturnsAsync(new PagedResult<ModuleDto>
+            {
+                Page = expectedModules.Count,
+                PageSize = query.PageSize,
+                TotalItems = expectedModules.Count,
+                Items = expectedModules,
+            });
 
         var controller = CreateController(moduleServiceMock);
 
         // Act
-        var result = await controller.GetAllModules();
+        var result = await controller.GetAllModules(query);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        Assert.Same(expectedModules, okResult.Value);
-        moduleServiceMock.Verify(s => s.GetAllModulesAsync(), Times.Once);
+        var response = Assert.IsType<PagedResult<ModuleDto>>(okResult.Value);
+        Assert.Same(expectedModules, response.Items);
+        moduleServiceMock.Verify(s => s.GetAllModulesAsync(query), Times.Once);
     }
 
     [Fact]
     [Trait("Layer", "Controller")]
-    public async Task GetModuleById_WhenMissing_ReturnsNotFound()
+    public async Task GetModuleById_WhenMissing_ThrowsNotFound()
     {
         // Arrange
         var moduleId = Guid.NewGuid();
@@ -52,15 +62,16 @@ public class ModulesControllerTest
         var moduleServiceMock = new Mock<IModuleService>();
         moduleServiceMock
             .Setup(s => s.GetModuleByIdAsync(moduleId))
-            .ReturnsAsync((ModuleDto?)null);
+            .Throws(new ModuleNotFoundException(moduleId));
 
         var controller = CreateController(moduleServiceMock);
 
-        // Act
-        var result = await controller.GetModuleById(moduleId);
+        // Act       
 
         // Assert
-        Assert.IsType<NotFoundResult>(result.Result);
+        await Assert.ThrowsAsync<ModuleNotFoundException>(async () => 
+            await controller.GetModuleById(moduleId)
+        );
         moduleServiceMock.Verify(s => s.GetModuleByIdAsync(moduleId), Times.Once);
     }
 

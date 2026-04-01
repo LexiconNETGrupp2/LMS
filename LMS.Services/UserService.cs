@@ -2,6 +2,7 @@ using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
 using LMS.Shared.DTOs.UserDtos;
+using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Identity;
 using Service.Contracts;
 
@@ -17,25 +18,29 @@ public class UserService : IUserService
         _uow = uow;
     }
 
-    public async Task<IReadOnlyCollection<UserDto>> GetAllUsers(CancellationToken ct)
+    public async Task<PagedResult<UserDto>> GetAllUsers(PagedQuery query, CancellationToken ct)
     {
-        var users = await _uow.Users.GetAllWithCoursesAsync(ct);
-        return users.Select(MapToUserDto).ToList();
+        var users = await _uow.Users.GetAllWithCoursesAsync(query, ct);
+        return new PagedResult<UserDto>
+        {
+            Page = users.Page,
+            PageSize = users.PageSize,
+            TotalItems = users.TotalItems,
+            Items = users.Items.Select(MapToUserDto).ToList(),
+        };
     }
 
     public async Task<UserDto> GetUserById(string id)
     {
-        var user = await _uow.Users.GetByIdWithCourseAsync(id, CancellationToken.None);
-        if (user == null)
-            throw new UserNotFoundException();
+        var user = await _uow.Users.GetByIdWithCourseAsync(id, CancellationToken.None)
+            ?? throw new UserNotFoundException();
         return MapToUserDto(user);
     }
 
     public async Task DeleteUser(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
-        if (user == null)
-            throw new UserNotFoundException();
+        var user = await _userManager.FindByIdAsync(id)
+            ?? throw new UserNotFoundException();
         await _userManager.DeleteAsync(user);
     }
 

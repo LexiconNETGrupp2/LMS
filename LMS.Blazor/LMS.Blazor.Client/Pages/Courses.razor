@@ -1,4 +1,4 @@
-@page "/courses"
+@page "/Modules"
 @attribute [Authorize(Roles = "Teacher")]
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @inject IApiService ApiService
@@ -223,11 +223,10 @@
 
         try
         {
-            var uri = "api/courses";
-            if (search is not null) uri += $"?search={search}";
-            allCourses = (await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>(uri) ?? []).ToList();
-            activeCourses = allCourses.Where(c => c.EndDate > DateOnly.FromDateTime(DateTime.Now)).ToList();
-            ToggleShowingCourses();
+            var result = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
+
+            courses.Clear();
+            courses.AddRange((result ?? []).OrderBy(course => course.Name));
 
             expandedCourseIds = courses
                 .Select(course => course.Id)
