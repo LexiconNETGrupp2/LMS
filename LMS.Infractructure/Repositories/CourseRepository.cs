@@ -32,11 +32,14 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         }
 
         if (param.Search is not null) {
-            query = query.Where(c => c.Name.Contains(param.Search) || 
+            query = query.Where(c => c.Name.Contains(param.Search) ||
                                 c.Description.Contains(param.Search));
         }
 
-        return await query.Include(c => c.Modules)
+        return await query
+                        .Include(c => c.Modules)
+                            .ThenInclude(m => m.Activities)
+                                .ThenInclude(a => a.Type)
                         .Include(c => c.Students)
                         .ToPagedResultAsync(param, token);
     }
@@ -46,6 +49,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
         return await FindAll(trackChanges: trackChanges)
                         .Include(c => c.Modules)
                             .ThenInclude(m => m.Activities)
+                                .ThenInclude(a => a.Type)
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(c => c.Id == id, token);
     }
@@ -58,6 +62,8 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .AsNoTracking()
                         .Where(c => c.Students.FirstOrDefault(u => u.Id == userIdStr) != null)
                         .Include(c => c.Modules)
+                            .ThenInclude(m => m.Activities)
+                                .ThenInclude(a => a.Type)
                         .Include(c => c.Students)
                         .FirstOrDefaultAsync(token);
     }

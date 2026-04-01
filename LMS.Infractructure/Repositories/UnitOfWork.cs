@@ -5,7 +5,7 @@ namespace LMS.Infractructure.Repositories;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext context;
-    
+
     public ICourseRepository Courses => field ??= new CourseRepository(context);
     public IModuleRepository Modules => field ??= new ModuleRepository(context);
     public IActivityRepository Activities => field ??= new ActivityRepository(context);

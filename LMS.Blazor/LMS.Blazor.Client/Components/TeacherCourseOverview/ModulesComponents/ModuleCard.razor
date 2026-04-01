@@ -45,12 +45,14 @@
                 </div>
 
                 <div class="d-flex gap-2 flex-shrink-0">
-                    <button class="btn btn-primary-subtle text-primary rounded-3">
+                    <button class="btn btn-primary-subtle text-primary rounded-3"
+                            @onclick="() => OnEditModule.InvokeAsync(Module)">
                         <i class="bi bi-pencil-square me-2"></i>
                         Redigera
                     </button>
 
-                    <button class="btn btn-danger-subtle text-danger rounded-3">
+                    <button class="btn btn-danger-subtle text-danger rounded-3"
+                            @onclick="() => OnDeleteModule.InvokeAsync(Module)">
                         <i class="bi bi-trash me-2"></i>
                         Ta bort
                     </button>
@@ -62,11 +64,16 @@
             <div class="d-flex flex-column gap-3">
                 @foreach (var activity in Module.Activities)
                 {
-                    <ModuleActivityItem Activity="activity" />
+                    <ModuleActivityItem Activity="activity"
+                                        OnEdit="OnEditActivity"
+                                        OnDelete="OnDeleteActivity"
+                                        OnViewSubmissions="OnViewSubmissions"
+                                        OnAddDocument="OnAddDocument" />
                 }
             </div>
 
-            <button class="btn btn-outline-secondary w-100 border-dashed rounded-3 mt-3">
+            <button class="btn btn-outline-secondary w-100 border-dashed rounded-3 mt-3"
+                    @onclick="() => OnAddActivity.InvokeAsync(Module)">
                 <i class="bi bi-plus-circle me-2"></i>
                 Lägg till aktivitet
             </button>
@@ -76,4 +83,11 @@
 
 @code {
     [Parameter, EditorRequired] public ModuleModel Module { get; set; } = new();
+    [Parameter] public EventCallback<ModuleModel> OnEditModule { get; set; }
+    [Parameter] public EventCallback<ModuleModel> OnDeleteModule { get; set; }
+    [Parameter] public EventCallback<ModuleModel> OnAddActivity { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnEditActivity { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnDeleteActivity { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnViewSubmissions { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnAddDocument { get; set; }
 }

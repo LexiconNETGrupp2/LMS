@@ -66,4 +66,36 @@ public class ActivityService : IActivityService
             throw new BadRequestException(ex.Message);
         }
     }
+
+    public async Task UpdateActivity(Guid id, UpdateActivityDto request)
+    {
+        var activity = await _uow.Activities.GetActivityById(id, trackChanges: true)
+            ?? throw new ActivityNotFoundException(id);
+
+        activity.Name = request.Name;
+        activity.Description = request.Description;
+        activity.StartDate = request.StartDate;
+        activity.EndDate = request.EndDate;
+        activity.Type = _mapper.Map<ActivityType>(request.Type);
+
+        try {
+            _uow.Activities.Update(activity);
+            await _uow.CompleteAsync(CancellationToken.None);
+        } catch (Exception ex) {
+            throw new BadRequestException(ex.Message);
+        }
+    }
+
+    public async Task DeleteActivity(Guid id)
+    {
+        var activity = await _uow.Activities.GetActivityById(id, trackChanges: true)
+            ?? throw new ActivityNotFoundException(id);
+
+        try {
+            _uow.Activities.Delete(activity);
+            await _uow.CompleteAsync(CancellationToken.None);
+        } catch (Exception ex) {
+            throw new BadRequestException(ex.Message);
+        }
+    }
 }

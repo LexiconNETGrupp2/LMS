@@ -23,17 +23,18 @@
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
             @if (Activity.ShowSubmissionButton)
             {
-                <button class="btn btn-success-subtle text-success rounded-3">
+                <button class="btn btn-success-subtle text-success rounded-3"
+                        @onclick="() => OnViewSubmissions.InvokeAsync(Activity)">
                     <i class="bi bi-eye me-2"></i>
                     Se inlämningar
                 </button>
             }
 
-            <button class="btn btn-link text-primary p-0">
+            <button class="btn btn-link text-primary p-0" @onclick="() => OnEdit.InvokeAsync(Activity)">
                 <i class="bi bi-pencil-square fs-5"></i>
             </button>
 
-            <button class="btn btn-link text-danger p-0">
+            <button class="btn btn-link text-danger p-0" @onclick="() => OnDelete.InvokeAsync(Activity)">
                 <i class="bi bi-trash fs-5"></i>
             </button>
         </div>
@@ -53,7 +54,8 @@
         </div>
     }
 
-    <button class="btn btn-link text-decoration-none px-0 mt-2">
+    <button class="btn btn-link text-decoration-none px-0 mt-2"
+            @onclick="() => OnAddDocument.InvokeAsync(Activity)">
         <i class="bi bi-plus-circle me-1"></i>
         Lägg till dokument
     </button>
@@ -61,6 +63,10 @@
 
 @code {
     [Parameter, EditorRequired] public ModuleActivityModel Activity { get; set; } = new();
+    [Parameter] public EventCallback<ModuleActivityModel> OnEdit { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnDelete { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnViewSubmissions { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnAddDocument { get; set; }
 
     private string GetTypeLabel() => Activity.Type switch
     {

@@ -1,7 +1,7 @@
 ﻿<div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="h3 mb-0 fw-semibold">Moduler</h2>
 
-    <button class="btn btn-primary rounded-3">
+    <button class="btn btn-primary rounded-3" @onclick="() => OnAddModule.InvokeAsync()">
         <i class="bi bi-plus-circle me-2"></i>
         Lägg till modul
     </button>
@@ -10,10 +10,25 @@
 <div class="accordion" id="modulesAccordion">
     @foreach (var module in Modules)
     {
-        <ModuleCard Module="module" />
+        <ModuleCard Module="module"
+                    OnEditModule="OnEditModule"
+                    OnDeleteModule="OnDeleteModule"
+                    OnAddActivity="OnAddActivity"
+                    OnEditActivity="OnEditActivity"
+                    OnDeleteActivity="OnDeleteActivity"
+                    OnViewSubmissions="OnViewSubmissions"
+                    OnAddDocument="OnAddDocument" />
     }
 </div>
 
 @code {
     [Parameter] public List<ModuleModel> Modules { get; set; } = [];
+    [Parameter] public EventCallback OnAddModule { get; set; }
+    [Parameter] public EventCallback<ModuleModel> OnEditModule { get; set; }
+    [Parameter] public EventCallback<ModuleModel> OnDeleteModule { get; set; }
+    [Parameter] public EventCallback<ModuleModel> OnAddActivity { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnEditActivity { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnDeleteActivity { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnViewSubmissions { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnAddDocument { get; set; }
 }
