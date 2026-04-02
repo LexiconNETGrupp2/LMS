@@ -215,7 +215,7 @@
         await LoadCoursesAsync();
     }
 
-    private async Task LoadCoursesAsync(string? search = null)
+    private async Task LoadCoursesAsync()
     {
         var expandedBeforeReload = expandedCourseIds.ToHashSet();
 
@@ -259,7 +259,7 @@
         courses = courses.OrderBy(course => course.Name).ToList();
     }
 
-    private async Task SearchForCourses() => await LoadCoursesAsync(searchStr);
+    private async Task SearchForCourses() => await LoadCoursesAsync();
 
     private void ToggleCourse(Guid courseId)
     {
