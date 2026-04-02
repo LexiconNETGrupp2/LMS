@@ -5,6 +5,7 @@ namespace LMS.Shared.DTOs.CourseDtos;
 public sealed record CourseModuleDto(
     Guid Id,
     string Name,
+    string Description,
     DateOnly StartDate,
     DateOnly EndDate,
     ICollection<ActivityDto> Activities

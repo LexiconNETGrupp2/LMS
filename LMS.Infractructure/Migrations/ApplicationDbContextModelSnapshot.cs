@@ -252,6 +252,10 @@ namespace LMS.Infractructure.Migrations
                     b.Property<Guid>("CourseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateOnly>("EndDate")
                         .HasColumnType("date");
 

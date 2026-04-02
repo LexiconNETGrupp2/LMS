@@ -1,0 +1,28 @@
+﻿<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+            <h3 class="h4 fw-semibold mb-0">Senaste aktiviteter</h3>
+            <a href="#" class="text-decoration-none fw-medium">
+                Visa alla <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+        </div>
+
+        @if (!Activities.Any())
+        {
+            <div class="p-4 text-secondary">
+                Inga aktiviteter
+            </div>
+        }
+        else
+        {
+            @foreach (var activity in Activities)
+            {
+                <ActivityListItem Activity="activity" />
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ActivityModel> Activities { get; set; } = [];
+}

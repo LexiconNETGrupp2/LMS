@@ -1,0 +1,22 @@
+﻿@using LMS.Blazor.Client.Components.TeacherCourseOverview.ModulesComponents
+<div class="card border-0 shadow-sm rounded-4 h-100">
+    <div class="card-body p-4">
+        <h3 class="h4 fw-semibold mb-4">Kursframsteg</h3>
+
+        <div class="d-flex align-items-baseline gap-2 mb-3">
+            <span class="fs-2 fw-bold text-primary">@Progress%</span>
+            <span class="text-secondary fs-5">genomfört i genomsnitt</span>
+        </div>
+
+        <div class="progress mb-4 rounded-pill" role="progressbar" aria-valuenow="@Progress" aria-valuemin="0" aria-valuemax="100" style="height: 0.9rem;">
+            <div class="progress-bar rounded-pill" style="width:@($"{Progress}%")"></div>
+        </div>
+
+        <ModuleProgressList Modules="Modules" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Progress { get; set; }
+    [Parameter] public List<ModuleProgressModel> Modules { get; set; } = [];
+}

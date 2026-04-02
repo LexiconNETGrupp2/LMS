@@ -3,6 +3,7 @@ using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
 using LMS.Shared.DTOs.ActivityDtos;
+using LMS.Shared.Pagination;
 using Service.Contracts;
 
 namespace LMS.Services;
@@ -20,15 +21,21 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityDto?> GetActivityById(Guid id)
     {
-        var activity = await _uow.Activities.GetActivityById(id);
-        if (activity == null) return null;
+        var activity = await _uow.Activities.GetActivityById(id)
+            ?? throw new ActivityNotFoundException(id);
         return _mapper.Map<ActivityDto>(activity);
     }
 
-    public async Task<List<ActivityDto>> GetAllActivities()
+    public async Task<PagedResult<ActivityDto>> GetAllActivities(PagedQuery query)
     {
-        var activities = await _uow.Activities.GetAllActivities();
-        return _mapper.Map<List<ActivityDto>>(activities);
+        var result = await _uow.Activities.GetAllActivities(query);
+        return new PagedResult<ActivityDto>
+        {
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalItems = result.TotalItems,
+            Items = _mapper.Map<List<ActivityDto>>(result.Items),
+        };
     }
 
     public async Task<List<ActivityDto>> GetActivitiesFromModuleId(Guid moduleId)
@@ -39,9 +46,8 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityDto> CreateActivity(CreateActivityDto request)
     {
-        var module = await _uow.Modules.GetModuleByIdTrackedAsync(request.ModuleId);
-        if (module == null)
-            throw new NotFoundException("Module not found");
+        var module = await _uow.Modules.GetModuleByIdTrackedAsync(request.ModuleId)
+            ?? throw new ModuleNotFoundException(request.ModuleId);
         // TODO: check start/end is within module and not overlapping with other activities in the same module
         var activity = new Activity
         {
@@ -57,7 +63,39 @@ public class ActivityService : IActivityService
             await _uow.CompleteAsync(CancellationToken.None);
             return _mapper.Map<ActivityDto>(activity);
         } catch (Exception ex) {
-            throw new Exception($"Error creating activity: {ex.Message}");
+            throw new BadRequestException(ex.Message);
+        }
+    }
+
+    public async Task UpdateActivity(Guid id, UpdateActivityDto request)
+    {
+        var activity = await _uow.Activities.GetActivityById(id, trackChanges: true)
+            ?? throw new ActivityNotFoundException(id);
+
+        activity.Name = request.Name;
+        activity.Description = request.Description;
+        activity.StartDate = request.StartDate;
+        activity.EndDate = request.EndDate;
+        activity.Type = _mapper.Map<ActivityType>(request.Type);
+
+        try {
+            _uow.Activities.Update(activity);
+            await _uow.CompleteAsync(CancellationToken.None);
+        } catch (Exception ex) {
+            throw new BadRequestException(ex.Message);
+        }
+    }
+
+    public async Task DeleteActivity(Guid id)
+    {
+        var activity = await _uow.Activities.GetActivityById(id, trackChanges: true)
+            ?? throw new ActivityNotFoundException(id);
+
+        try {
+            _uow.Activities.Delete(activity);
+            await _uow.CompleteAsync(CancellationToken.None);
+        } catch (Exception ex) {
+            throw new BadRequestException(ex.Message);
         }
     }
 }

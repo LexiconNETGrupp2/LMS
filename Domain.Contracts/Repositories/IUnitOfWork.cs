@@ -2,9 +2,10 @@
 
 public interface IUnitOfWork
 {
-    ICourseRepository CourseRepository { get; }
+    ICourseRepository Courses { get; }
     IModuleRepository Modules { get; }
     IActivityRepository Activities { get; }
+    IUserRepository Users { get; }
 
     Task CompleteAsync(CancellationToken token);
 }

@@ -19,19 +19,6 @@ public class AuthController : ControllerBase
         this.serviceManager = serviceManager;
     }
 
-    [HttpPost]
-    [SwaggerOperation(
-        Summary = "Register a new user",
-        Description = "Creates a new user account with the provided registration details."
-    )]
-    [SwaggerResponse(StatusCodes.Status201Created, "User successfully registered")]
-    [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid input or registration failed")]
-    public async Task<IActionResult> RegisterUser(UserRegistrationDto userRegistrationDto)
-    {
-        IdentityResult result = await serviceManager.AuthService.RegisterUserAsync(userRegistrationDto);
-        return result.Succeeded ? StatusCode(StatusCodes.Status201Created) : BadRequest(result.Errors);
-    }
-
     [HttpPost("login")]
     [AllowAnonymous]
     [SwaggerOperation(

@@ -1,0 +1,116 @@
+﻿@inject NavigationManager NavigationManager
+
+<div class="container bg-white py-4 rounded">
+    <h1 class="h1 fs-3 fw-bold">Skapa kurs</h1>
+    <EditForm FormName="CreateCourse" Model="Course" OnValidSubmit="CreateCourse" class="vstack gap-3 mt-4">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label" for="course-name">Kursnamn</label>
+            <InputText id="course-name"
+                       @bind-Value="Course.Name"
+                       class="form-control"
+                       placeholder="Namnet på kursen"
+                       type="text"
+                       autofocus />
+            <ValidationMessage For="() => Course.Name" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="course-description">Kursbeskrivning</label>
+            <InputTextArea id="course-description"
+                           @bind-Value="Course.Description"
+                           placeholder="Beskriv kursen"
+                           class="form-control"
+                           Rows="4" />
+            <ValidationMessage For="() => Course.Description" />
+        </div>
+
+        <div class="row">
+            <div class="col-6">
+                <label class="form-label" for="course-start-date">Startdatum</label>
+                <InputDate @bind-Value="Course.StartDate"
+                           class="form-control"
+                           id="course-start-date"
+                           max="@Course.EndDate" />
+                <ValidationMessage For="() => Course.StartDate" />
+            </div>
+            <div class="col-6">
+                <label class="form-label" for="course-end-date">Slutdatum</label>
+                <InputDate @bind-Value="Course.EndDate"
+                           class="form-control"
+                           id="course-end-date"
+                           min="@Course.StartDate" />
+                <ValidationMessage For="() => Course.EndDate" />
+            </div>
+        </div>
+
+        <h3 class="h3 fs-5 fw-bold border-top pt-3">Lägg till moduler</h3>
+        @for (int i = 0; i < Course.Modules.Count; i++) {
+            <AddModule Module="Course.Modules[i]"
+                       OnDelete="OnRemoveModule"
+                       index="i+1"
+                       CourseStart="Course.StartDate"
+                       CourseEnd="Course.EndDate"
+                       PreviousModuleEnd="@(i > 0 ? Course.Modules[i - 1].EndDate : null)"
+                       NextModuleStart="@(i == Course.Modules.Count ? Course.Modules[i+1].StartDate : null)" />
+        }
+
+        <ValidationSummary class="alert alert-danger" />
+        @if (OverlapErrors is not null && OverlapErrors.Count > 0) {
+            <div class="alert alert-danger">
+                <ul class="m-0">
+                    @foreach (string error in OverlapErrors) {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div>
+            <button type="button" class="btn btn-link text-decoration-none float-start" @onclick="AddModule">
+                <i class="bi bi-plus-circle"></i>
+                Lägg till modul
+            </button>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-outline-secondary me-3" @onclick="CancelForm">Avbryt</button>
+            <button type="submit" class="btn btn-primary float-end" disabled="@IsLoading">Skapa kurs</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public required CourseFormModel Course { get; set; }
+
+    [Parameter]
+    public List<string> OverlapErrors { get; set; } = [];
+
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    [Parameter]
+    public EventCallback<CourseFormModel> OnCreateCourse { get; set; }
+
+    [Parameter]
+    public EventCallback OnAddModule { get; set; }
+    [Parameter]
+    public EventCallback<Guid?> OnRemoveModule { get; set; }
+
+    private async Task CreateCourse()
+    {
+        if (OnCreateCourse.HasDelegate)
+            await OnCreateCourse.InvokeAsync(Course);
+    }
+
+    private async Task AddModule()
+    {
+        if (OnAddModule.HasDelegate)
+            await OnAddModule.InvokeAsync();
+    }
+
+    private void CancelForm()
+        => NavigationManager.NavigateTo("/");
+}
