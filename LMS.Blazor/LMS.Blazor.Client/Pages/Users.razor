@@ -1,6 +1,7 @@
 ﻿@page "/Users"
 @using LMS.Blazor.Client.Components.User
 @using LMS.Shared.DTOs.AuthDtos
+@using LMS.Shared.DTOs.UserDtos
 @using LMS.Shared.Pagination
 @inject IApiService ApiService
 @attribute [Authorize(Roles = RolesNames.Teacher)]
@@ -207,10 +208,11 @@
         showCreateForm = !showCreateForm;
     }
 
-    private void OnUserCreated(UserRegistrationDto user)
+    private void OnUserCreated(UserDto user)
     {
         _users.Add(new UserModel
         {
+            Id = Guid.Parse(user.Id),
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,

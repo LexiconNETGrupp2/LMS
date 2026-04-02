@@ -1,4 +1,5 @@
 @using LMS.Shared.DTOs.AuthDtos
+@using LMS.Shared.DTOs.UserDtos
 @inject IApiService ApiService
 
 <div class="card border-0 shadow-sm mb-3">
@@ -78,7 +79,7 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<UserRegistrationDto> OnUserCreated { get; set; }
+    [Parameter] public EventCallback<UserDto> OnUserCreated { get; set; }
     [Parameter] public Dictionary<Guid, string> CourseOptions { get; set; } = new();
 
     private CreateUserFormModel _form = new();
@@ -107,13 +108,13 @@
                 CourseId = _form.CourseId,
             };
 
-            await ApiService.PostAsync<UserRegistrationDto, object?>("api/auth", dto);
+            var response = await ApiService.PostAsync<UserRegistrationDto, UserDto>("api/users", dto);
             _successMessage = "Användaren skapades.";
             ResetForm();
 
             if (OnUserCreated.HasDelegate)
             {
-                await OnUserCreated.InvokeAsync(dto);
+                await OnUserCreated.InvokeAsync(response);
             }
         }
         catch (Exception ex)
