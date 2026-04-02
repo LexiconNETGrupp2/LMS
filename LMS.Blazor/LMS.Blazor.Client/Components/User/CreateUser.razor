@@ -1,7 +1,7 @@
 @using LMS.Shared.DTOs.AuthDtos
 @inject IApiService ApiService
 
-<div class="card border-0 shadow-sm">
+<div class="card border-0 shadow-sm mb-3">
     <div class="card-body">
         <h2 class="h5 mb-3">Skapa användare</h2>
 
@@ -21,25 +21,25 @@
             <div class="g-3">
                 <div class="mb-3">
                     <label for="firstName" class="form-label">Förnamn</label>
-                    <InputText id="firstName" class="form-control" @bind-Value="_form.FirstName" />
+                    <InputText id="firstName" class="form-control" @bind-Value="_form.FirstName" placeholder="Förnamn" />
                     <ValidationMessage For="() => _form.FirstName" class="text-danger" />
                 </div>
 
                 <div class="mb-3">
                     <label for="lastName" class="form-label">Efternamn</label>
-                    <InputText id="lastName" class="form-control" @bind-Value="_form.LastName" />
+                    <InputText id="lastName" class="form-control" @bind-Value="_form.LastName" placeholder="Efternamn" />
                     <ValidationMessage For="() => _form.LastName" class="text-danger" />
                 </div>
 
                 <div class="mb-3">
                     <label for="email" class="form-label">E-post</label>
-                    <InputText id="email" type="email" class="form-control" @bind-Value="_form.Email" />
+                    <InputText id="email" type="email" class="form-control" @bind-Value="_form.Email" placeholder="E-postadress" />
                     <ValidationMessage For="() => _form.Email" class="text-danger" />
                 </div>
 
                 <div class="mb-3">
                     <label for="password" class="form-label">Lösenord</label>
-                    <InputText id="password" type="password" class="form-control" @bind-Value="_form.Password" />
+                    <InputText id="password" type="password" class="form-control" @bind-Value="_form.Password" placeholder="Lösenord" />
                     <ValidationMessage For="() => _form.Password" class="text-danger" />
                 </div>
 
@@ -55,7 +55,7 @@
                 <div class="mb-3">
                     <label for="course" class="form-label">Kurs</label>
                     <InputSelect id="course" class="form-select" @bind-Value="_form.CourseId">
-                        <option value="">Välj kurs...</option>
+                        <option value="" disabled selected>Välj kurs...</option>
                         @foreach (var (courseId, courseName) in CourseOptions)
                         {
                             <option value="@courseId">@courseName</option>
