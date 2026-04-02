@@ -224,7 +224,9 @@
 
         try
         {
-            var result = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
+            var uri = "api/courses";
+            if (!string.IsNullOrWhiteSpace(searchStr)) uri += $"?search={searchStr}";
+            var result = await ApiService.GetAsync<PagedResult<CourseDto>>(uri);
             allCourses = result?.Items.ToList() ?? [];
             activeCourses = allCourses.Where(c => c.EndDate >= DateOnly.FromDateTime(DateTime.Now)).ToList();
             courses = showOldCourses ? allCourses : activeCourses;
