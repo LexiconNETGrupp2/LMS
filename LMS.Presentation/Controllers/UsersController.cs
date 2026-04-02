@@ -1,4 +1,5 @@
 using LMS.Shared.Constants;
+using LMS.Shared.DTOs.AuthDtos;
 using LMS.Shared.DTOs.UserDtos;
 using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
@@ -9,18 +10,27 @@ using Service.Contracts;
 namespace LMS.Presentation.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/users")]
 [Authorize(Roles = RolesNames.Teacher)]
 public class UsersController(IServiceManager serviceManager) : ControllerBase
 {
     private IUserService UserService => serviceManager.UserService;
 
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyCollection<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyCollection<UserDto>>> GetAll([FromQuery] PagedQuery query)
+    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<UserDto>>> GetAll([FromQuery] PagedQuery query)
     {
         var users = await UserService.GetAllUsers(query);
         return Ok(users);
+    }
+
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Create(UserRegistrationDto request)
+    {
+        var user = await UserService.CreateUser(request);
+        return CreatedAtAction(nameof(GetById), new { user.Id }, user);
     }
 
     [HttpGet("{id}")]
