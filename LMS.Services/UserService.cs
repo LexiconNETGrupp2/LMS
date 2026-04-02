@@ -76,7 +76,12 @@ public class UserService : IUserService
         IdentityResult result;
         result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded)
+        {
+            if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.DuplicateUserName)))
+                throw new BadRequestException("E-postadressen är redan registrerad");
+
             throw new BadRequestException(string.Join(", ", result.Errors.Select(s => s.Description)));
+        }
 
         result = await _userManager.AddToRoleAsync(user, request.Role);
         if (!result.Succeeded)
