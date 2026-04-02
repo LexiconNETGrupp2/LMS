@@ -59,7 +59,7 @@ public class UserService : IUserService
         Course? course = null;
         if (request.CourseId is not null)
         {
-            course = await _uow.Courses.GetCourseById(request.CourseId.Value, true, CancellationToken.None);
+            course = await _uow.Courses.GetCourseById(request.CourseId.Value, trackChanges: true, CancellationToken.None);
             if (course is null)
                 throw new BadRequestException("Course not found");
         }
