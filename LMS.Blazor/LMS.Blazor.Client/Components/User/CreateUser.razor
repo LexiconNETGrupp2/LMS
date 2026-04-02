@@ -55,13 +55,13 @@
                 <div class="mb-3">
                     <label for="course" class="form-label">Kurs</label>
                     <InputSelect id="course" class="form-select" @bind-Value="_form.CourseId">
-                        <option value="" disabled selected>Välj kurs...</option>
+                        <option value="" disabled="@IsCourseRequired" selected>Välj kurs...</option>
                         @foreach (var (courseId, courseName) in CourseOptions)
                         {
                             <option value="@courseId">@courseName</option>
                         }
                     </InputSelect>
-                    <ValidationMessage For="() => _form.Role" class="text-danger" />
+                    <ValidationMessage For="() => _form.CourseId" class="text-danger" />
                 </div>
             </div>
 
@@ -85,6 +85,8 @@
     private bool _isSubmitting;
     private string? _successMessage;
     private string? _errorMessage;
+
+    private bool IsCourseRequired => RolesNames.Student.Equals(_form.Role);
 
     private async Task HandleValidSubmitAsync()
     {
@@ -129,7 +131,7 @@
         _form = new CreateUserFormModel();
     }
 
-    private sealed class CreateUserFormModel
+    private sealed class CreateUserFormModel : IValidatableObject
     {
         [Required(ErrorMessage = "Förnamn krävs")]
         public string FirstName { get; set; } = string.Empty;
@@ -148,5 +150,13 @@
         public string Role { get; set; } = RolesNames.Student;
 
         public Guid? CourseId { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (RolesNames.Student.Equals(Role) && CourseId is null)
+            {
+                yield return new ValidationResult("Välj en kurs för en elev.", [nameof(CourseId)]);
+            }
+        }
     }
 }

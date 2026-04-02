@@ -14,7 +14,16 @@
             <div class="text-secondary">Totalt <strong>@FilteredUsers.Count()</strong> användare i systemet</div>
         </div>
         <button class="btn btn-primary" @onclick="ToggleCreateForm">
-            <i class="bi bi-plus"></i> Lägg till användare
+            @if (!showCreateForm)
+            {
+                <i class="bi bi-plus"></i>
+                @:Lägg till användare
+            }
+            else
+            {
+                <i class="bi bi-x-lg"></i>
+                @:Stäng
+            }
         </button>
     </div>
 </div>
