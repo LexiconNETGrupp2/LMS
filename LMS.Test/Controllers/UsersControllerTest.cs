@@ -1,4 +1,5 @@
 using LMS.Presentation.Controllers;
+using LMS.Shared.DTOs.AuthDtos;
 using LMS.Shared.DTOs.UserDtos;
 using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -70,10 +71,50 @@ public class UsersControllerTest
         userServiceMock.Verify(s => s.DeleteUser(userId), Times.Once);
     }
 
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task Create_WhenUserIsValid_ReturnsCreatedAtAction()
+    {
+        // Arrange
+        var userServiceMock = new Mock<IUserService>();
+        var userRegistrationDto = new UserRegistrationDto
+        {
+            FirstName = "Test",
+            LastName = "Testsson",
+            Email = "test.testsson@example.com",
+            Password = "abc123!",
+            Role = "Student",
+            CourseId = Guid.NewGuid(),
+        };
+        var createdUser = new UserDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            FirstName = userRegistrationDto.FirstName,
+            LastName = userRegistrationDto.LastName,
+            Email = userRegistrationDto.Email,
+        };
+        userServiceMock
+            .Setup(s => s.CreateUser(userRegistrationDto))
+            .ReturnsAsync(createdUser);
+
+        var controller = CreateController(userServiceMock);
+
+        // Act
+        var result = await controller.Create(userRegistrationDto);
+
+        // Assert
+        var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
+        Assert.Equal(nameof(UsersController.GetById), createdAtActionResult.ActionName);
+        Assert.Equal(createdUser.Id, createdAtActionResult.RouteValues!["id"]);
+        Assert.Same(createdUser, createdAtActionResult.Value);
+        userServiceMock.Verify(s => s.CreateUser(userRegistrationDto), Times.Once);
+    }
+
     private static UsersController CreateController(Mock<IUserService> userServiceMock)
     {
         var serviceManagerMock = new Mock<IServiceManager>();
         serviceManagerMock.SetupGet(m => m.UserService).Returns(userServiceMock.Object);
         return new UsersController(serviceManagerMock.Object);
     }
+
 }
