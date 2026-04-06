@@ -7,10 +7,11 @@ public class Document
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public DateTime UploadedAt { get; set; }
-    //public string UploaderId { get; set; } = string.Empty;
-    //public Guid? CourseId { get; set; } = Guid.NewGuid();
-    //public Guid? ModuleId { get; set; } = Guid.NewGuid();
-    //public Guid? ActivityId { get; set; } = Guid.NewGuid();
+    public required string UploaderId { get; set; }
+    public Guid? CourseId { get; set; }
+    public Guid? ModuleId { get; set; }
+    public Guid? ActivityId { get; set; }
+
     // Navigational
     public required ApplicationUser Uploader { get; set; }
     public Course? Course { get; set; }
