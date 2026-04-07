@@ -7,6 +7,7 @@ public class Module
     public string Description { get; set; } = string.Empty;
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
+    public Guid CourseId { get; set; }
     public required Course Course { get; set; }
     public ICollection<Activity> Activities { get; set; } = [];
 }

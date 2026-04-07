@@ -26,7 +26,7 @@ public sealed class ActivityFormModel
     public string EndDateTimeLocal { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Välj en aktivitetstyp.")]
-    public string TypeName { get; set; } = "Lecture";
+    public string TypeName { get; set; } = string.Empty;
 
     public bool IsEditMode => ActivityId.HasValue;
 }

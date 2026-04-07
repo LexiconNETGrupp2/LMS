@@ -48,6 +48,8 @@ public class ActivityService : IActivityService
     {
         var module = await _uow.Modules.GetModuleByIdTrackedAsync(request.ModuleId)
             ?? throw new ModuleNotFoundException(request.ModuleId);
+        var activityType = _uow.ActivityTypes.FirstOrDefault(a => a.Name == request.Type.Name)
+            ?? throw new ActivityTypeNotFoundException(request.Type.Name);
         // TODO: check start/end is within module and not overlapping with other activities in the same module
         var activity = new Activity
         {
@@ -55,7 +57,7 @@ public class ActivityService : IActivityService
             Description = request.Description,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
-            Type = _mapper.Map<ActivityType>(request.Type),
+            Type = activityType,
             Module = module,
         };
         try {
@@ -71,12 +73,14 @@ public class ActivityService : IActivityService
     {
         var activity = await _uow.Activities.GetActivityById(id, trackChanges: true)
             ?? throw new ActivityNotFoundException(id);
+        var activityType = _uow.ActivityTypes.FirstOrDefault(a => a.Name == request.Type.Name)
+            ?? throw new ActivityTypeNotFoundException(request.Type.Name);
 
         activity.Name = request.Name;
         activity.Description = request.Description;
         activity.StartDate = request.StartDate;
         activity.EndDate = request.EndDate;
-        activity.Type = _mapper.Map<ActivityType>(request.Type);
+        activity.Type = activityType;
 
         try {
             _uow.Activities.Update(activity);
