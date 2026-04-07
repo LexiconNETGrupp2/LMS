@@ -39,7 +39,7 @@ public class ModuleActivityModel
     public string ModuleId { get; set; } = string.Empty;
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
-    public ModuleActivityType Type { get; set; }
+    public string Type { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public DateTime? Deadline { get; set; }
     public bool ShowSubmissionButton { get; set; }
@@ -57,13 +57,6 @@ public class StudentListItemModel
     public string Email { get; set; } = string.Empty;
     public int ProgressPercent { get; set; }
     public DateTime LastActive { get; set; }
-}
-
-public enum ModuleActivityType
-{
-    Lecture,
-    Exercise,
-    Assignment
 }
 
 public enum ActivityType
