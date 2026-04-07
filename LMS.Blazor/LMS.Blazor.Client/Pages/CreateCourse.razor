@@ -1,9 +1,12 @@
-﻿@page "/create-course"
+﻿@page "/create-course/{CourseId?}"
 @inject IApiService ApiService
 
 @attribute [Authorize(Roles = RolesNames.Teacher)]
-
-<PageTitle>Skapa Kurs</PageTitle>
+@if (!_isEdit) {
+    <PageTitle>Skapa Kurs</PageTitle>
+} else {
+    <PageTitle>Redigera Kurs</PageTitle>
+}
 
 @if (_successMessage is not null) {
     <div class="container">
@@ -15,6 +18,7 @@
 }
 
 <CreateCourseForm Course="_course"
+                  IsEditing="_isEdit"
                   OnAddModule="AddModule"
                   OnRemoveModule="RemoveModule"
                   OnCreateCourse="SubmitCourse"
@@ -22,20 +26,53 @@
                   OverlapErrors="_overlapErrors" />
 
 @code {
-    private CourseFormModel _course = null!;
+    [Parameter] public string? CourseId { get; set; }
+    private bool _isEdit = false;
+    private CourseFormModel _course = new();
     private List<string> _overlapErrors = [];
     private bool _isLoading = false;
     private string? _successMessage;
 
-    protected override void OnInitialized()
+    protected async override Task OnInitializedAsync()
     {
-        InitCourse();
+        if (CourseId is null) {
+            InitCourse();
+            Console.WriteLine("is null");
+        } else {
+            await GetCourse();
+            Console.WriteLine("is not null");
+        }
     }
 
     private void InitCourse()
     {
         _course = new() { Id = Guid.NewGuid() };
         AddModule();
+        _isEdit = false;
+    }
+
+    private async Task GetCourse()
+    {
+        if (!Guid.TryParse(CourseId, out _)) {
+            InitCourse();
+            return;
+        }
+
+        CourseDto? courseDto = await ApiService.GetAsync<CourseDto>($"api/courses/{CourseId}");
+        if (courseDto is null) {
+            InitCourse();
+            return;
+        }
+
+        _course = new() {
+            Id = courseDto.Id,
+            Name = courseDto.Name,
+            Description = courseDto.Description,
+            StartDate = courseDto.StartDate,
+            EndDate = courseDto.EndDate,
+            Modules = []
+        };
+        _isEdit = true;
     }
 
     private void AddModule()
@@ -61,16 +98,30 @@
         if (_course.Modules.Count > 0) {
             CheckForOverlap();
             if (_overlapErrors.Count > 0) return;
-            // if (_overlapErrors.Count > 0) {
-            //     Console.Write($"Errors occured: {Environment.NewLine}");
-            //     foreach (var error in _overlapErrors) {
-            //         Console.Write($"- {error}");
-            //         Console.WriteLine();
-            //         return;
-            //     }
-            // }
         }
 
+        bool isSuccess = false;
+        _isLoading = true;
+        try {
+            if (_isEdit) {
+                await UpdateCourse();
+            } else {
+                await CreateNewCourse();
+            }
+            isSuccess = true;
+        } catch (Exception) {
+            isSuccess = false;
+        } finally {
+            _isLoading = false;
+        }
+        if (isSuccess) {
+            _successMessage = _isEdit ? $"Kurs {_course.Name} redigerad" : $"Kurs {_course.Name} sparad";
+            InitCourse();
+        }
+    }
+
+    private async Task CreateNewCourse()
+    {
         CreateCourseDto createCourseDto = new() {
             Name = _course.Name,
             Description = _course.Description,
@@ -84,20 +135,18 @@
                 CourseId: (Guid)m.CourseId!
             )).ToList()
         };
+        await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
+    }
 
-        bool isSuccess = false;
-        _isLoading = true;
-        try {
-            await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
-            isSuccess = true;
-        } catch (Exception) {
-            isSuccess = false;
-        }
-        _isLoading = false;
-        if (isSuccess) {
-            _successMessage = $"Kurs {_course.Name} sparad";
-            InitCourse();
-        }
+    private async Task UpdateCourse()
+    {
+        UpdateCourseDto updateCourseDto = new(
+            Name: _course.Name,
+            Description: _course.Description,
+            StartDate: (DateOnly)_course.StartDate!,
+            EndDate: (DateOnly)_course.EndDate!
+        );
+        await ApiService.PatchAsync<UpdateCourseDto, bool>($"api/courses/{CourseId}", updateCourseDto);
     }
 
     private void CheckForOverlap()

@@ -105,14 +105,15 @@
 
                                 <button type="button"
                                         class="btn btn-link text-primary modules-icon-button"
-                                        title="Redigera modul">
+                                        title="Redigera kurs"
+                                        @onclick="() => UpdateCourse(course.Id)">
                                     <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                     Redigera kurs
                                 </button>
 
                                 <button type="button"
                                         class="btn btn-link text-danger modules-icon-button"
-                                        title="Ta bort modul"
+                                        title="Ta bort kurs"
                                         @onclick="() => DeleteCourse(course)">
                                     <i class="bi bi-trash3" aria-hidden="true"></i>
                                     Radera kurs
@@ -422,6 +423,8 @@
 
     private void GoToCreateCourses() => NavigationManager.NavigateTo("/create-course");
     private void GoToCourseOverview(Guid courseId) => NavigationManager.NavigateTo($"/courses/{courseId}");
+
+    private void UpdateCourse(Guid courseId) => NavigationManager.NavigateTo($"/create-course/{courseId}");
 
     private async Task DeleteCourse(CourseDto course)
     {
