@@ -1,7 +1,9 @@
 ﻿@page "/create-course/{CourseId?}"
 @inject IApiService ApiService
+@inject NavigationManager NavigationManager
 
 @attribute [Authorize(Roles = RolesNames.Teacher)]
+
 @if (!_isEdit) {
     <PageTitle>Skapa Kurs</PageTitle>
 } else {
@@ -12,6 +14,16 @@
     <div class="container">
         <div class="alert alert-success alert-dismissible" role="alert">
             <div>@_successMessage</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}
+
+@if (_errorMessage is not null) {
+    <div class="container">
+        <div class="alert alert-danger alert-dismissible" role="alert">
+            <span>@_errorMessage</span>
+            <button type="button" class="btn btn-link" @onclick="() => NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true)">Ladda om</button>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     </div>
@@ -32,15 +44,14 @@
     private List<string> _overlapErrors = [];
     private bool _isLoading = false;
     private string? _successMessage;
+    private string? _errorMessage;
 
     protected async override Task OnInitializedAsync()
     {
         if (CourseId is null) {
             InitCourse();
-            Console.WriteLine("is null");
         } else {
             await GetCourse();
-            Console.WriteLine("is not null");
         }
     }
 
@@ -94,6 +105,7 @@
     private async Task SubmitCourse()
     {
         _successMessage = null;
+        _errorMessage = null;
 
         if (_course.Modules.Count > 0) {
             CheckForOverlap();
@@ -109,14 +121,19 @@
                 await CreateNewCourse();
             }
             isSuccess = true;
-        } catch (Exception) {
+        } catch (Exception e) {
             isSuccess = false;
+            if (e.Message == "405 MethodNotAllowed") {
+                _errorMessage = "Ett fel har uppstått. Snälla ladda om sidan och försök igen.";
+            }
         } finally {
             _isLoading = false;
         }
         if (isSuccess) {
             _successMessage = _isEdit ? $"Kurs {_course.Name} redigerad" : $"Kurs {_course.Name} sparad";
             InitCourse();
+            CourseId = null;
+            NavigationManager.NavigateTo("/create-course");
         }
     }
 
