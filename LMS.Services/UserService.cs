@@ -118,7 +118,7 @@ public class UserService : IUserService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var user = await _uow.Users.GetByIdWithCourseAsync(id, token);
+        var user = await _userManager.FindByIdAsync(id);
         if (user is null)
             throw new NotFoundException("Användaren hittades inte");
 
@@ -138,7 +138,10 @@ public class UserService : IUserService
         if (!updateResult.Succeeded)
             throw new BadRequestException(GetIdentityErrors(updateResult));
 
-        return MapToUserDto(user);
+        var updatedUser = await _uow.Users.GetByIdWithCourseAsync(user.Id, token)
+            ?? throw new NotFoundException("Användaren hittades inte");
+
+        return MapToUserDto(updatedUser);
     }
 
     private static void ValidateUpdateRequest(UpdateUserDto request)
