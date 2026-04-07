@@ -9,4 +9,5 @@ public interface IUserService
     Task<UserDto> GetUserById(string id);
     Task<UserDto> CreateUser(UserRegistrationDto request);
     Task DeleteUser(string id);
+    Task<UserDto> UpdateUser(string id, UpdateUserDto request, CancellationToken token);
 }
