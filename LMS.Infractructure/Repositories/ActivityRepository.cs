@@ -12,19 +12,19 @@ public class ActivityRepository(ApplicationDbContext context)
 {
     public async Task<IReadOnlyCollection<Activity>> GetActivitiesFromModuleId(Guid moduleId)
     {
-        return FindAll()
+        return await FindAll()
             .Where(s => s.Module.Id == moduleId)
             .Include(s => s.Module)
             .Include(s => s.Type)
-            .ToList();
+            .ToListAsync();
     }
 
     public async Task<Activity?> GetActivityById(Guid id, bool trackChanges)
     {
-        return FindByCondition(s => s.Id == id, trackChanges)
+        return await FindByCondition(s => s.Id == id, trackChanges)
             .Include(s => s.Module)
             .Include(s => s.Type)
-            .FirstOrDefault();
+            .FirstOrDefaultAsync();
     }
 
     public async Task<PagedResult<Activity>> GetAllActivities(PagedQuery query)
