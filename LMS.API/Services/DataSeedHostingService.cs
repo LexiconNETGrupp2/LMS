@@ -212,9 +212,11 @@ public class DataSeedHostingService : IHostedService
     private async Task<IReadOnlyCollection<ActivityType>> AddActivityTypesToDb(ApplicationDbContext context)
     {
         IReadOnlyCollection<ActivityType> types = [
-            new() { Name = "Assignment" },
-            new() { Name = "Lecture" },
+            new() { Name = "Inlämning" },
+            new() { Name = "Övning" },
+            new() { Name = "Föreläsning" },
             new() { Name = "E-Learning" },
+            new() { Name = "Prov" },
             new() { Name = "Examination" }
         ];
 
