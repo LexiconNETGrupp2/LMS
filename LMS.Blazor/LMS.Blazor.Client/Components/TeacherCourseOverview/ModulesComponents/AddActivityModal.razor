@@ -60,6 +60,8 @@
                         <InputText id="activity-start"
                                    class="form-control"
                                    type="datetime-local"
+                                   min="@Model.ModuleStartDateTimeMin"
+                                   max="@Model.ModuleEndDateTimeMax"
                                    @bind-Value="Model.StartDateTimeLocal"
                                    disabled="@IsSubmitting" />
                         <ValidationMessage For="() => Model.StartDateTimeLocal" />
@@ -70,6 +72,8 @@
                         <InputText id="activity-end"
                                    class="form-control"
                                    type="datetime-local"
+                                   min="@Model.ModuleStartDateTimeMin"
+                                   max="@Model.ModuleEndDateTimeMax"
                                    @bind-Value="Model.EndDateTimeLocal"
                                    disabled="@IsSubmitting" />
                         <ValidationMessage For="() => Model.EndDateTimeLocal" />

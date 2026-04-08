@@ -10,6 +10,8 @@ public sealed class ActivityFormModel
     public Guid ModuleId { get; set; }
 
     public string ModuleName { get; set; } = string.Empty;
+    public string ModuleStartDateTimeMin { get; set; } = string.Empty;
+    public string ModuleEndDateTimeMax { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Aktivitetsnamn är obligatoriskt.")]
     [StringLength(120, ErrorMessage = "Aktivitetsnamnet får vara högst 120 tecken.")]

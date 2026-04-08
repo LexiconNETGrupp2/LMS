@@ -379,15 +379,32 @@ else
             return;
         }
 
+        var (moduleStartMin, moduleEndMax) = GetModuleDateTimeBounds(module);
         var start = DateTime.Now;
+
+        if (start < moduleStartMin)
+        {
+            start = moduleStartMin;
+        }
+        else if (start > moduleEndMax)
+        {
+            start = moduleEndMax;
+        }
+
         var end = start.AddHours(2);
+        if (end > moduleEndMax)
+        {
+            end = moduleEndMax;
+        }
 
         activityForm = new ActivityFormModel
         {
             ModuleId = moduleId,
             ModuleName = module.Title,
-            StartDateTimeLocal = start.ToString("yyyy-MM-ddTHH:mm"),
-            EndDateTimeLocal = end.ToString("yyyy-MM-ddTHH:mm")
+            ModuleStartDateTimeMin = FormatDateTimeLocal(moduleStartMin),
+            ModuleEndDateTimeMax = FormatDateTimeLocal(moduleEndMax),
+            StartDateTimeLocal = FormatDateTimeLocal(start),
+            EndDateTimeLocal = FormatDateTimeLocal(end)
         };
 
         isActivityModalOpen = true;
@@ -405,9 +422,11 @@ else
             return;
         }
 
-        var moduleName = _courseModules
-            .FirstOrDefault(m => m.Id == activity.ModuleId)?.Title
-            ?? "Modul";
+        var module = _courseModules.FirstOrDefault(m => m.Id == activity.ModuleId);
+        var moduleName = module?.Title ?? "Modul";
+        var (moduleStartMin, moduleEndMax) = module is null
+            ? (activity.Date, activity.Deadline ?? activity.Date.AddHours(2))
+            : GetModuleDateTimeBounds(module);
 
         var endDate = activity.Deadline ?? activity.Date.AddHours(2);
 
@@ -416,10 +435,12 @@ else
             ActivityId = activityId,
             ModuleId = moduleId,
             ModuleName = moduleName,
+            ModuleStartDateTimeMin = FormatDateTimeLocal(moduleStartMin),
+            ModuleEndDateTimeMax = FormatDateTimeLocal(moduleEndMax),
             Name = activity.Title,
             Description = activity.Description,
-            StartDateTimeLocal = activity.Date.ToString("yyyy-MM-ddTHH:mm"),
-            EndDateTimeLocal = endDate.ToString("yyyy-MM-ddTHH:mm"),
+            StartDateTimeLocal = FormatDateTimeLocal(activity.Date),
+            EndDateTimeLocal = FormatDateTimeLocal(endDate),
             TypeName = activity.Type.ToString()
         };
 
@@ -652,5 +673,15 @@ else
         }
 
         return null;
+    }
+
+    private static (DateTime Min, DateTime Max) GetModuleDateTimeBounds(ModuleModel module)
+    {
+        return (module.StartDate.Date, module.EndDate.Date.AddDays(1).AddMinutes(-1));
+    }
+
+    private static string FormatDateTimeLocal(DateTime value)
+    {
+        return value.ToString("yyyy-MM-ddTHH:mm");
     }
 }
