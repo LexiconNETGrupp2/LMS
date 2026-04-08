@@ -44,14 +44,16 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                         .ToPagedResultAsync(param, token);
     }
 
-    public async Task<Course?> GetCourseById(Guid id, bool trackChanges, CancellationToken token)
+    public async Task<Course?> GetCourseById(Guid id, bool trackChanges, CancellationToken token, bool includeAllData = true)
     {
-        return await FindAll(trackChanges: trackChanges)
-                        .Include(c => c.Modules)
+        var query = FindAll(trackChanges: trackChanges);
+        if (includeAllData) {
+            query = query.Include(c => c.Modules)
                             .ThenInclude(m => m.Activities)
                                 .ThenInclude(a => a.Type)
-                        .Include(c => c.Students)
-                        .FirstOrDefaultAsync(c => c.Id == id, token);
+                          .Include(c => c.Students);
+        }
+        return await query.FirstOrDefaultAsync(c => c.Id == id, token);
     }
 
     public async Task<Course?> GetCourseFromUserId(Guid userId, bool trackChanges, CancellationToken token)

@@ -289,7 +289,7 @@ else
 
     private void HandleEditCourse()
     {
-        // Navigate to edit page or open modal
+        NavigationManager.NavigateTo($"/create-course/{CourseId}");
     }
 
     private void HandleTabChanged(string tabValue)

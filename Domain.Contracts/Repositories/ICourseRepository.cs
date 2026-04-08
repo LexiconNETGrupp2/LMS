@@ -7,6 +7,6 @@ namespace Domain.Contracts.Repositories;
 public interface ICourseRepository : IRepositoryBase<Course>
 {
     Task<PagedResult<Course>> GetAllCourses(AllCoursesParams param, CancellationToken token);
-    Task<Course?> GetCourseById(Guid id, bool trackChanges, CancellationToken token);
+    Task<Course?> GetCourseById(Guid id, bool trackChanges, CancellationToken token, bool includeAllData = true);
     Task<Course?> GetCourseFromUserId(Guid userId, bool trackChanges, CancellationToken token);
 }
