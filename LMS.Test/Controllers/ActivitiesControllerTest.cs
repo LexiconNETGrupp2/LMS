@@ -73,7 +73,7 @@ public class ActivitiesControllerTest
         activityServiceMock
             .Setup(s => s.GetActivityById(id))
             .Throws(new ActivityNotFoundException(id));
-        
+
         ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
 
         await Assert.ThrowsAsync<ActivityNotFoundException>(async () => await controller.GetActivityById(id));
@@ -151,6 +151,22 @@ public class ActivitiesControllerTest
         ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
 
         await Assert.ThrowsAsync<BadRequestException>(
+            async () => await controller.CreateActivity(createActivityDto)
+        );
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task CreateActivity_WhenInvalid_ThrowsActivityTypeNotFound()
+    {
+        CreateActivityDto createActivityDto = ActivityHelpers.GenerateCreateActivityDto();
+        Mock<IActivityService> activityServiceMock = new();
+        activityServiceMock
+            .Setup(s => s.CreateActivity(createActivityDto))
+            .Throws(new ActivityTypeNotFoundException("Activity type not found"));
+        ActivitiesController controller = ActivityHelpers.CreateController(activityServiceMock);
+
+        await Assert.ThrowsAsync<ActivityTypeNotFoundException>(
             async () => await controller.CreateActivity(createActivityDto)
         );
     }

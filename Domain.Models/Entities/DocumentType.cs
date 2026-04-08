@@ -3,5 +3,6 @@
 public class DocumentType
 {
     public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
+    public required string Name { get; set; }
+    public ICollection<Document> Documents { get; set; } = [];
 }

@@ -261,7 +261,7 @@ else
                         ModuleId = module.Id.ToString(),
                         Title = activity.Name,
                         Description = activity.Description,
-                        Type = ToModuleActivityType(activity.Type?.Name),
+                        Type = activity.Type.Name,
                         Date = activity.StartDate,
                         Deadline = activity.EndDate,
                         ShowSubmissionButton = string.Equals(
@@ -272,16 +272,6 @@ else
                     .ToList()
             })
             .ToList();
-    }
-
-    private static ModuleActivityType ToModuleActivityType(string? activityTypeName)
-    {
-        return activityTypeName?.Trim().ToLowerInvariant() switch
-        {
-            "exercise" => ModuleActivityType.Exercise,
-            "assignment" => ModuleActivityType.Assignment,
-            _ => ModuleActivityType.Lecture
-        };
     }
 
     private async Task<List<StudentListItemModel>> LoadCourseStudents(Guid courseId)
@@ -430,7 +420,7 @@ else
             Description = activity.Description,
             StartDateTimeLocal = activity.Date.ToString("yyyy-MM-ddTHH:mm"),
             EndDateTimeLocal = endDate.ToString("yyyy-MM-ddTHH:mm"),
-            TypeName = NormalizeActivityTypeName(activity.Type.ToString())
+            TypeName = activity.Type.ToString()
         };
 
         isActivityModalOpen = true;
@@ -466,16 +456,6 @@ else
     {
         NavigationManager.NavigateTo($"/courses/{CourseId}/{TabDocuments}");
         return Task.CompletedTask;
-    }
-
-    private static string NormalizeActivityTypeName(string input)
-    {
-        return input.Trim().ToLowerInvariant() switch
-        {
-            "exercise" => "Exercise",
-            "assignment" => "Assignment",
-            _ => "Lecture"
-        };
     }
 
     private async Task CloseModuleModal()
@@ -597,7 +577,7 @@ else
                     activityForm.Description.Trim(),
                     startDate,
                     endDate,
-                    new ActivityTypeDto(NormalizeActivityTypeName(activityForm.TypeName)));
+                    new ActivityTypeDto(activityForm.TypeName));
 
                 await ApiService.PutAsync($"api/activities/{activityForm.ActivityId.Value}", updateDto);
                 modulesActionMessage = "Aktiviteten uppdaterades.";
@@ -609,7 +589,7 @@ else
                     activityForm.Description.Trim(),
                     startDate,
                     endDate,
-                    new ActivityTypeDto(NormalizeActivityTypeName(activityForm.TypeName)),
+                    new ActivityTypeDto(activityForm.TypeName),
                     activityForm.ModuleId);
 
                 await ApiService.PostAsync<CreateActivityDto, ActivityDto>("api/activities", createDto);

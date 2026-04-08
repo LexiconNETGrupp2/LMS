@@ -2,7 +2,7 @@
     <div class="d-flex justify-content-between align-items-start gap-3">
         <div class="min-w-0">
             <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
-                <span class="@GetBadgeClass()">@GetTypeLabel()</span>
+                <span class="badge rounded-pill text-primary bg-primary-subtle">@Activity.Type</span>
                 <span class="fw-semibold fs-5">@Activity.Title</span>
             </div>
 
@@ -67,20 +67,4 @@
     [Parameter] public EventCallback<ModuleActivityModel> OnDelete { get; set; }
     [Parameter] public EventCallback<ModuleActivityModel> OnViewSubmissions { get; set; }
     [Parameter] public EventCallback<ModuleActivityModel> OnAddDocument { get; set; }
-
-    private string GetTypeLabel() => Activity.Type switch
-    {
-        ModuleActivityType.Lecture => "Föreläsning",
-        ModuleActivityType.Exercise => "Övning",
-        ModuleActivityType.Assignment => "Inlämning",
-        _ => "Aktivitet"
-    };
-
-    private string GetBadgeClass() => Activity.Type switch
-    {
-        ModuleActivityType.Lecture => "badge rounded-pill text-primary bg-primary-subtle",
-        ModuleActivityType.Exercise => "badge rounded-pill text-primary bg-primary-subtle",
-        ModuleActivityType.Assignment => "badge rounded-pill text-primary bg-primary-subtle",
-        _ => "badge rounded-pill text-secondary bg-light"
-    };
 }

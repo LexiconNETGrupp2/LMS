@@ -82,9 +82,13 @@
                                  class="form-select"
                                  @bind-Value="Model.TypeName"
                                  disabled="@IsSubmitting">
-                        <option value="Lecture">Föreläsning</option>
-                        <option value="Exercise">Övning</option>
-                        <option value="Assignment">Inlämning</option>
+                        <option value="" disabled selected>Välj aktivitetstyp...</option>
+                        <option value="Föreläsning">Föreläsning</option>
+                        <option value="Övning">Övning</option>
+                        <option value="E-Learning">E-Learning</option>
+                        <option value="Prov">Prov</option>
+                        <option value="Inlämning">Inlämning</option>
+                        <option value="Examination">Examination</option>
                     </InputSelect>
                     <ValidationMessage For="() => Model.TypeName" />
                 </div>
