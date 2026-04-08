@@ -7,6 +7,7 @@ using LMS.Shared.DTOs.UserDtos;
 using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Identity;
 using Service.Contracts;
+using System.ComponentModel.DataAnnotations;
 
 namespace LMS.Services;
 
@@ -98,6 +99,9 @@ public class UserService : IUserService
     }
 
     private static UserDto MapToUserDto(ApplicationUser user)
+        => MapToUserDto(user, null);
+
+    private static UserDto MapToUserDto(ApplicationUser user, string? role)
     {
         return new UserDto
         {
@@ -105,7 +109,53 @@ public class UserService : IUserService
             Email = user.Email ?? string.Empty,
             FirstName = user.FirstName,
             LastName = user.LastName,
+            Role = role,
             CourseId = user.Course?.Id,
         };
     }
+
+    public async Task<UserDto> UpdateUser(string id, UpdateUserDto request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+            throw new NotFoundException("Användaren hittades inte");
+
+        ValidateUpdateRequest(request);
+
+        var normalizedEmail = request.Email.Trim();
+        var duplicateUser = await _userManager.FindByEmailAsync(normalizedEmail);
+        if (duplicateUser is not null && duplicateUser.Id != user.Id)
+            throw new BadRequestException("E-postadressen är redan registrerad");
+
+        user.Email = normalizedEmail;
+        user.UserName = normalizedEmail;
+        user.FirstName = request.FirstName.Trim();
+        user.LastName = request.LastName.Trim();
+
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+            throw new BadRequestException(GetIdentityErrors(updateResult));
+
+        var updatedUser = await _uow.Users.GetByIdWithCourseAsync(user.Id, token)
+            ?? throw new NotFoundException("Användaren hittades inte");
+
+        return MapToUserDto(updatedUser);
+    }
+
+    private static void ValidateUpdateRequest(UpdateUserDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new BadRequestException("Email krävs");
+
+        if (string.IsNullOrWhiteSpace(request.FirstName))
+            throw new BadRequestException("Förnamn krävs");
+
+        if (string.IsNullOrWhiteSpace(request.LastName))
+            throw new BadRequestException("Efternamn krävs");
+    }
+
+    private static string GetIdentityErrors(IdentityResult result)
+        => string.Join(", ", result.Errors.Select(e => e.Description));
 }

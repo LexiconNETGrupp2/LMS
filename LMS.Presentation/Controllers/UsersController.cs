@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Contracts;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace LMS.Presentation.Controllers;
 
@@ -49,5 +50,17 @@ public class UsersController(IServiceManager serviceManager) : ControllerBase
     {
         await UserService.DeleteUser(id);
         return NoContent();
+    }
+
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateUserDto request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var updatedUser = await UserService.UpdateUser(id, request, token);
+        return Ok(updatedUser);
     }
 }
