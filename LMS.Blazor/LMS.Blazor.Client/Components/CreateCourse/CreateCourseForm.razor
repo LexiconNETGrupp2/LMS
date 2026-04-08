@@ -12,7 +12,8 @@
                        class="form-control"
                        placeholder="Namnet på kursen"
                        type="text"
-                       autofocus />
+                       autofocus
+                       onkeypress="return event.keyCode != 13" /> @* Disables submitting when pressing enter (KeyCode 13) *@
             <ValidationMessage For="() => Course.Name" />
         </div>
 
@@ -103,7 +104,7 @@
     public EventCallback<Guid?> OnRemoveModule { get; set; }
 
     private async Task CreateCourse()
-    {
+    {        
         if (OnCreateCourse.HasDelegate)
             await OnCreateCourse.InvokeAsync(Course);
     }
@@ -115,5 +116,9 @@
     }
 
     private void CancelForm()
-        => NavigationManager.NavigateTo("/");
+    {
+        Console.WriteLine("Course created");
+        NavigationManager.NavigateTo("/");
+    }
+    
 }
