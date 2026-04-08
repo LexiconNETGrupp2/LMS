@@ -566,6 +566,23 @@ else
             return;
         }
 
+        var selectedModule = _courseModules.FirstOrDefault(module =>
+            Guid.TryParse(module.Id, out var moduleId) &&
+            moduleId == activityForm.ModuleId);
+
+        if (selectedModule is null)
+        {
+            activitySubmitError = "Kunde inte hitta den valda modulen.";
+            return;
+        }
+
+        var validationError = ValidateActivitySchedule(selectedModule, startDate, endDate);
+        if (validationError is not null)
+        {
+            activitySubmitError = validationError;
+            return;
+        }
+
         isActivitySubmitting = true;
 
         try
@@ -611,5 +628,29 @@ else
         {
             isActivitySubmitting = false;
         }
+    }
+
+    private string? ValidateActivitySchedule(ModuleModel module, DateTime startDate, DateTime endDate)
+    {
+        if (startDate.Date < module.StartDate.Date || endDate.Date > module.EndDate.Date)
+        {
+            return $"Aktivitetens datum måste ligga inom modulens datum ({module.StartDate:yyyy-MM-dd} - {module.EndDate:yyyy-MM-dd}).";
+        }
+
+        var currentActivityId = activityForm.IsEditMode && activityForm.ActivityId.HasValue
+            ? activityForm.ActivityId.Value.ToString()
+            : null;
+
+        var hasOverlap = module.Activities.Any(activity =>
+            activity.Id != currentActivityId &&
+            startDate < (activity.Deadline ?? activity.Date) &&
+            endDate > activity.Date);
+
+        if (hasOverlap)
+        {
+            return "Aktivitetens datum överlappar med en annan aktivitet i den här modulen.";
+        }
+
+        return null;
     }
 }

@@ -50,7 +50,11 @@ public class ActivityService : IActivityService
             ?? throw new ModuleNotFoundException(request.ModuleId);
         var activityType = _uow.ActivityTypes.FirstOrDefault(a => a.Name == request.Type.Name)
             ?? throw new ActivityTypeNotFoundException(request.Type.Name);
-        // TODO: check start/end is within module and not overlapping with other activities in the same module
+
+        ValidateDateRange(request.StartDate, request.EndDate);
+        ValidateActivityWithinModule(request.StartDate, request.EndDate, module);
+        await EnsureActivityDoesNotOverlapAsync(request.ModuleId, request.StartDate, request.EndDate);
+
         var activity = new Activity
         {
             Name = request.Name,
@@ -76,6 +80,10 @@ public class ActivityService : IActivityService
         var activityType = _uow.ActivityTypes.FirstOrDefault(a => a.Name == request.Type.Name)
             ?? throw new ActivityTypeNotFoundException(request.Type.Name);
 
+        ValidateDateRange(request.StartDate, request.EndDate);
+        ValidateActivityWithinModule(request.StartDate, request.EndDate, activity.Module);
+        await EnsureActivityDoesNotOverlapAsync(activity.ModuleId, request.StartDate, request.EndDate, activity.Id);
+
         activity.Name = request.Name;
         activity.Description = request.Description;
         activity.StartDate = request.StartDate;
@@ -100,6 +108,43 @@ public class ActivityService : IActivityService
             await _uow.CompleteAsync(CancellationToken.None);
         } catch (Exception ex) {
             throw new BadRequestException(ex.Message);
+        }
+    }
+
+    private static void ValidateDateRange(DateTime startDate, DateTime endDate)
+    {
+        if (startDate > endDate)
+        {
+            throw new BadRequestException("Aktivitetens startdatum kan inte vara senare än slutdatum.");
+        }
+    }
+
+    private static void ValidateActivityWithinModule(DateTime startDate, DateTime endDate, Module module)
+    {
+        if (DateOnly.FromDateTime(startDate) < module.StartDate ||
+            DateOnly.FromDateTime(endDate) > module.EndDate)
+        {
+            throw new BadRequestException(
+                $"Aktivitetens datum måste ligga inom modulens datum ({module.StartDate:yyyy-MM-dd} - {module.EndDate:yyyy-MM-dd}).");
+        }
+    }
+
+    private async Task EnsureActivityDoesNotOverlapAsync(
+        Guid moduleId,
+        DateTime startDate,
+        DateTime endDate,
+        Guid? currentActivityId = null)
+    {
+        var existingActivities = await _uow.Activities.GetActivitiesFromModuleId(moduleId);
+
+        var hasOverlap = existingActivities.Any(activity =>
+            activity.Id != currentActivityId &&
+            startDate < activity.EndDate &&
+            endDate > activity.StartDate);
+
+        if (hasOverlap)
+        {
+            throw new BadRequestException("Aktivitetens datum överlappar med en annan aktivitet i den här modulen.");
         }
     }
 }
