@@ -15,13 +15,10 @@
             <div class="text-secondary">Totalt <strong>@FilteredUsers.Count()</strong> användare i systemet</div>
         </div>
         <button class="btn btn-primary" @onclick="ToggleCreateForm">
-            @if (!showCreateForm)
-            {
+            @if (!showCreateForm) {
                 <i class="bi bi-plus"></i>
                 @:Lägg till användare
-            }
-            else
-            {
+            } else {
                 <i class="bi bi-x-lg"></i>
                 @:Stäng
             }
@@ -29,8 +26,7 @@
     </div>
 </div>
 
-@if (showCreateForm)
-{
+@if (showCreateForm) {
     <CreateUser OnUserCreated="OnUserCreated" CourseOptions="CourseOptions" />
 }
 
@@ -41,8 +37,7 @@
             <input type="text" class="form-control border-start-0" placeholder="Sök efter namn eller e-post..."
                    @bind="searchTerm"
                    @bind:event="oninput" />
-            @if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
+            @if (!string.IsNullOrWhiteSpace(searchTerm)) {
                 <button type="button" class="btn btn-outline-secondary border-start-0" style="z-index:2;"
                         @onclick="ClearSearch" tabindex="-1">
                     <i class="bi bi-x-lg"></i>
@@ -51,21 +46,25 @@
         </div>
     </div>
     <div class="btn-group ms-2" role="group">
-        <button type="button" class="btn btn-outline-primary @(roleFilter==null ? "active" : "")"
-                @onclick="() => SetRoleFilter(null)">Alla</button>
-        <button type="button" class="btn btn-outline-primary @(roleFilter==RolesNames.Student ? "active" : "")"
-                @onclick="() => SetRoleFilter(RolesNames.Student)">Elever</button>
-        <button type="button" class="btn btn-outline-primary @(roleFilter==RolesNames.Teacher ? "active" : "")"
-                @onclick="() => SetRoleFilter(RolesNames.Teacher)">Lärare</button>
+        <button type="button" class="btn btn-outline-primary @(roleFilter == null ? "active" : "")"
+                @onclick="() => SetRoleFilter(null)">
+            Alla
+        </button>
+        <button type="button" class="btn btn-outline-primary @(roleFilter == RolesNames.Student ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Student)">
+            Elever
+        </button>
+        <button type="button" class="btn btn-outline-primary @(roleFilter == RolesNames.Teacher ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Teacher)">
+            Lärare
+        </button>
     </div>
 </div>
 
-@if (pageErrors.Any())
-{
+@if (pageErrors.Any()) {
     <div class="alert alert-danger">
         <ul>
-            @foreach (var error in pageErrors)
-            {
+            @foreach (var error in pageErrors) {
                 <li>@error</li>
             }
         </ul>
@@ -73,7 +72,7 @@
 }
 
 <div class="card shadow-sm border-0 p-2">
-    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" Items="FilteredUsers.AsQueryable()" Pagination="pagination">
+    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" ItemsProvider="userProvider" Pagination="pagination">
         <PropertyColumn Property="@(u => u.FullName)"
                         Title="Namn"
                         Sortable="true"
@@ -92,7 +91,7 @@
             </button>
         </TemplateColumn>
     </QuickGrid>
-    <Paginator State="pagination" />
+    <Paginator State="@pagination" />
 </div>
 
 @code {
@@ -104,6 +103,8 @@
     private string? roleFilter = null;
     private Dictionary<Guid, string> CourseOptions => Courses.ToDictionary(c => c.Id, c => c.Name);
     private bool showCreateForm = false;
+
+    private GridItemsProvider<UserModel>? userProvider;
 
     public class UserModel
     {
@@ -120,10 +121,12 @@
         public Guid? CourseId { get; set; }
     }
 
-    private IEnumerable<UserModel> FilteredUsers => _users
+    private IQueryable<UserModel> FilteredUsers => _users
+        .Where(u => roleFilter == null || u.Role == roleFilter)
         .Where(u => u.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                     u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-        .Where(u => roleFilter == null || u.Role == roleFilter);
+        .AsQueryable();
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -133,59 +136,50 @@
 
     private async Task LoadCourses()
     {
-        try
-        {
+        try {
             var response = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
             Courses = response?.Items ?? [];
-        }
-        catch
-        {
+        } catch {
             pageErrors.Add("Kunde inte ladda kurser");
         }
     }
 
     private async Task LoadUsers()
     {
-        // generate dummy users for now
-        Guid RandomCourse() => Courses.Any() ? Courses[Random.Shared.Next(Courses.Count)].Id : Guid.Empty;
-        string RandomRole() => Random.Shared.Next(4) == 0 ? RolesNames.Teacher : RolesNames.Student;
-        _users = new List<UserModel>
+        userProvider = async request =>
         {
-            new() { FirstName = "Alice", LastName = "Andersson", Email = "alice.andersson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Bob", LastName = "Berg", Email = "bob.berg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Charlie", LastName = "Carlsson", Email = "charlie.carlsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "David", LastName = "Dahl", Email = "david.dahl@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Eva", LastName = "Eriksson", Email = "eva.eriksson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Fiona", LastName = "Fransson", Email = "fiona.fransson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Gustav", LastName = "Gustavsson", Email = "gustav.gustavsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Hanna", LastName = "Holm", Email = "hanna.holm@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Isak", LastName = "Isaksson", Email = "isak.isaksson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Julia", LastName = "Johansson", Email = "julia.johansson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Karl", LastName = "Karlsson", Email = "karl.karlsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Lina", LastName = "Lindberg", Email = "lina.lindberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Mikael", LastName = "Magnusson", Email = "mikael.magnusson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Nina", LastName = "Nilsson", Email = "nina.nilsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Oscar", LastName = "Olofsson", Email = "oscar.olofsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Petra", LastName = "Persson", Email = "petra.persson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Quentin", LastName = "Qvist", Email = "quentin.qvist@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Rebecca", LastName = "Rasmusson", Email = "rebecca.rasmusson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Simon", LastName = "Svensson", Email = "simon.svensson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Tina", LastName = "Thomasson", Email = "tina.thomasson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Ulf", LastName = "Udd", Email = "ulf.udd@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Vera", LastName = "Viklund", Email = "vera.viklund@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "William", LastName = "Wallin", Email = "william.wallin@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Xenia", LastName = "Xenakis", Email = "xenia.xenakis@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Yvonne", LastName = "Ytterberg", Email = "yvonne.ytterberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Zacharias", LastName = "Zetterberg", Email = "zacharias.zetterberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+            PagedResult<UserDto>? response;
+            try {
+                response = await ApiService.GetAsync<PagedResult<UserDto>>(
+                    $"api/users?page={pagination.CurrentPageIndex + 1}&pageSize={pagination.ItemsPerPage}"
+                );
+                if (response is null) return FailedToLoadUsers();
+            } catch {
+                return FailedToLoadUsers();
+            }
+            var models = response?.Items.Select(i => new UserModel {
+                Id = Guid.Parse(i.Id),
+                FirstName = i.FirstName,
+                LastName = i.LastName,
+                Email = i.Email,
+                Role = i.Role ?? string.Empty,
+                CourseId = i.CourseId
+            }).ToList() ?? [];
+            return GridItemsProviderResult.From(items: models, totalItemCount: response!.TotalItems);
         };
+    }
+
+    private GridItemsProviderResult<UserModel> FailedToLoadUsers()
+    {
+        pageErrors.Add("Kunde inte ladda användare");
+        return GridItemsProviderResult.From<UserModel>([], 0);
     }
 
     private string CourseName(Guid? courseId) =>
         Courses.SingleOrDefault(s => s.Id == courseId)?.Name ?? string.Empty;
 
     private string RoleName(string role) =>
-        role switch
-        {
+        role switch {
             RolesNames.Student => "Elev",
             RolesNames.Teacher => "Lärare",
             _ => role
@@ -210,8 +204,7 @@
 
     private void OnUserCreated(UserDto user)
     {
-        _users.Add(new UserModel
-        {
+        _users.Add(new UserModel {
             Id = Guid.Parse(user.Id),
             FirstName = user.FirstName,
             LastName = user.LastName,
