@@ -12,8 +12,7 @@
                        class="form-control"
                        placeholder="Namnet på kursen"
                        type="text"
-                       autofocus
-                       onkeypress="return event.keyCode != 13" /> @* Disables submitting when pressing enter (KeyCode 13) *@
+                       autofocus />
             <ValidationMessage For="() => Course.Name" />
         </div>
 
@@ -76,7 +75,7 @@
             </div>
         }
         <div class="d-flex justify-content-end">
-            <button class="btn btn-outline-secondary me-3" @onclick="CancelForm">Avbryt</button>
+            <button type="button" class="btn btn-outline-secondary me-3" @onclick="CancelForm">Avbryt</button>
             <button type="submit" class="btn btn-primary float-end" disabled="@IsLoading">@(IsEditing ? "Redigera kurs" : "Skapa kurs")</button>
         </div>
     </EditForm>
@@ -104,7 +103,7 @@
     public EventCallback<Guid?> OnRemoveModule { get; set; }
 
     private async Task CreateCourse()
-    {        
+    {
         if (OnCreateCourse.HasDelegate)
             await OnCreateCourse.InvokeAsync(Course);
     }
@@ -116,9 +115,6 @@
     }
 
     private void CancelForm()
-    {
-        Console.WriteLine("Course created");
-        NavigationManager.NavigateTo("/");
-    }
+        => NavigationManager.NavigateTo("/");
     
 }
