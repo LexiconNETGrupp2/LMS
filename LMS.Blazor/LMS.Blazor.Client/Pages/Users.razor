@@ -12,7 +12,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h1 class="fw-bold fs-3 mb-1">Användare</h1>
-            <div class="text-secondary">Totalt <strong>@FilteredUsers.Count()</strong> användare i systemet</div>
+            <div class="text-secondary">Totalt <strong>@pagedResponse?.TotalItems</strong> användare i systemet</div>
         </div>
         <button class="btn btn-primary" @onclick="ToggleCreateForm">
             @if (!showCreateForm) {
@@ -34,7 +34,10 @@
     <div class="flex-grow-1">
         <div class="input-group">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control border-start-0" placeholder="Sök efter namn eller e-post..."
+            <input type="search" 
+                   class="form-control border-start-0" 
+                   placeholder="Sök efter namn eller e-post..." 
+                   autofocus
                    @bind="searchTerm"
                    @bind:event="oninput" />
             @if (!string.IsNullOrWhiteSpace(searchTerm)) {
@@ -72,7 +75,7 @@
 }
 
 <div class="card shadow-sm border-0 p-2">
-    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" ItemsProvider="userProvider" Pagination="pagination">
+    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" ItemsProvider="userProvider" Pagination="_pagination" @ref="_grid">
         <PropertyColumn Property="@(u => u.FullName)"
                         Title="Namn"
                         Sortable="true"
@@ -84,27 +87,28 @@
                 @RoleName(context.Role)
             </div>
         </TemplateColumn>
-        <PropertyColumn Property="@(u => CourseName(u.CourseId))" Title="Kurs" Sortable="true" Align="Align.Start" />
+        <PropertyColumn Property="@(u => u.CourseName)" Title="Kurs" Sortable="true" Align="Align.Start" />
         <TemplateColumn Context="user" Title="Åtgärder" Align="Align.End">
             <button class="btn btn-link text-primary p-0">
                 Redigera
             </button>
         </TemplateColumn>
     </QuickGrid>
-    <Paginator State="@pagination" />
+    <Paginator State="@_pagination" />
 </div>
 
 @code {
     private List<UserModel> _users = [];
-    private readonly PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
+    private readonly PaginationState _pagination = new PaginationState { ItemsPerPage = 20 };
     private IReadOnlyList<CourseDto> Courses { get; set; } = [];
     private readonly List<string> pageErrors = [];
     private string searchTerm = string.Empty;
     private string? roleFilter = null;
     private Dictionary<Guid, string> CourseOptions => Courses.ToDictionary(c => c.Id, c => c.Name);
     private bool showCreateForm = false;
-
+    private PagedResult<UserDto>? pagedResponse;
     private GridItemsProvider<UserModel>? userProvider;
+    private QuickGrid<UserModel>? _grid;
 
     public class UserModel
     {
@@ -119,14 +123,8 @@
         public string Role { get; set; } = RolesNames.Student;
         [Required(ErrorMessage = "Kurs krävs")]
         public Guid? CourseId { get; set; }
+        public string CourseName { get; set; } = string.Empty;
     }
-
-    private IQueryable<UserModel> FilteredUsers => _users
-        .Where(u => roleFilter == null || u.Role == roleFilter)
-        .Where(u => u.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-        .AsQueryable();
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -148,25 +146,55 @@
     {
         userProvider = async request =>
         {
-            PagedResult<UserDto>? response;
+            Console.WriteLine(0);
             try {
-                response = await ApiService.GetAsync<PagedResult<UserDto>>(
-                    $"api/users?page={pagination.CurrentPageIndex + 1}&pageSize={pagination.ItemsPerPage}"
-                );
-                if (response is null) return FailedToLoadUsers();
-            } catch {
+                Console.WriteLine(1);
+                string uri = $"api/users?page={_pagination.CurrentPageIndex + 1}&pageSize={_pagination.ItemsPerPage}";
+                uri += GetSearch();
+                uri += GetSorting(request.GetSortByProperties().FirstOrDefault());
+                uri += GetRoleFilter();
+                pagedResponse = await ApiService.GetAsync<PagedResult<UserDto>>(uri);
+                Console.WriteLine(2);
+                if (pagedResponse is null) return FailedToLoadUsers();
+                Console.WriteLine(3);
+            } catch (Exception e) {
+                Console.WriteLine(4);
+                Console.WriteLine(e.Message);
                 return FailedToLoadUsers();
             }
-            var models = response?.Items.Select(i => new UserModel {
+            Console.WriteLine(5);
+            var models = pagedResponse.Items.Select(i => new UserModel {
                 Id = Guid.Parse(i.Id),
                 FirstName = i.FirstName,
                 LastName = i.LastName,
                 Email = i.Email,
                 Role = i.Role ?? string.Empty,
-                CourseId = i.CourseId
-            }).ToList() ?? [];
-            return GridItemsProviderResult.From(items: models, totalItemCount: response!.TotalItems);
+                CourseId = i.CourseId,
+                CourseName = CourseName(i.CourseId)
+            }).AsQueryable();
+            Console.WriteLine(6);
+            models = request.ApplySorting(models);
+            return GridItemsProviderResult.From<UserModel>(items: models.ToList(), totalItemCount: pagedResponse!.TotalItems);
         };
+    }
+
+    private string GetRoleFilter() 
+        => string.IsNullOrWhiteSpace(roleFilter) ? string.Empty : $"&role={roleFilter}";
+
+    private string GetSearch()
+        => !string.IsNullOrWhiteSpace(searchTerm) ? $"&search={searchTerm}" : string.Empty;
+
+    private string GetSorting(SortedProperty? sortedProperties)
+    {
+        if (!sortedProperties.HasValue) return string.Empty;
+
+        var item = sortedProperties.Value;
+        string name = item.PropertyName;
+        bool direction = item.Direction switch {
+            SortDirection.Descending => true,
+            _ => false
+        };
+        return $"&OrderBy={name}&IsDescending={direction}";
     }
 
     private GridItemsProviderResult<UserModel> FailedToLoadUsers()
@@ -186,10 +214,10 @@
         };
 
 
-    private void SetRoleFilter(string? role)
+    private async Task SetRoleFilter(string? role)
     {
         roleFilter = role;
-        StateHasChanged();
+        await LoadUsers();
     }
 
     private void ClearSearch()
