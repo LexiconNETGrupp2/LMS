@@ -26,7 +26,8 @@ public sealed class ActivityViewModel
     public string Id { get; init; } = Guid.NewGuid().ToString();
     public string Type { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
-    public string Date { get; init; } = string.Empty;
+    public DateTime StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
     public bool HasDocument { get; init; }
     public string StatusText { get; init; } = string.Empty;
     public string? StatusIcon { get; init; }
