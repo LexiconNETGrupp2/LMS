@@ -15,7 +15,7 @@
             <div class="text-secondary">Totalt @_totalItemCount användare i systemet</div>
         </div>
         <button class="btn btn-primary" @onclick="ToggleCreateForm">
-            @if (!showCreateForm) {
+            @if (!_showCreateForm) {
                 <i class="bi bi-plus"></i>
                 @:Lägg till användare
             } else {
@@ -26,19 +26,19 @@
     </div>
 </div>
 
-@if (showCreateForm) {
+@if (_showCreateForm) {
     <CreateUser OnUserCreated="OnUserCreated" CourseOptions="CourseOptions" />
 }
 
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div class="flex-grow-1">
         <div class="input-group">
-            <EditForm Model="searchTerm" OnValidSubmit="UpdateGrid" class="w-75">
+            <EditForm Model="_searchTerm" OnSubmit="UpdateGrid" class="w-75">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search me-1"></i>
                 <input type="search" class="form-control border-start-0"
                            placeholder="Sök efter namn eller e-post..."
-                           @bind="searchTerm" />
-                @if (!string.IsNullOrWhiteSpace(searchTerm)) {
+                           @bind="_searchTerm" />
+                @if (!string.IsNullOrWhiteSpace(_searchTerm)) {
                     <button type="button" class="btn btn-outline-secondary border-start-0 border-end-0" style="z-index:2;"
                             @onclick="ClearSearch" tabindex="-1">
                         <i class="bi bi-x-lg"></i>
@@ -50,25 +50,25 @@
         </div>
     </div>
     <div class="btn-group ms-2" role="group">
-        <button type="button" class="btn btn-outline-primary @(roleFilter == null ? "active" : "")"
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == null ? "active" : "")"
                 @onclick="() => SetRoleFilter(null)">
             Alla
         </button>
-        <button type="button" class="btn btn-outline-primary @(roleFilter == RolesNames.Student ? "active" : "")"
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == RolesNames.Student ? "active" : "")"
                 @onclick="() => SetRoleFilter(RolesNames.Student)">
             Elever
         </button>
-        <button type="button" class="btn btn-outline-primary @(roleFilter == RolesNames.Teacher ? "active" : "")"
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == RolesNames.Teacher ? "active" : "")"
                 @onclick="() => SetRoleFilter(RolesNames.Teacher)">
             Lärare
         </button>
     </div>
 </div>
 
-@if (pageErrors.Any()) {
+@if (_pageErrors.Any()) {
     <div class="alert alert-danger">
         <ul>
-            @foreach (var error in pageErrors) {
+            @foreach (var error in _pageErrors) {
                 <li>@error</li>
             }
         </ul>
@@ -76,7 +76,7 @@
 }
 
 <div class="card shadow-sm border-0 p-2">
-    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" ItemsProvider="userProvider" Pagination="_pagination" @ref="_grid">
+    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" ItemsProvider="_userProvider" Pagination="_pagination" @ref="_grid">
         <PropertyColumn Property="@(u => u.FullName)"
                         Title="Namn"
                         Sortable="true"
@@ -99,18 +99,18 @@
 </div>
 
 @code {
-    private List<UserModel> _users = [];
-    private readonly PaginationState _pagination = new PaginationState { ItemsPerPage = 20 };
     private IReadOnlyList<CourseDto> Courses { get; set; } = [];
-    private readonly List<string> pageErrors = [];
-    private string searchTerm = string.Empty;
-    private string? roleFilter = null;
     private Dictionary<Guid, string> CourseOptions => Courses.ToDictionary(c => c.Id, c => c.Name);
-    private bool showCreateForm = false;
-    private PagedResult<UserDto>? pagedResponse;
-    private GridItemsProvider<UserModel>? userProvider;
+
+    private readonly PaginationState _pagination = new PaginationState { ItemsPerPage = 20 };
+    private string _searchTerm = string.Empty;
+    private string? _roleFilter = null;
+    private GridItemsProvider<UserModel>? _userProvider;
     private QuickGrid<UserModel>? _grid;
     private int _totalItemCount = 0;
+
+    private bool _showCreateForm = false;
+    private readonly List<string> _pageErrors = [];
 
     public class UserModel
     {
@@ -131,7 +131,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadCourses();
-        userProvider = LoadUsers;
+        _userProvider = LoadUsers;
     }
 
     private async Task LoadCourses()
@@ -140,38 +140,31 @@
             var response = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
             Courses = response?.Items ?? [];
         } catch {
-            pageErrors.Add("Kunde inte ladda kurser");
+            _pageErrors.Add("Kunde inte ladda kurser");
         }
     }
 
     private async Task UpdateGrid()
     {
-        Console.WriteLine("Tryint to update grid");
+        Console.WriteLine("Updating grid");
         if (_grid is not null) {
-            Console.WriteLine("Updating grid");
             await _grid.RefreshDataAsync();
         }
     }
 
     private async ValueTask<GridItemsProviderResult<UserModel>> LoadUsers(GridItemsProviderRequest<UserModel> request)
     {
-        Console.WriteLine(0);
+        PagedResult<UserDto>? pagedResponse;
         try {
-            Console.WriteLine(1);
             string uri = $"api/users?page={_pagination.CurrentPageIndex + 1}&pageSize={_pagination.ItemsPerPage}";
             uri += GetSearch();
             uri += GetSorting(request.GetSortByProperties().FirstOrDefault());
             uri += GetRoleFilter();
             pagedResponse = await ApiService.GetAsync<PagedResult<UserDto>>(uri);
-            Console.WriteLine(2);
             if (pagedResponse is null) return await FailedToLoadUsers();
-            Console.WriteLine(3);
-        } catch (Exception e) {
-            Console.WriteLine(4);
-            Console.WriteLine(e.Message);
+        } catch (Exception) {
             return await FailedToLoadUsers();
         }
-        Console.WriteLine(5);
         var models = pagedResponse.Items.Select(i => new UserModel {
             Id = Guid.Parse(i.Id),
             FirstName = i.FirstName,
@@ -181,18 +174,16 @@
             CourseId = i.CourseId,
             CourseName = CourseName(i.CourseId)
         }).AsQueryable();
-        Console.WriteLine(6);
-        models = request.ApplySorting(models);
         _totalItemCount = pagedResponse!.TotalItems;
         StateHasChanged();
         return GridItemsProviderResult.From<UserModel>(items: models.ToList(), totalItemCount: _totalItemCount);
     }
 
     private string GetRoleFilter()
-        => string.IsNullOrWhiteSpace(roleFilter) ? string.Empty : $"&role={roleFilter}";
+        => string.IsNullOrWhiteSpace(_roleFilter) ? string.Empty : $"&role={_roleFilter}";
 
     private string GetSearch()
-        => !string.IsNullOrWhiteSpace(searchTerm) ? $"&search={searchTerm}" : string.Empty;
+        => !string.IsNullOrWhiteSpace(_searchTerm) ? $"&search={_searchTerm}" : string.Empty;
 
     private string GetSorting(SortedProperty? sortedProperties)
     {
@@ -209,7 +200,7 @@
 
     private async ValueTask<GridItemsProviderResult<UserModel>> FailedToLoadUsers()
     {
-        pageErrors.Add("Kunde inte ladda användare");
+        _pageErrors.Add("Kunde inte ladda användare");
         return GridItemsProviderResult.From<UserModel>([], 0);
     }
 
@@ -226,30 +217,23 @@
 
     private async Task SetRoleFilter(string? role)
     {
-        roleFilter = role;
+        _roleFilter = role;
         await UpdateGrid();
     }
 
     private async Task ClearSearch()
     {
-        searchTerm = string.Empty;
+        _searchTerm = string.Empty;
         await UpdateGrid();
     }
 
     private void ToggleCreateForm()
     {
-        showCreateForm = !showCreateForm;
+        _showCreateForm = !_showCreateForm;
     }
 
-    private void OnUserCreated(UserDto user)
+    private async Task OnUserCreated(UserDto user)
     {
-        _users.Add(new UserModel {
-            Id = Guid.Parse(user.Id),
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Role = user.Role ?? string.Empty,
-            CourseId = user.CourseId,
-        });
+        await UpdateGrid();
     }
 }
