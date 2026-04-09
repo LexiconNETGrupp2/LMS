@@ -1,9 +1,9 @@
-﻿@page "/Users"
+﻿@page "/Users/{EditUserId:guid?}"
 @using LMS.Blazor.Client.Components.User
-@using LMS.Shared.DTOs.AuthDtos
 @using LMS.Shared.DTOs.UserDtos
 @using LMS.Shared.Pagination
 @inject IApiService ApiService
+@inject NavigationManager Navigation
 @attribute [Authorize(Roles = RolesNames.Teacher)]
 
 <PageTitle>Användare</PageTitle>
@@ -28,6 +28,11 @@
 
 @if (_showCreateForm) {
     <CreateUser OnUserCreated="OnUserCreated" CourseOptions="CourseOptions" />
+}
+
+@if (EditUserId is not null)
+{
+    <EditUser OnUserEdit="@OnUserEdit" OnClose="@OnUserEditClose" UserId="@EditUserId" />
 }
 
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -90,8 +95,11 @@
         </TemplateColumn>
         <PropertyColumn Property="@(u => u.CourseName)" Title="Kurs" Sortable="true" Align="Align.Start" />
         <TemplateColumn Context="user" Title="Åtgärder" Align="Align.End">
-            <button class="btn btn-link text-primary p-0">
-                Redigera
+            <a href="/Users/@user.Id" class="btn btn-link text-primary p-0">
+                <i class="bi bi-pencil-square"></i> Redigera
+            </a>
+            <button class="btn btn-link text-danger p-0">
+                <i class="bi bi-trash3"></i> Radera
             </button>
         </TemplateColumn>
     </QuickGrid>
@@ -99,6 +107,9 @@
 </div>
 
 @code {
+    [Parameter]
+    public Guid? EditUserId { get; set; }
+
     private IReadOnlyList<CourseDto> Courses { get; set; } = [];
     private Dictionary<Guid, string> CourseOptions => Courses.ToDictionary(c => c.Id, c => c.Name);
 
@@ -111,6 +122,7 @@
 
     private bool _showCreateForm = false;
     private readonly List<string> _pageErrors = [];
+
 
     public class UserModel
     {
@@ -236,4 +248,16 @@
     {
         await UpdateGrid();
     }
+
+    private void OnUserEdit(UserDto user)
+    {
+        _users.RemoveAll(u => u.Id == Guid.Parse(user.Id));
+        OnUserCreated(user);
+    }
+
+    private void OnUserEditClose()
+    {
+        Navigation.NavigateTo("/Users");
+    }
+
 }

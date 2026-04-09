@@ -87,7 +87,7 @@ public class CourseService : ICourseService
 
     public async Task UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
-        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
+        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token, includeAllData: false)
            ?? throw new CourseNotFoundException(id);
 
         if (updateCourseDto.Name is not null)
