@@ -280,6 +280,7 @@ else
         var students = await ApiService.GetAsync<List<CourseStudentDto>>(uri) ?? [];
         return students.Select(s => new StudentListItemModel
         {
+            Id = s.Id,
             Name = s.FullName,
             Email = s.Email,
             ProgressPercent = Random.Shared.Next(0, 100), // TODO: Replace with real progress data
