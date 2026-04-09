@@ -249,10 +249,9 @@
         await UpdateGrid();
     }
 
-    private void OnUserEdit(UserDto user)
+    private async Task OnUserEdit(UserDto user)
     {
-        _users.RemoveAll(u => u.Id == Guid.Parse(user.Id));
-        OnUserCreated(user);
+        await UpdateGrid();
     }
 
     private void OnUserEditClose()

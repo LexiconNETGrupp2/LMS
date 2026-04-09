@@ -1,4 +1,5 @@
 using LMS.Presentation.Controllers;
+using LMS.Shared.Constants;
 using LMS.Shared.DTOs.AuthDtos;
 using LMS.Shared.DTOs.UserDtos;
 using LMS.Shared.Pagination;
@@ -33,7 +34,7 @@ public class UsersControllerTest
                 },
             },
         };
-        PagedQuery query = new() { Page = 1, PageSize = 20 };
+        AllUsersParams query = new(RolesNames.Teacher) { Page = 1, PageSize = 20 };
         userServiceMock
             .Setup(s => s.GetAllUsers(query, ct))
             .ReturnsAsync(expectedUsers);
