@@ -664,12 +664,12 @@ else
 
         var hasOverlap = module.Activities.Any(activity =>
             activity.Id != currentActivityId &&
-            startDate < (activity.Deadline ?? activity.Date) &&
-            endDate > activity.Date);
+            startDate <= (activity.Deadline ?? activity.Date) &&
+            endDate >= activity.Date);
 
         if (hasOverlap)
         {
-            return "Aktivitetens datum överlappar med en annan aktivitet i den här modulen.";
+            return "Aktivitetens datum överlappar med en annan aktivitet i den här modulen. En aktivitet kan inte sluta samtidigt som en annan börjar.";
         }
 
         return null;

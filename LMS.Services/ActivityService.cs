@@ -64,11 +64,14 @@ public class ActivityService : IActivityService
             Type = activityType,
             Module = module,
         };
-        try {
+        try
+        {
             _uow.Activities.Create(activity);
             await _uow.CompleteAsync(CancellationToken.None);
             return _mapper.Map<ActivityDto>(activity);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             throw new BadRequestException(ex.Message);
         }
     }
@@ -90,10 +93,13 @@ public class ActivityService : IActivityService
         activity.EndDate = request.EndDate;
         activity.Type = activityType;
 
-        try {
+        try
+        {
             _uow.Activities.Update(activity);
             await _uow.CompleteAsync(CancellationToken.None);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             throw new BadRequestException(ex.Message);
         }
     }
@@ -103,10 +109,13 @@ public class ActivityService : IActivityService
         var activity = await _uow.Activities.GetActivityById(id, trackChanges: true)
             ?? throw new ActivityNotFoundException(id);
 
-        try {
+        try
+        {
             _uow.Activities.Delete(activity);
             await _uow.CompleteAsync(CancellationToken.None);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             throw new BadRequestException(ex.Message);
         }
     }
@@ -139,12 +148,12 @@ public class ActivityService : IActivityService
 
         var hasOverlap = existingActivities.Any(activity =>
             activity.Id != currentActivityId &&
-            startDate < activity.EndDate &&
-            endDate > activity.StartDate);
+            startDate <= activity.EndDate &&
+            endDate >= activity.StartDate);
 
         if (hasOverlap)
         {
-            throw new BadRequestException("Aktivitetens datum överlappar med en annan aktivitet i den här modulen.");
+            throw new BadRequestException("Aktivitetens datum överlappar med en annan aktivitet i den här modulen. En aktivitet kan inte sluta samtidigt som en annan börjar.");
         }
     }
 }
