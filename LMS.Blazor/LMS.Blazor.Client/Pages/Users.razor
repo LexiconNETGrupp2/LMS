@@ -12,7 +12,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h1 class="fw-bold fs-3 mb-1">Användare</h1>
-            <div class="text-secondary">Totalt <strong>@pagedResponse?.TotalItems</strong> användare i systemet</div>
+            <div class="text-secondary">Totalt @_totalItemCount användare i systemet</div>
         </div>
         <button class="btn btn-primary" @onclick="ToggleCreateForm">
             @if (!showCreateForm) {
@@ -33,19 +33,20 @@
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div class="flex-grow-1">
         <div class="input-group">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-            <input type="search" 
-                   class="form-control border-start-0" 
-                   placeholder="Sök efter namn eller e-post..." 
-                   autofocus
-                   @bind="searchTerm"
-                   @bind:event="oninput" />
-            @if (!string.IsNullOrWhiteSpace(searchTerm)) {
-                <button type="button" class="btn btn-outline-secondary border-start-0" style="z-index:2;"
-                        @onclick="ClearSearch" tabindex="-1">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            }
+            <EditForm Model="searchTerm" OnValidSubmit="UpdateGrid" class="w-75">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search me-1"></i>
+                <input type="search" class="form-control border-start-0"
+                           placeholder="Sök efter namn eller e-post..."
+                           @bind="searchTerm" />
+                @if (!string.IsNullOrWhiteSpace(searchTerm)) {
+                    <button type="button" class="btn btn-outline-secondary border-start-0 border-end-0" style="z-index:2;"
+                            @onclick="ClearSearch" tabindex="-1">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+                <button type="submit" class="btn btn-outline-primary border-start-0" style="z-index: 2">Sök</button>
+                </span>
+            </EditForm>
         </div>
     </div>
     <div class="btn-group ms-2" role="group">
@@ -109,6 +110,7 @@
     private PagedResult<UserDto>? pagedResponse;
     private GridItemsProvider<UserModel>? userProvider;
     private QuickGrid<UserModel>? _grid;
+    private int _totalItemCount = 0;
 
     public class UserModel
     {
@@ -129,7 +131,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadCourses();
-        await LoadUsers();
+        userProvider = LoadUsers;
     }
 
     private async Task LoadCourses()
@@ -142,43 +144,51 @@
         }
     }
 
-    private async Task LoadUsers()
+    private async Task UpdateGrid()
     {
-        userProvider = async request =>
-        {
-            Console.WriteLine(0);
-            try {
-                Console.WriteLine(1);
-                string uri = $"api/users?page={_pagination.CurrentPageIndex + 1}&pageSize={_pagination.ItemsPerPage}";
-                uri += GetSearch();
-                uri += GetSorting(request.GetSortByProperties().FirstOrDefault());
-                uri += GetRoleFilter();
-                pagedResponse = await ApiService.GetAsync<PagedResult<UserDto>>(uri);
-                Console.WriteLine(2);
-                if (pagedResponse is null) return FailedToLoadUsers();
-                Console.WriteLine(3);
-            } catch (Exception e) {
-                Console.WriteLine(4);
-                Console.WriteLine(e.Message);
-                return FailedToLoadUsers();
-            }
-            Console.WriteLine(5);
-            var models = pagedResponse.Items.Select(i => new UserModel {
-                Id = Guid.Parse(i.Id),
-                FirstName = i.FirstName,
-                LastName = i.LastName,
-                Email = i.Email,
-                Role = i.Role ?? string.Empty,
-                CourseId = i.CourseId,
-                CourseName = CourseName(i.CourseId)
-            }).AsQueryable();
-            Console.WriteLine(6);
-            models = request.ApplySorting(models);
-            return GridItemsProviderResult.From<UserModel>(items: models.ToList(), totalItemCount: pagedResponse!.TotalItems);
-        };
+        Console.WriteLine("Tryint to update grid");
+        if (_grid is not null) {
+            Console.WriteLine("Updating grid");
+            await _grid.RefreshDataAsync();
+        }
     }
 
-    private string GetRoleFilter() 
+    private async ValueTask<GridItemsProviderResult<UserModel>> LoadUsers(GridItemsProviderRequest<UserModel> request)
+    {
+        Console.WriteLine(0);
+        try {
+            Console.WriteLine(1);
+            string uri = $"api/users?page={_pagination.CurrentPageIndex + 1}&pageSize={_pagination.ItemsPerPage}";
+            uri += GetSearch();
+            uri += GetSorting(request.GetSortByProperties().FirstOrDefault());
+            uri += GetRoleFilter();
+            pagedResponse = await ApiService.GetAsync<PagedResult<UserDto>>(uri);
+            Console.WriteLine(2);
+            if (pagedResponse is null) return await FailedToLoadUsers();
+            Console.WriteLine(3);
+        } catch (Exception e) {
+            Console.WriteLine(4);
+            Console.WriteLine(e.Message);
+            return await FailedToLoadUsers();
+        }
+        Console.WriteLine(5);
+        var models = pagedResponse.Items.Select(i => new UserModel {
+            Id = Guid.Parse(i.Id),
+            FirstName = i.FirstName,
+            LastName = i.LastName,
+            Email = i.Email,
+            Role = i.Role ?? string.Empty,
+            CourseId = i.CourseId,
+            CourseName = CourseName(i.CourseId)
+        }).AsQueryable();
+        Console.WriteLine(6);
+        models = request.ApplySorting(models);
+        _totalItemCount = pagedResponse!.TotalItems;
+        StateHasChanged();
+        return GridItemsProviderResult.From<UserModel>(items: models.ToList(), totalItemCount: _totalItemCount);
+    }
+
+    private string GetRoleFilter()
         => string.IsNullOrWhiteSpace(roleFilter) ? string.Empty : $"&role={roleFilter}";
 
     private string GetSearch()
@@ -197,7 +207,7 @@
         return $"&OrderBy={name}&IsDescending={direction}";
     }
 
-    private GridItemsProviderResult<UserModel> FailedToLoadUsers()
+    private async ValueTask<GridItemsProviderResult<UserModel>> FailedToLoadUsers()
     {
         pageErrors.Add("Kunde inte ladda användare");
         return GridItemsProviderResult.From<UserModel>([], 0);
@@ -217,12 +227,13 @@
     private async Task SetRoleFilter(string? role)
     {
         roleFilter = role;
-        await LoadUsers();
+        await UpdateGrid();
     }
 
-    private void ClearSearch()
+    private async Task ClearSearch()
     {
         searchTerm = string.Empty;
+        await UpdateGrid();
     }
 
     private void ToggleCreateForm()
