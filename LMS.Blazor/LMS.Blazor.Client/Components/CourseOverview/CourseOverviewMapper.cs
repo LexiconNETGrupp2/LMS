@@ -23,7 +23,8 @@ public static class CourseOverviewMapper
                 {
                     Title = a.Name,
                     Type = a.Type.Name,
-                    Date = $"{a.StartDate} - {a.EndDate}",
+                    StartDate = a.StartDate,
+                    EndDate = a.EndDate,
                 }).ToArray(),
             }).ToArray(),
         };

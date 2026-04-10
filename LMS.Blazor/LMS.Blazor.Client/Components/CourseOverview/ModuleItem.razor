@@ -98,7 +98,8 @@
             Id = s.Id.ToString(),
             Title = s.Name,
             Type = s.Type.Name,
-            Date = $"{s.StartDate} - {s.EndDate}",
+            StartDate = s.StartDate,
+            EndDate = s.EndDate
         }).ToList();
     }
 
