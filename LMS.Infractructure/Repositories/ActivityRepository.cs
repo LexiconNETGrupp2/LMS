@@ -16,6 +16,7 @@ public class ActivityRepository(ApplicationDbContext context)
             .Where(s => s.Module.Id == moduleId)
             .Include(s => s.Module)
             .Include(s => s.Type)
+            .OrderBy(s => s.StartDate)
             .ToListAsync();
     }
 
@@ -32,6 +33,7 @@ public class ActivityRepository(ApplicationDbContext context)
         return await FindAll()
             .Include(s => s.Module)
             .Include(s => s.Type)
+            .OrderBy(s => s.StartDate)
             .ToPagedResultAsync(query);
     }
 }
