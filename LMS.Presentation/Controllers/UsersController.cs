@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Contracts;
-using Swashbuckle.AspNetCore.Annotations;
 
 namespace LMS.Presentation.Controllers;
 
@@ -19,7 +18,7 @@ public class UsersController(IServiceManager serviceManager) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<UserDto>>> GetAll([FromQuery] PagedQuery query)
+    public async Task<ActionResult<PagedResult<UserDto>>> GetAll([FromQuery] AllUsersParams query)
     {
         var users = await UserService.GetAllUsers(query);
         return Ok(users);

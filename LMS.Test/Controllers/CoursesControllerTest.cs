@@ -22,7 +22,6 @@ public class CoursesControllerTest
         // Arrange
         var ct = CancellationToken.None;
         var param = new AllCoursesParams(
-            Search: null,
             AfterDate: null,
             BeforeDate: null)
         {
