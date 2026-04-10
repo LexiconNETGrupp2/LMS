@@ -6,6 +6,6 @@ namespace Domain.Contracts.Repositories;
 
 public interface IUserRepository
 {
-    Task<PagedResult<ApplicationUser>> GetAllWithCoursesAsync(AllUsersParams query, CancellationToken ct);
+    Task<PagedResult<UserDto>> GetAllWithCoursesAsync(AllUsersParams query, CancellationToken ct);
     Task<ApplicationUser?> GetByIdWithCourseAsync(string id, CancellationToken ct);
 }

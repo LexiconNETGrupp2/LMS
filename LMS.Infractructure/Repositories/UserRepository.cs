@@ -13,7 +13,7 @@ public class UserRepository(ApplicationDbContext context)
 {
     private readonly ApplicationDbContext _context = context;
 
-    public async Task<PagedResult<ApplicationUser>> GetAllWithCoursesAsync(AllUsersParams query, CancellationToken ct)
+    public async Task<PagedResult<UserDto>> GetAllWithCoursesAsync(AllUsersParams query, CancellationToken ct)
     {
         var users = FindAll();
         
@@ -37,19 +37,32 @@ public class UserRepository(ApplicationDbContext context)
         bool isDesc = query.IsDescending.Value && true;
         users = query.OrderBy switch {
             "FullName" => isDesc ? 
-                        users.OrderByDescending(u => u.FirstName).ThenBy(u => u.LastName) : 
-                        users.OrderBy(u => u.FirstName).ThenBy(u => u.LastName),
+                        users.OrderByDescending(u => u.LastName).ThenBy(u => u.FirstName) : 
+                        users.OrderBy(u => u.LastName).ThenBy(u => u.FirstName),
             "Email" => isDesc ?
                         users.OrderByDescending(u => u.Email) :
                         users.OrderBy(u => u.Email),
             "CourseName" => isDesc ?
                         users.OrderByDescending(u => u.Course.Name) :
                         users.OrderBy(u => u.Course.Name),
-            _ => users.OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+            _ => users.OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
         };
 
-        return await users.Include(u => u.Course)
-                     .ToPagedResultAsync(query, ct);
+        users = users.Include(u => u.Course);
+
+        var userDtos = (from user in users
+                join userRole in _context.UserRoles.AsNoTracking() on user.Id equals userRole.UserId
+                join role in _context.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+                select new UserDto {
+                    Id = user.Id,
+                    Email = user.Email!,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Role = role.Name,
+                    CourseId = user.CourseId
+                }).AsQueryable();
+
+        return await userDtos.ToPagedResultAsync(query, ct);
     }
 
     public async Task<ApplicationUser?> GetByIdWithCourseAsync(string id, CancellationToken ct)

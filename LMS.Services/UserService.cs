@@ -31,7 +31,7 @@ public class UserService : IUserService
             Page = users.Page,
             PageSize = users.PageSize,
             TotalItems = users.TotalItems,
-            Items = users.Items.Select(MapToUserDto).ToList(),
+            Items = users.Items,
         };
     }
 
