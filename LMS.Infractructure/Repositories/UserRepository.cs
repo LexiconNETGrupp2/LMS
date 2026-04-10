@@ -2,6 +2,7 @@ using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
 using LMS.Infractructure.Extensions;
+using LMS.Shared.DTOs.UserDtos;
 using LMS.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,12 +11,58 @@ namespace LMS.Infractructure.Repositories;
 public class UserRepository(ApplicationDbContext context)
     : RepositoryBase<ApplicationUser>(context), IUserRepository
 {
-    public async Task<PagedResult<ApplicationUser>> GetAllWithCoursesAsync(PagedQuery query, CancellationToken ct)
+    private readonly ApplicationDbContext _context = context;
+
+    public async Task<PagedResult<UserDto>> GetAllWithCoursesAsync(AllUsersParams query, CancellationToken ct)
     {
-        return await FindAll()
-            .Include(u => u.Course)
-            .OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
-            .ToPagedResultAsync(query, ct);
+        var users = FindAll();
+        
+        if (query.Role is not null) {
+            users = from user in users
+                    join userRole in _context.UserRoles.AsNoTracking()
+                        on user.Id equals userRole.UserId
+                    join role in _context.Roles.AsNoTracking()
+                         on userRole.RoleId equals role.Id
+                    where role.Name == query.Role
+                    select user;
+        }
+
+        if (query.Search is not null) {
+            users = users.Where(u => u.FirstName.Contains(query.Search)
+                                  || u.LastName.Contains(query.Search)
+                                  || u.Email!.Contains(query.Search));
+        }
+
+        string orderBy = query.OrderBy is not null ? query.OrderBy : "FullName";
+        bool isDesc = query.IsDescending.Value && true;
+        users = query.OrderBy switch {
+            "FullName" => isDesc ? 
+                        users.OrderByDescending(u => u.LastName).ThenBy(u => u.FirstName) : 
+                        users.OrderBy(u => u.LastName).ThenBy(u => u.FirstName),
+            "Email" => isDesc ?
+                        users.OrderByDescending(u => u.Email) :
+                        users.OrderBy(u => u.Email),
+            "CourseName" => isDesc ?
+                        users.OrderByDescending(u => u.Course.Name) :
+                        users.OrderBy(u => u.Course.Name),
+            _ => users.OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
+        };
+
+        users = users.Include(u => u.Course);
+
+        var userDtos = (from user in users
+                join userRole in _context.UserRoles.AsNoTracking() on user.Id equals userRole.UserId
+                join role in _context.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+                select new UserDto {
+                    Id = user.Id,
+                    Email = user.Email!,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Role = role.Name,
+                    CourseId = user.CourseId
+                }).AsQueryable();
+
+        return await userDtos.ToPagedResultAsync(query, ct);
     }
 
     public async Task<ApplicationUser?> GetByIdWithCourseAsync(string id, CancellationToken ct)

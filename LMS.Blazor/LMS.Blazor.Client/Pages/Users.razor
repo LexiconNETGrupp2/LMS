@@ -12,16 +12,13 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h1 class="fw-bold fs-3 mb-1">Användare</h1>
-            <div class="text-secondary">Totalt <strong>@FilteredUsers.Count()</strong> användare i systemet</div>
+            <div class="text-secondary">Totalt @_totalItemCount användare i systemet</div>
         </div>
         <button class="btn btn-primary" @onclick="ToggleCreateForm">
-            @if (!showCreateForm)
-            {
+            @if (!_showCreateForm) {
                 <i class="bi bi-plus"></i>
                 @:Lägg till användare
-            }
-            else
-            {
+            } else {
                 <i class="bi bi-x-lg"></i>
                 @:Stäng
             }
@@ -29,8 +26,7 @@
     </div>
 </div>
 
-@if (showCreateForm)
-{
+@if (_showCreateForm) {
     <CreateUser OnUserCreated="OnUserCreated" CourseOptions="CourseOptions" />
 }
 
@@ -42,35 +38,40 @@
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div class="flex-grow-1">
         <div class="input-group">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control border-start-0" placeholder="Sök efter namn eller e-post..."
-                   @bind="searchTerm"
-                   @bind:event="oninput" />
-            @if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                <button type="button" class="btn btn-outline-secondary border-start-0" style="z-index:2;"
-                        @onclick="ClearSearch" tabindex="-1">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            }
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search me-1"></i>
+                <input type="text" class="form-control border-start-0"
+                           placeholder="Sök efter namn eller e-post..."
+                           @bind-value="_searchTerm" />
+                </span>
+                @if (!string.IsNullOrWhiteSpace(_searchTerm)) {
+                    <button type="button" class="btn btn-outline-secondary border-start-0 border-end-0" style="z-index:2;"
+                            @onclick="ClearSearch" tabindex="-1">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+                <button @onclick="UpdateGrid" class="btn btn-outline-primary border-start-0" style="z-index: 2">Sök</button>
         </div>
     </div>
     <div class="btn-group ms-2" role="group">
-        <button type="button" class="btn btn-outline-primary @(roleFilter==null ? "active" : "")"
-                @onclick="() => SetRoleFilter(null)">Alla</button>
-        <button type="button" class="btn btn-outline-primary @(roleFilter==RolesNames.Student ? "active" : "")"
-                @onclick="() => SetRoleFilter(RolesNames.Student)">Elever</button>
-        <button type="button" class="btn btn-outline-primary @(roleFilter==RolesNames.Teacher ? "active" : "")"
-                @onclick="() => SetRoleFilter(RolesNames.Teacher)">Lärare</button>
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == null ? "active" : "")"
+                @onclick="() => SetRoleFilter(null)">
+            Alla
+        </button>
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == RolesNames.Student ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Student)">
+            Elever
+        </button>
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == RolesNames.Teacher ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Teacher)">
+            Lärare
+        </button>
     </div>
 </div>
 
-@if (pageErrors.Any())
-{
+@if (_pageErrors.Any()) {
     <div class="alert alert-danger">
         <ul>
-            @foreach (var error in pageErrors)
-            {
+            @foreach (var error in _pageErrors) {
                 <li>@error</li>
             }
         </ul>
@@ -78,7 +79,7 @@
 }
 
 <div class="card shadow-sm border-0 p-2">
-    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" Items="FilteredUsers.AsQueryable()" Pagination="pagination">
+    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" ItemsProvider="_userProvider" Pagination="_pagination" @ref="_grid">
         <PropertyColumn Property="@(u => u.FullName)"
                         Title="Namn"
                         Sortable="true"
@@ -90,7 +91,7 @@
                 @RoleName(context.Role)
             </div>
         </TemplateColumn>
-        <PropertyColumn Property="@(u => CourseName(u.CourseId))" Title="Kurs" Sortable="true" Align="Align.Start" />
+        <PropertyColumn Property="@(u => u.CourseName)" Title="Kurs" Sortable="true" Align="Align.Start" />
         <TemplateColumn Context="user" Title="Åtgärder" Align="Align.End">
             <a href="/Users/@user.Id" class="btn btn-link text-primary p-0">
                 <i class="bi bi-pencil-square"></i> Redigera
@@ -100,21 +101,25 @@
             </button>
         </TemplateColumn>
     </QuickGrid>
-    <Paginator State="pagination" />
+    <Paginator State="@_pagination" />
 </div>
 
 @code {
     [Parameter]
     public Guid? EditUserId { get; set; }
 
-    private List<UserModel> _users = [];
-    private readonly PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
     private IReadOnlyList<CourseDto> Courses { get; set; } = [];
-    private readonly List<string> pageErrors = [];
-    private string searchTerm = string.Empty;
-    private string? roleFilter = null;
     private Dictionary<Guid, string> CourseOptions => Courses.ToDictionary(c => c.Id, c => c.Name);
-    private bool showCreateForm = false;
+
+    private readonly PaginationState _pagination = new PaginationState { ItemsPerPage = 20 };
+    private string _searchTerm = string.Empty;
+    private string? _roleFilter = null;
+    private GridItemsProvider<UserModel>? _userProvider;
+    private QuickGrid<UserModel>? _grid;
+    private int _totalItemCount = 0;
+
+    private bool _showCreateForm = false;
+    private readonly List<string> _pageErrors = [];
 
 
     public class UserModel
@@ -130,113 +135,129 @@
         public string Role { get; set; } = RolesNames.Student;
         [Required(ErrorMessage = "Kurs krävs")]
         public Guid? CourseId { get; set; }
+        public string CourseName { get; set; } = string.Empty;
     }
-
-    private IEnumerable<UserModel> FilteredUsers => _users
-        .Where(u => u.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-        .Where(u => roleFilter == null || u.Role == roleFilter);
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCourses();
-        await LoadUsers();
+        _userProvider = LoadUsers;
     }
 
     private async Task LoadCourses()
     {
-        try
-        {
+        try {
             var response = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
             Courses = response?.Items ?? [];
-        }
-        catch
-        {
-            pageErrors.Add("Kunde inte ladda kurser");
+        } catch {
+            _pageErrors.Add("Kunde inte ladda kurser");
         }
     }
 
-    private async Task LoadUsers()
+    private async Task UpdateGrid()
     {
-        // generate dummy users for now
-        Guid RandomCourse() => Courses.Any() ? Courses[Random.Shared.Next(Courses.Count)].Id : Guid.Empty;
-        string RandomRole() => Random.Shared.Next(4) == 0 ? RolesNames.Teacher : RolesNames.Student;
-        _users = new List<UserModel>
-        {
-            new() { FirstName = "Alice", LastName = "Andersson", Email = "alice.andersson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Bob", LastName = "Berg", Email = "bob.berg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Charlie", LastName = "Carlsson", Email = "charlie.carlsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "David", LastName = "Dahl", Email = "david.dahl@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Eva", LastName = "Eriksson", Email = "eva.eriksson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Fiona", LastName = "Fransson", Email = "fiona.fransson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Gustav", LastName = "Gustavsson", Email = "gustav.gustavsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Hanna", LastName = "Holm", Email = "hanna.holm@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Isak", LastName = "Isaksson", Email = "isak.isaksson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Julia", LastName = "Johansson", Email = "julia.johansson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Karl", LastName = "Karlsson", Email = "karl.karlsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Lina", LastName = "Lindberg", Email = "lina.lindberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Mikael", LastName = "Magnusson", Email = "mikael.magnusson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Nina", LastName = "Nilsson", Email = "nina.nilsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Oscar", LastName = "Olofsson", Email = "oscar.olofsson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Petra", LastName = "Persson", Email = "petra.persson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Quentin", LastName = "Qvist", Email = "quentin.qvist@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Rebecca", LastName = "Rasmusson", Email = "rebecca.rasmusson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Simon", LastName = "Svensson", Email = "simon.svensson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Tina", LastName = "Thomasson", Email = "tina.thomasson@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Ulf", LastName = "Udd", Email = "ulf.udd@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Vera", LastName = "Viklund", Email = "vera.viklund@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "William", LastName = "Wallin", Email = "william.wallin@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Xenia", LastName = "Xenakis", Email = "xenia.xenakis@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Yvonne", LastName = "Ytterberg", Email = "yvonne.ytterberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
-            new() { FirstName = "Zacharias", LastName = "Zetterberg", Email = "zacharias.zetterberg@example.com", CourseId = RandomCourse(), Role = RandomRole() },
+        Console.WriteLine("Updating grid");
+        if (_grid is not null) {
+            await _grid.RefreshDataAsync();
+        }
+    }
+
+    private async ValueTask<GridItemsProviderResult<UserModel>> LoadUsers(GridItemsProviderRequest<UserModel> request)
+    {
+        PagedResult<UserDto>? pagedResponse;
+        try {
+            string uri = $"api/users?page={_pagination.CurrentPageIndex + 1}&pageSize={_pagination.ItemsPerPage}";
+            uri += GetSearch();
+            uri += GetSorting(request.GetSortByProperties().FirstOrDefault());
+            uri += GetRoleFilter();
+            pagedResponse = await ApiService.GetAsync<PagedResult<UserDto>>(uri);
+            if (pagedResponse is null) return await FailedToLoadUsers();
+        } catch (Exception) {
+            return await FailedToLoadUsers();
+        }
+        var models = pagedResponse.Items.Select(i => new UserModel {
+            Id = Guid.Parse(i.Id),
+            FirstName = i.FirstName,
+            LastName = i.LastName,
+            Email = i.Email,
+            Role = i.Role ?? string.Empty,
+            CourseId = i.CourseId,
+            CourseName = CourseName(i.CourseId)
+        }).AsQueryable();
+        _totalItemCount = pagedResponse!.TotalItems;
+        StateHasChanged();
+        return GridItemsProviderResult.From<UserModel>(items: models.ToList(), totalItemCount: _totalItemCount);
+    }
+
+    private string GetRoleFilter()
+        => string.IsNullOrWhiteSpace(_roleFilter) ? string.Empty : $"&role={_roleFilter}";
+
+    private string GetSearch()
+        => !string.IsNullOrWhiteSpace(_searchTerm) ? $"&search={_searchTerm}" : string.Empty;
+
+    private string GetSorting(SortedProperty? sortedProperties)
+    {
+        if (!sortedProperties.HasValue) return string.Empty;
+
+        var item = sortedProperties.Value;
+        string name = item.PropertyName;
+        bool direction = item.Direction switch {
+            SortDirection.Descending => true,
+            _ => false
         };
+        return $"&OrderBy={name}&IsDescending={direction}";
+    }
+
+    private async ValueTask<GridItemsProviderResult<UserModel>> FailedToLoadUsers()
+    {
+        _pageErrors.Add("Kunde inte ladda användare");
+        return GridItemsProviderResult.From<UserModel>([], 0);
     }
 
     private string CourseName(Guid? courseId) =>
         Courses.SingleOrDefault(s => s.Id == courseId)?.Name ?? string.Empty;
 
     private string RoleName(string role) =>
-        role switch
-        {
+        role switch {
             RolesNames.Student => "Elev",
             RolesNames.Teacher => "Lärare",
             _ => role
         };
 
 
-    private void SetRoleFilter(string? role)
+    private async Task SetRoleFilter(string? role)
     {
-        roleFilter = role;
-        StateHasChanged();
+        _roleFilter = role;
+        await UpdateGrid();
     }
 
-    private void ClearSearch()
+    private async Task ClearSearch()
     {
-        searchTerm = string.Empty;
+        _searchTerm = string.Empty;
+        await UpdateGrid();
+    }
+
+    private async Task SubmitWithEnter(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter") {
+            Console.WriteLine("PRessed enter");
+            await UpdateGrid();
+        }
     }
 
     private void ToggleCreateForm()
     {
-        showCreateForm = !showCreateForm;
+        _showCreateForm = !_showCreateForm;
     }
 
-    private void OnUserCreated(UserDto user)
+    private async Task OnUserCreated(UserDto user)
     {
-        _users.Add(new UserModel
-        {
-            Id = Guid.Parse(user.Id),
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Role = user.Role ?? string.Empty,
-            CourseId = user.CourseId,
-        });
+        await UpdateGrid();
     }
 
-    private void OnUserEdit(UserDto user)
+    private async Task OnUserEdit(UserDto user)
     {
-        _users.RemoveAll(u => u.Id == Guid.Parse(user.Id));
-        OnUserCreated(user);
+        await UpdateGrid();
     }
 
     private void OnUserEditClose()

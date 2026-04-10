@@ -51,7 +51,7 @@ public class DataSeedHostingService : IHostedService
             try {
                 await AddRolesAsync([TeacherRole, StudentRole]);
                 await AddDemoUsersAsync();
-                users = await AddUsersAsync(20);
+                users = await AddUsersAsync(50);
                 logger.LogInformation("Seed complete");
             } catch (Exception ex) {
                 logger.LogError($"Data seed fail with error: {ex.Message}");
