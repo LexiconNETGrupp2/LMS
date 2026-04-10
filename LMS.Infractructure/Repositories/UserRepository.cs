@@ -14,6 +14,7 @@ public class UserRepository(ApplicationDbContext context)
     {
         return await FindAll()
             .Include(u => u.Course)
+            .OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
             .ToPagedResultAsync(query, ct);
     }
 
