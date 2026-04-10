@@ -1,4 +1,5 @@
 @page "/courses"
+@using LMS.Blazor.Client.Components.Pagination
 @using LMS.Shared.Pagination
 @attribute [Authorize(Roles = "Teacher")]
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
@@ -20,7 +21,7 @@
                 </label>
             </span>
         </div>
-        <div>            
+        <div>
             <button type="button" class="btn btn-primary modules-primary-action me-2" @onclick="() => OpenCreateModal()">
                 <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
                 Lägg till modul
@@ -38,7 +39,7 @@
                 <button class="btn btn-primary ms-2" type="submit">Sök</button>
             </EditForm>
         </div>
-    </div>    
+    </div>
     @if (!string.IsNullOrWhiteSpace(actionMessage))
     {
         <div class="alert alert-success">@actionMessage</div>
@@ -67,7 +68,8 @@
     }
     else
     {
-        <section class="card shadow-sm modules-card">
+        <Pagination CurrentPage="@Page" LastPage="@lastPage" />
+        <section class="card shadow-sm modules-card my-3">
             <div class="modules-accordion">
                 @foreach (var course in courses)
                 {
@@ -127,53 +129,53 @@
                                 <div class="table-responsive modules-table-wrap">
                                     <table class="table align-middle mb-0">
                                         <thead>
-                                            <tr>
-                                                <th>Modulnamn</th>
-                                                <th>Period</th>
-                                                <th>Aktiviteter</th>
-                                                <th class="text-end">Åtgärder</th>
-                                            </tr>
+                                        <tr>
+                                            <th>Modulnamn</th>
+                                            <th>Period</th>
+                                            <th>Aktiviteter</th>
+                                            <th class="text-end">Åtgärder</th>
+                                        </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var module in course.Modules.OrderBy(m => m.StartDate).ThenBy(m => m.Name))
-                                            {
-                                                <tr>
-                                                    <td>
-                                                        <div class="fw-semibold text-dark">@module.Name</div>
-                                                    </td>
-                                                    <td>
-                                                        <div class="modules-period">
-                                                            <i class="bi bi-calendar3" aria-hidden="true"></i>
-                                                            <span>@module.StartDateStr - @module.EndDateStr</span>
-                                                        </div>
-                                                    </td>
-                                                    <td>@module.ActivitiesCount</td>
-                                                    <td class="text-end">
-                                                        <button type="button"
-                                                                class="btn btn-link text-primary modules-icon-button"
-                                                                title="Redigera modul"
-                                                                @onclick="() => OpenEditModal(course, module)">
-                                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button type="button"
-                                                                class="btn btn-link text-danger modules-icon-button"
-                                                                title="Ta bort modul"
-                                                                @onclick="() => DeleteModuleAsync(course, module)">
-                                                            <i class="bi bi-trash3" aria-hidden="true"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            }
+                                        @foreach (var module in course.Modules.OrderBy(m => m.StartDate).ThenBy(m => m.Name))
+                                        {
                                             <tr>
-                                                <td colspan="4" class="modules-inline-add-cell">
+                                                <td>
+                                                    <div class="fw-semibold text-dark">@module.Name</div>
+                                                </td>
+                                                <td>
+                                                    <div class="modules-period">
+                                                        <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                                        <span>@module.StartDateStr - @module.EndDateStr</span>
+                                                    </div>
+                                                </td>
+                                                <td>@module.ActivitiesCount</td>
+                                                <td class="text-end">
                                                     <button type="button"
-                                                            class="btn btn-link modules-inline-add"
-                                                            @onclick="() => OpenCreateModal(course.Id)">
-                                                        <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
-                                                        Lägg till modul i @course.Name
+                                                            class="btn btn-link text-primary modules-icon-button"
+                                                            title="Redigera modul"
+                                                            @onclick="() => OpenEditModal(course, module)">
+                                                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-link text-danger modules-icon-button"
+                                                            title="Ta bort modul"
+                                                            @onclick="() => DeleteModuleAsync(course, module)">
+                                                        <i class="bi bi-trash3" aria-hidden="true"></i>
                                                     </button>
                                                 </td>
                                             </tr>
+                                        }
+                                        <tr>
+                                            <td colspan="4" class="modules-inline-add-cell">
+                                                <button type="button"
+                                                        class="btn btn-link modules-inline-add"
+                                                        @onclick="() => OpenCreateModal(course.Id)">
+                                                    <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                                                    Lägg till modul i @course.Name
+                                                </button>
+                                            </td>
+                                        </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -183,6 +185,7 @@
                 }
             </div>
         </section>
+        <Pagination CurrentPage="@Page" LastPage="@lastPage" />
     }
 </div>
 
@@ -205,13 +208,17 @@
     private bool isModalOpen;
     private bool isSubmitting;
     private bool lockCourseSelection;
+    private int lastPage = 1;
+    private const int DefaultPageSize = 20;
     private string? loadError;
     private string? submitError;
     private string? actionMessage;
     private string searchStr = "";
     private bool showOldCourses = true;
 
-    protected override async Task OnInitializedAsync()
+    [SupplyParameterFromQuery] public int Page { get; set; } = 1;
+
+    protected override async Task OnParametersSetAsync()
     {
         await LoadCoursesAsync();
     }
@@ -225,10 +232,13 @@
 
         try
         {
-            var uri = "api/courses";
-            if (!string.IsNullOrWhiteSpace(searchStr)) uri += $"?search={searchStr}";
+            Page = Math.Max(Page, PagedQuery.MinPage);
+
+            var uri = $"api/courses?page={Page}&pageSize={DefaultPageSize}";
+            if (!string.IsNullOrWhiteSpace(searchStr)) uri += $"&search={Uri.EscapeDataString(searchStr)}";
             var result = await ApiService.GetAsync<PagedResult<CourseDto>>(uri);
             allCourses = result?.Items.ToList() ?? [];
+            lastPage = Math.Max(result?.TotalPages ?? 1, 1);
             activeCourses = allCourses.Where(c => c.EndDate >= DateOnly.FromDateTime(DateTime.Now)).ToList();
             courses = showOldCourses ? allCourses : activeCourses;
             courses = courses.OrderBy(course => course.Name).ToList();
@@ -238,10 +248,6 @@
                 .Where(expandedBeforeReload.Contains)
                 .ToHashSet();
 
-            if (expandedCourseIds.Count == 0 && courses.Count > 0)
-            {
-                expandedCourseIds.Add(courses[0].Id);
-            }
         }
         catch (Exception ex)
         {
@@ -260,7 +266,11 @@
         courses = courses.OrderBy(course => course.Name).ToList();
     }
 
-    private async Task SearchForCourses() => await LoadCoursesAsync();
+    private async Task SearchForCourses()
+    {
+        Page = 1;
+        await LoadCoursesAsync();
+    }
 
     private void ToggleCourse(Guid courseId)
     {
