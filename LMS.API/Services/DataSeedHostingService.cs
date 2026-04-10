@@ -5,139 +5,110 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LMS.API.Services;
 
-//You need all this for JWT to work :)
-//User Secrets Json
-//Important to have secretkey inside same key "JwtSettings" as used in appsettings.json for get both sections!!!!
-//{
-//     "password": "YourSecretPasswordHere",
-//     "JwtSettings": {
-//        "secretkey": "ThisMustBeReallyLong!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-//        }
-//}
-public class DataSeedHostingService : IHostedService
+public sealed class DataSeedHostingService : IHostedService
 {
-    private readonly IServiceProvider serviceProvider;
-    private readonly IConfiguration configuration;
-    private readonly ILogger<DataSeedHostingService> logger;
-    private UserManager<ApplicationUser> userManager = null!;
-    private RoleManager<IdentityRole> roleManager = null!;
     private const string TeacherRole = "Teacher";
     private const string StudentRole = "Student";
-    private readonly Faker faker = new("sv");
-    private int generatedUserSequence;
 
-    public DataSeedHostingService(IServiceProvider serviceProvider, IConfiguration configuration, ILogger<DataSeedHostingService> logger)
+    private const int NumberOfCoursesToSeed = 5;
+
+    private const int MinModulesPerCourse = 4;
+    private const int MaxModulesPerCourse = 8;
+
+    private const int MinActivitiesPerModule = 4;
+    private const int MaxActivitiesPerModule = 8;
+
+    private const int MinStudentsPerCourse = 10;
+    private const int MaxStudentsPerCourse = 15;
+
+    private const int MinTeachersPerCourse = 1;
+    private const int MaxTeachersPerCourse = 2;
+
+    private static readonly string[] Roles = [TeacherRole, StudentRole];
+
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<DataSeedHostingService> _logger;
+    private readonly Faker _faker = new("sv");
+
+    private int _generatedUserSequence;
+
+    public DataSeedHostingService(
+        IServiceProvider serviceProvider,
+        IConfiguration configuration,
+        ILogger<DataSeedHostingService> logger)
     {
-        this.serviceProvider = serviceProvider;
-        this.configuration = configuration;
-        this.logger = logger;
+        _serviceProvider = serviceProvider;
+        _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        using var scope = serviceProvider.CreateScope();
+        using var scope = _serviceProvider.CreateScope();
 
         var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
-        if (!env.IsDevelopment()) return;
+        if (!env.IsDevelopment())
+            return;
 
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-        ArgumentNullException.ThrowIfNull(roleManager, nameof(roleManager));
-        ArgumentNullException.ThrowIfNull(userManager, nameof(userManager));
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
         try
         {
-            await AddRolesAsync([TeacherRole, StudentRole]);
-
-            if (!await context.Users.AnyAsync(cancellationToken))
-            {
-                await AddDemoUsersAsync();
-            }
-
-            List<Course> courses;
-            if (!await context.Courses.AnyAsync(cancellationToken))
-            {
-                courses = AddCoursesToDb(context);
-
-                foreach (var course in courses)
-                {
-                    await AddStudentsForCourseAsync(course, Random.Shared.Next(10, 16));
-                    await AddTeachersForCourseAsync(course, Random.Shared.Next(1, 3));
-                }
-            }
-            else
-            {
-                courses = await context.Courses.ToListAsync(cancellationToken);
-            }
-
-            if (courses.Count > 0)
-            {
-                await AssignDemoUsersToFirstCourseAsync(courses[0]);
-            }
-
-            List<ActivityType> activityTypes;
-            if (!await context.ActivityTypes.AnyAsync(cancellationToken))
-            {
-                activityTypes = AddActivityTypesToDb(context);
-            }
-            else
-            {
-                activityTypes = await context.ActivityTypes.ToListAsync(cancellationToken);
-            }
-
-            List<Module> modules = [];
-            if (!await context.Modules.AnyAsync(cancellationToken))
-            {
-                modules = AddModulesToCourses(context, courses);
-            }
-            else
-            {
-                modules = await context.Modules
-                    .Include(module => module.Course)
-                    .ToListAsync(cancellationToken);
-            }
-
-            if (!await context.Activities.AnyAsync(cancellationToken))
-            {
-                AddActivitiesToModules(context, modules, activityTypes);
-            }
-
-            if (!await context.DocumentTypes.AnyAsync(cancellationToken))
-            {
-                // TODO: Add document types
-            }
-
-            if (!await context.Documents.AnyAsync(cancellationToken))
-            {
-                // TODO: Add documents
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-            logger.LogInformation("Seed complete");
+            await SeedAsync(context, userManager, roleManager, cancellationToken);
+            _logger.LogInformation("Seed complete");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Data seed failed");
+            _logger.LogError(ex, "Data seed failed");
             throw;
         }
     }
 
-    private async Task AddRolesAsync(string[] rolenames)
-    {
-        foreach (string rolename in rolenames)
-        {
-            if (await roleManager.RoleExistsAsync(rolename)) continue;
-            var role = new IdentityRole { Name = rolename };
-            var res = await roleManager.CreateAsync(role);
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-            if (!res.Succeeded) throw new Exception(string.Join("\n", res.Errors));
+    private async Task SeedAsync(
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        CancellationToken cancellationToken)
+    {
+        await EnsureRolesAsync(roleManager);
+        await EnsureDemoUsersAsync(context, userManager, cancellationToken);
+
+        var courses = await GetOrSeedCoursesAsync(context, cancellationToken);
+        await EnsureCourseUsersAsync(context, userManager, courses, cancellationToken);
+        await AssignDemoUsersToFirstCourseAsync(userManager, courses, cancellationToken);
+
+        var activityTypes = await GetOrSeedActivityTypesAsync(context, cancellationToken);
+        var modules = await GetOrSeedModulesAsync(context, courses, cancellationToken);
+        await EnsureActivitiesAsync(context, modules, activityTypes, cancellationToken);
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task EnsureRolesAsync(RoleManager<IdentityRole> roleManager)
+    {
+        foreach (var roleName in Roles)
+        {
+            if (await roleManager.RoleExistsAsync(roleName))
+                continue;
+
+            var result = await roleManager.CreateAsync(new IdentityRole(roleName));
+            EnsureSuccess(result);
         }
     }
 
-    private async Task AddDemoUsersAsync()
+    private async Task EnsureDemoUsersAsync(
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        CancellationToken cancellationToken)
     {
+        if (await context.Users.AnyAsync(cancellationToken))
+            return;
+
         var teacher = new ApplicationUser
         {
             UserName = "teacher@test.com",
@@ -156,171 +127,133 @@ public class DataSeedHostingService : IHostedService
             LastName = "Student"
         };
 
-        await AddUserToDb([teacher, student]);
+        await CreateUsersAsync(userManager, [teacher, student]);
 
-        var teacherRoleResult = await userManager.AddToRoleAsync(teacher, TeacherRole);
-        if (!teacherRoleResult.Succeeded) throw new Exception(string.Join("\n", teacherRoleResult.Errors));
-
-        var studentRoleResult = await userManager.AddToRoleAsync(student, StudentRole);
-        if (!studentRoleResult.Succeeded) throw new Exception(string.Join("\n", studentRoleResult.Errors));
+        EnsureSuccess(await userManager.AddToRoleAsync(teacher, TeacherRole));
+        EnsureSuccess(await userManager.AddToRoleAsync(student, StudentRole));
     }
 
-    private async Task AssignDemoUsersToFirstCourseAsync(Course firstCourse)
+    private async Task<List<Course>> GetOrSeedCoursesAsync(
+    ApplicationDbContext context,
+    CancellationToken cancellationToken)
     {
+        var existingCourses = await context.Courses.ToListAsync(cancellationToken);
+        if (existingCourses.Count > 0)
+            return existingCourses;
+
+        var courseFaker = new Faker<Course>("sv")
+            .RuleFor(c => c.Name, f => GenerateCourseName(f))
+            .RuleFor(c => c.Description, f => f.Lorem.Sentence(18))
+            .RuleFor(c => c.StartDate, f => GetRandomDateOnly(
+                f,
+                new DateOnly(2025, 1, 1),
+                new DateOnly(2027, 12, 31)))
+            .RuleFor(c => c.EndDate, (f, c) =>
+            {
+                var monthsToAdd = f.Random.Int(6, 12);
+                return c.StartDate.AddMonths(monthsToAdd);
+            });
+
+        var courses = courseFaker.Generate(NumberOfCoursesToSeed);
+
+        context.Courses.AddRange(courses);
+        return courses;
+    }
+
+    private async Task EnsureCourseUsersAsync(
+    ApplicationDbContext context,
+    UserManager<ApplicationUser> userManager,
+    IReadOnlyList<Course> courses,
+    CancellationToken cancellationToken)
+    {
+        var hasCourseUsers = await context.Users.AnyAsync(user => user.CourseId != null, cancellationToken);
+        if (hasCourseUsers)
+            return;
+
+        foreach (var course in courses)
+        {
+            var studentCount = _faker.Random.Int(MinStudentsPerCourse, MaxStudentsPerCourse);
+            var teacherCount = _faker.Random.Int(MinTeachersPerCourse, MaxTeachersPerCourse);
+
+            await CreateUsersForCourseAsync(userManager, course, studentCount, StudentRole);
+            await CreateUsersForCourseAsync(userManager, course, teacherCount, TeacherRole);
+        }
+    }
+
+    private async Task AssignDemoUsersToFirstCourseAsync(
+        UserManager<ApplicationUser> userManager,
+        IReadOnlyList<Course> courses,
+        CancellationToken cancellationToken)
+    {
+        if (courses.Count == 0)
+            return;
+
+        var firstCourse = courses[0];
+
         var teacher = await userManager.FindByEmailAsync("teacher@test.com");
         if (teacher is not null && teacher.CourseId is null)
         {
             teacher.Course = firstCourse;
+            await userManager.UpdateAsync(teacher);
         }
 
         var student = await userManager.FindByEmailAsync("student@test.com");
         if (student is not null && student.CourseId is null)
         {
             student.Course = firstCourse;
+            await userManager.UpdateAsync(student);
         }
     }
 
-    private Task<IReadOnlyCollection<ApplicationUser>> AddStudentsForCourseAsync(Course course, int count)
+    private async Task<List<ActivityType>> GetOrSeedActivityTypesAsync(
+        ApplicationDbContext context,
+        CancellationToken cancellationToken)
     {
-        return AddUsersForCourseAsync(course, count, StudentRole);
+        var existingTypes = await context.ActivityTypes.ToListAsync(cancellationToken);
+        if (existingTypes.Count > 0)
+            return existingTypes;
+
+        var activityTypes = ActivityTypeNames
+            .Select(name => new ActivityType { Name = name })
+            .ToList();
+
+        context.ActivityTypes.AddRange(activityTypes);
+        return activityTypes;
     }
 
-    private Task<IReadOnlyCollection<ApplicationUser>> AddTeachersForCourseAsync(Course course, int count)
+    private async Task<List<Module>> GetOrSeedModulesAsync(
+    ApplicationDbContext context,
+    IReadOnlyList<Course> courses,
+    CancellationToken cancellationToken)
     {
-        return AddUsersForCourseAsync(course, count, TeacherRole);
-    }
+        var existingModules = await context.Modules
+            .Include(module => module.Course)
+            .ToListAsync(cancellationToken);
 
-    private async Task<IReadOnlyCollection<ApplicationUser>> AddUsersForCourseAsync(Course course, int count, string role)
-    {
-        var users = Enumerable.Range(0, count)
-            .Select(_ => CreateCourseUser(course))
-            .ToArray();
+        if (existingModules.Count > 0)
+            return existingModules;
 
-        await AddUserToDb(users);
-
-        foreach (var user in users)
-        {
-            var roleResult = await userManager.AddToRoleAsync(user, role);
-            if (!roleResult.Succeeded) throw new Exception(string.Join("\n", roleResult.Errors));
-        }
-
-        return users;
-    }
-
-    private ApplicationUser CreateCourseUser(Course course)
-    {
-        generatedUserSequence++;
-
-        var firstName = faker.Name.FirstName();
-        var lastName = faker.Name.LastName();
-        var normalizedFirstName = NormalizeEmailPart(firstName);
-        var normalizedLastName = NormalizeEmailPart(lastName);
-        var uniqueEmail = $"{normalizedFirstName}.{normalizedLastName}.{generatedUserSequence}@example.com";
-
-        return new ApplicationUser
-        {
-            FirstName = firstName,
-            LastName = lastName,
-            Email = uniqueEmail,
-            UserName = uniqueEmail,
-            EmailConfirmed = true,
-            Course = course
-        };
-    }
-
-    private async Task AddUserToDb(IEnumerable<ApplicationUser> users)
-    {
-        var passWord = configuration["password"];
-        ArgumentNullException.ThrowIfNull(passWord, nameof(passWord));
-
-        foreach (var user in users)
-        {
-            var result = await userManager.CreateAsync(user, passWord);
-            if (!result.Succeeded)
-                throw new Exception(string.Join("\n", result.Errors.Select(error => $"{error.Code}: {error.Description}")));
-        }
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    private List<Course> AddCoursesToDb(ApplicationDbContext context)
-    {
-        List<Course> courses =
-        [
-            new()
-            {
-                Name = "Databaser och SQL",
-                Description = "Kursen ger en introduktion till databashantering och hur man arbetar med relationella databaser. Deltagarna lär sig grunderna i databasspråket SQL och hur man skapar, hämtar och hanterar data i databassystem.",
-                StartDate = new DateOnly(2025, 10, 16),
-                EndDate = new DateOnly(2026, 4, 30),
-            },
-            new()
-            {
-                Name = "C# och .NET-utveckling",
-                Description = "Kursen ger en introduktion till programmering i C# och utveckling på .NET-plattformen. Deltagarna lär sig grunderna i objektorienterad programmering och hur man bygger enkla applikationer med moderna utvecklingsverktyg.",
-                StartDate = new DateOnly(2026, 10, 16),
-                EndDate = new DateOnly(2027, 5, 31)
-            },
-            new()
-            {
-                Name = "Frontend-utveckling med React",
-                Description = "Kursen introducerar grunderna i modern frontend-utveckling och hur man bygger interaktiva webbgränssnitt. Deltagarna lär sig att skapa komponentbaserade applikationer med React och arbeta med tekniker som JavaScript, HTML och CSS.",
-                StartDate = new DateOnly(2026, 1, 5),
-                EndDate = new DateOnly(2026, 6, 13)
-            },
-            new()
-            {
-                Name = "DevOps och molnutveckling",
-                Description = "Kursen introducerar principer och verktyg inom DevOps samt hur moderna applikationer utvecklas och distribueras i molnmiljöer. Deltagarna lär sig grunderna i automatisering, versionshantering och kontinuerlig integration samt arbete med molnplattformar som Microsoft Azure.",
-                StartDate = new DateOnly(2026, 2, 1),
-                EndDate = new DateOnly(2026, 8, 31)
-            },
-            new()
-            {
-                Name = "Systemdesign och arkitektur",
-                Description = "Kursen introducerar grundläggande principer för systemdesign och mjukvaruarkitektur. Deltagarna lär sig hur man planerar, strukturerar och dokumenterar skalbara och hållbara systemlösningar med etablerade designprinciper och arkitekturmönster.",
-                StartDate = new DateOnly(2026, 9, 1),
-                EndDate = new DateOnly(2027, 2, 10)
-            },
-        ];
-
-        context.Courses.AddRange(courses);
-        return courses;
-    }
-
-    private List<Module> AddModulesToCourses(ApplicationDbContext context, IEnumerable<Course> courses)
-    {
         var modules = new List<Module>();
 
         foreach (var course in courses)
         {
-            var moduleTemplates = GetCourseSeedDefinition(course.Name).Modules;
-            var courseLengthDays = course.EndDate.DayNumber - course.StartDate.DayNumber + 1;
-            var blockSize = Math.Max(14, courseLengthDays / moduleTemplates.Count);
-            var currentStart = course.StartDate;
+            var moduleCount = _faker.Random.Int(MinModulesPerCourse, MaxModulesPerCourse);
+            var moduleDateRanges = SplitDateRange(course.StartDate, course.EndDate, moduleCount);
 
-            for (var index = 0; index < moduleTemplates.Count; index++)
+            var moduleFaker = new Faker<Module>("sv")
+                .RuleFor(m => m.Name, f => GenerateModuleName(f))
+                .RuleFor(m => m.Description, f => f.Lorem.Sentence(16))
+                .RuleFor(m => m.Course, _ => course);
+
+            for (var index = 0; index < moduleCount; index++)
             {
-                var template = moduleTemplates[index];
-                var isLastModule = index == moduleTemplates.Count - 1;
-                var suggestedEnd = currentStart.AddDays(blockSize - 1);
-                var moduleEnd = isLastModule || suggestedEnd > course.EndDate ? course.EndDate : suggestedEnd;
+                var (startDate, endDate) = moduleDateRanges[index];
 
-                var module = new Module
-                {
-                    Name = template.Name,
-                    Description = template.Description,
-                    StartDate = currentStart,
-                    EndDate = moduleEnd,
-                    Course = course
-                };
+                var module = moduleFaker.Generate();
+                module.StartDate = startDate;
+                module.EndDate = endDate;
 
                 modules.Add(module);
-
-                if (!isLastModule)
-                {
-                    currentStart = moduleEnd.AddDays(1);
-                }
             }
         }
 
@@ -328,67 +261,197 @@ public class DataSeedHostingService : IHostedService
         return modules;
     }
 
-    private List<ActivityType> AddActivityTypesToDb(ApplicationDbContext context)
+    private static List<(DateOnly Start, DateOnly End)> SplitDateRange(
+    DateOnly start,
+    DateOnly end,
+    int parts)
     {
-        List<ActivityType> types =
-        [
-            new() { Name = "Inlämning" },
-            new() { Name = "Övning" },
-            new() { Name = "Föreläsning" },
-            new() { Name = "E-Learning" },
-            new() { Name = "Prov" },
-            new() { Name = "Examination" }
-        ];
+        var ranges = new List<(DateOnly Start, DateOnly End)>();
 
-        context.ActivityTypes.AddRange(types);
+        var totalDays = end.DayNumber - start.DayNumber + 1;
+        var baseLength = totalDays / parts;
+        var remainder = totalDays % parts;
 
-        return types;
+        var currentStart = start;
+
+        for (var i = 0; i < parts; i++)
+        {
+            var extraDay = i < remainder ? 1 : 0;
+            var length = Math.Max(1, baseLength + extraDay);
+
+            var currentEnd = currentStart.AddDays(length - 1);
+
+            if (currentEnd > end)
+                currentEnd = end;
+
+            ranges.Add((currentStart, currentEnd));
+
+            if (i < parts - 1)
+                currentStart = currentEnd.AddDays(1);
+        }
+
+        return ranges;
     }
 
-    private List<Activity> AddActivitiesToModules(
-        ApplicationDbContext context,
-        IEnumerable<Module> modules,
-        IEnumerable<ActivityType> activityTypes)
+    private static string GenerateModuleName(Faker faker)
     {
-        var activityTypeByName = activityTypes.ToDictionary(type => type.Name, type => type);
+        var first = Capitalize(faker.Lorem.Word());
+        var second = Capitalize(faker.Lorem.Word());
+
+        return $"{first} {second}";
+    }
+
+    private static string GenerateActivityName(Faker faker)
+    {
+        var verb = Capitalize(faker.Hacker.Verb());
+        var noun = Capitalize(faker.Hacker.Noun());
+
+        return $"{verb} {noun}";
+    }
+
+    private TimeOnly GetRandomStartTimeWithinSchoolHours()
+    {
+        var validHours = Enumerable.Range(8, 9).ToArray(); // 08:00 - 16:00
+        var hour = _faker.PickRandom(validHours);
+
+        var validMinutes = new[] { 0, 15, 30, 45 };
+        var minute = _faker.PickRandom(validMinutes);
+
+        return new TimeOnly(hour, minute);
+    }
+
+    private static string GenerateCourseName(Faker faker)
+    {
+        var firstWord = faker.Lorem.Word();
+        var secondWord = faker.Lorem.Word();
+
+        return $"{Capitalize(firstWord)} {Capitalize(secondWord)}";
+    }
+
+    private static string Capitalize(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return value;
+
+        return char.ToUpperInvariant(value[0]) + value[1..];
+    }
+
+    private static DateOnly GetRandomDateOnly(
+        Faker faker,
+        DateOnly min,
+        DateOnly max)
+    {
+        var daysBetween = max.DayNumber - min.DayNumber;
+        var randomDays = faker.Random.Int(0, daysBetween);
+        return min.AddDays(randomDays);
+    }
+
+    private async Task EnsureActivitiesAsync(
+    ApplicationDbContext context,
+    IReadOnlyList<Module> modules,
+    IReadOnlyList<ActivityType> activityTypes,
+    CancellationToken cancellationToken)
+    {
+        if (await context.Activities.AnyAsync(cancellationToken))
+            return;
+
         var activities = new List<Activity>();
 
         foreach (var module in modules)
         {
-            var courseDefinition = GetCourseSeedDefinition(module.Course.Name);
-            var moduleTemplate = courseDefinition.Modules.First(template => template.Name == module.Name);
-            var activityTemplates = moduleTemplate.Activities;
-            var totalModuleHours = Math.Max(8, (module.EndDate.DayNumber - module.StartDate.DayNumber + 1) * 8);
-            var blockHours = Math.Max(4, totalModuleHours / activityTemplates.Count);
-            var currentStart = module.StartDate.ToDateTime(new TimeOnly(8, 0));
+            var activityCount = _faker.Random.Int(MinActivitiesPerModule, MaxActivitiesPerModule);
+            var activityDateRanges = SplitDateRange(module.StartDate, module.EndDate, activityCount);
 
-            for (var index = 0; index < activityTemplates.Count; index++)
+            for (var index = 0; index < activityCount; index++)
             {
-                var template = activityTemplates[index];
-                var isLastActivity = index == activityTemplates.Count - 1;
-                var suggestedEnd = currentStart.AddHours(blockHours - 1);
-                var maxEnd = module.EndDate.ToDateTime(new TimeOnly(17, 0));
-                var activityEnd = isLastActivity || suggestedEnd > maxEnd ? maxEnd : suggestedEnd;
+                var (activityDate, _) = activityDateRanges[index];
 
-                activities.Add(new Activity
-                {
-                    Name = template.Name,
-                    Description = template.Description,
-                    Type = activityTypeByName[template.ActivityType],
-                    StartDate = currentStart,
-                    EndDate = activityEnd,
-                    Module = module
-                });
+                var startTime = GetRandomStartTimeWithinSchoolHours();
+                var durationHours = _faker.Random.Int(1, 3);
+                var endTime = startTime.AddHours(durationHours);
 
-                if (!isLastActivity)
+                var latestAllowedEnd = new TimeOnly(17, 0);
+                if (endTime > latestAllowedEnd)
+                    endTime = latestAllowedEnd;
+
+                if (endTime <= startTime)
+                    endTime = startTime.AddHours(1);
+
+                var activityType = _faker.PickRandom(activityTypes.ToArray());
+
+                var activity = new Activity
                 {
-                    currentStart = activityEnd.AddHours(1);
-                }
+                    Name = GenerateActivityName(_faker),
+                    Description = _faker.Lorem.Sentence(18),
+                    Type = activityType,
+                    Module = module,
+                    StartDate = activityDate.ToDateTime(startTime),
+                    EndDate = activityDate.ToDateTime(endTime)
+                };
+
+                activities.Add(activity);
             }
         }
 
         context.Activities.AddRange(activities);
-        return activities;
+    }
+
+    private async Task CreateUsersForCourseAsync(
+    UserManager<ApplicationUser> userManager,
+    Course course,
+    int count,
+    string role)
+    {
+        var userFaker = new Faker<ApplicationUser>("sv")
+            .RuleFor(u => u.FirstName, f => f.Name.FirstName())
+            .RuleFor(u => u.LastName, f => f.Name.LastName())
+            .RuleFor(u => u.Email, (f, u) => CreateUniqueEmail(u.FirstName, u.LastName))
+            .RuleFor(u => u.UserName, (_, u) => u.Email)
+            .RuleFor(u => u.EmailConfirmed, _ => true)
+            .RuleFor(u => u.Course, _ => course);
+
+        var users = userFaker.Generate(count);
+
+        await CreateUsersAsync(userManager, users);
+
+        foreach (var user in users)
+        {
+            var result = await userManager.AddToRoleAsync(user, role);
+            EnsureSuccess(result);
+        }
+    }
+
+    private async Task CreateUsersAsync(
+        UserManager<ApplicationUser> userManager,
+        IEnumerable<ApplicationUser> users)
+    {
+        var password = _configuration["password"];
+        ArgumentNullException.ThrowIfNull(password);
+
+        foreach (var user in users)
+        {
+            var result = await userManager.CreateAsync(user, password);
+            EnsureSuccess(result);
+        }
+    }
+
+    private string CreateUniqueEmail(string firstName, string lastName)
+    {
+        _generatedUserSequence++;
+
+        var normalizedFirstName = NormalizeEmailPart(firstName);
+        var normalizedLastName = NormalizeEmailPart(lastName);
+
+        return $"{normalizedFirstName}.{normalizedLastName}{_generatedUserSequence}@example.com";
+    }
+
+    private static void EnsureSuccess(IdentityResult result)
+    {
+        if (result.Succeeded)
+            return;
+
+        throw new InvalidOperationException(
+            string.Join(Environment.NewLine, result.Errors.Select(error => $"{error.Code}: {error.Description}")));
     }
 
     private static string NormalizeEmailPart(string value)
@@ -400,6 +463,8 @@ public class DataSeedHostingService : IHostedService
                 'å' => "a",
                 'ä' => "a",
                 'ö' => "o",
+                'é' => "e",
+                'á' => "a",
                 ' ' => "-",
                 '.' => string.Empty,
                 '\'' => string.Empty,
@@ -408,170 +473,22 @@ public class DataSeedHostingService : IHostedService
             }));
     }
 
-    private static CourseSeedDefinition GetCourseSeedDefinition(string courseName)
-    {
-        return courseName switch
-        {
-            "Databaser och SQL" => new CourseSeedDefinition(
-                [
-                    new ModuleSeedDefinition(
-                        "Databasgrunder",
-                        "Introduktion till relationella databaser, tabeller, nycklar och datamodellering.",
-                        [
-                            new ActivitySeedDefinition("Introduktion till relationsdatabaser", "Genomgång av tabeller, relationer och normalisering.", "Föreläsning"),
-                            new ActivitySeedDefinition("ER-modellering workshop", "Praktisk övning i att modellera affärsdata som entiteter och relationer.", "Övning"),
-                            new ActivitySeedDefinition("Skapa databasschema", "Skapa tabeller, primärnycklar och främmande nycklar i SQL Server.", "Inlämning"),
-                            new ActivitySeedDefinition("Databasdesign quiz", "Kort kunskapskontroll på datamodellering och nyckelbegrepp.", "Prov")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "SQL för datahantering",
-                        "Arbete med SELECT, JOIN, filtrering, sortering och aggregering.",
-                        [
-                            new ActivitySeedDefinition("SELECT och filtrering", "Genomgång av grundläggande SQL-frågor och villkor.", "Föreläsning"),
-                            new ActivitySeedDefinition("JOIN-labb", "Övning i att kombinera data från flera tabeller med olika typer av join.", "Övning"),
-                            new ActivitySeedDefinition("Rapportfrågor i SQL", "Bygg komplexa frågor med gruppering, sortering och aggregat.", "Inlämning"),
-                            new ActivitySeedDefinition("Självrättande SQL-träning", "Interaktiva övningar för att repetera SELECT, WHERE och JOIN.", "E-Learning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "Avancerad SQL och optimering",
-                        "Fördjupning i vyer, transaktioner, indexering och prestanda.",
-                        [
-                            new ActivitySeedDefinition("Vyer, procedurer och funktioner", "Genomgång av återanvändbara databasobjekt.", "Föreläsning"),
-                            new ActivitySeedDefinition("Transaktioner och felhantering", "Övning i ACID, COMMIT, ROLLBACK och säkra uppdateringar.", "Övning"),
-                            new ActivitySeedDefinition("Indexering och query-planer", "Analysera prestanda och förbättra långsamma SQL-frågor.", "Inlämning"),
-                            new ActivitySeedDefinition("Praktiskt delprov i SQL", "Prov där studenterna löser realistiska databasuppgifter.", "Prov"),
-                            new ActivitySeedDefinition("Slutexamination databaser", "Sammanfattande examination av databashantering och SQL.", "Examination")
-                        ])
-                ]),
-            "C# och .NET-utveckling" => new CourseSeedDefinition(
-                [
-                    new ModuleSeedDefinition(
-                        "Introduktion till C#",
-                        "Syntax, typer, kontrollflöden och grundläggande felsökning.",
-                        [
-                            new ActivitySeedDefinition("C# introduktion", "Genomgång av variabler, datatyper och kontrollstrukturer.", "Föreläsning"),
-                            new ActivitySeedDefinition("Kodkata i C#", "Parövningar med loopar, villkor och metoder.", "Övning"),
-                            new ActivitySeedDefinition("Konsolapplikation med användarinput", "Bygg en mindre konsolapp som hanterar menyval och validering.", "Inlämning"),
-                            new ActivitySeedDefinition("Grundläggande C#-syntax", "Digitala övningar för att befästa grunderna i C#.", "E-Learning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "Objektorienterad programmering",
-                        "Klasser, arv, interface, inkapsling och ansvarsfördelning.",
-                        [
-                            new ActivitySeedDefinition("OOP i praktiken", "Föreläsning om klasser, objekt och SOLID-inspirerat tänk.", "Föreläsning"),
-                            new ActivitySeedDefinition("Modellera ett domänproblem", "Övning där studenterna skapar klasser och relationer för ett verkligt scenario.", "Övning"),
-                            new ActivitySeedDefinition("Bibliotekssystem i C#", "Implementera ett mindre projekt med klasser, arv och interface.", "Inlämning"),
-                            new ActivitySeedDefinition("Kodgranskning OOP", "Gemensam genomgång av kodstruktur och designval.", "Övning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        ".NET och applikationsutveckling",
-                        "Arbete med .NET-ekosystemet, beroendeinjektion och enklare API-utveckling.",
-                        [
-                            new ActivitySeedDefinition(".NET-plattformen och projektstruktur", "Genomgång av solution, projekt, NuGet och beroenden.", "Föreläsning"),
-                            new ActivitySeedDefinition("Bygg ett REST-API", "Övning i controllers, endpoints och enkel datahantering.", "Övning"),
-                            new ActivitySeedDefinition("Miniapplikation i .NET", "Utveckla en mindre applikation med tydlig lagerindelning.", "Inlämning"),
-                            new ActivitySeedDefinition("Kunskapstest .NET", "Prov på centrala koncept inom C# och .NET.", "Prov"),
-                            new ActivitySeedDefinition("Praktisk slutexamination", "Examination där studenterna löser en utvecklingsuppgift självständigt.", "Examination")
-                        ])
-                ]),
-            "Frontend-utveckling med React" => new CourseSeedDefinition(
-                [
-                    new ModuleSeedDefinition(
-                        "Webbens byggstenar",
-                        "HTML, CSS, JavaScript och hur de samverkar i moderna gränssnitt.",
-                        [
-                            new ActivitySeedDefinition("HTML och semantik", "Föreläsning om tillgängliga och välstrukturerade webbgränssnitt.", "Föreläsning"),
-                            new ActivitySeedDefinition("CSS-layout med Flexbox och Grid", "Praktisk övning i responsiv layout.", "Övning"),
-                            new ActivitySeedDefinition("Interaktiv webbkomponent", "Skapa en mindre komponent med JavaScript och DOM-manipulation.", "Inlämning"),
-                            new ActivitySeedDefinition("Självstudie i modern CSS", "Digitala moment om responsiv design och komponenttänk.", "E-Learning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "React och komponenter",
-                        "State, props, rendering, formulär och återanvändbara komponenter.",
-                        [
-                            new ActivitySeedDefinition("React från grunden", "Genomgång av JSX, props, state och komponentstruktur.", "Föreläsning"),
-                            new ActivitySeedDefinition("Bygg komponentbibliotek", "Övning i att bryta ned ett UI i återanvändbara komponenter.", "Övning"),
-                            new ActivitySeedDefinition("Formulär och validering i React", "Implementera formulär med lokal state och validering.", "Inlämning"),
-                            new ActivitySeedDefinition("Kodlabb med hooks", "Praktiska uppgifter med useState och useEffect.", "Övning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "Frontendapplikationer",
-                        "Routing, API-anrop, state-hantering och användarupplevelse.",
-                        [
-                            new ActivitySeedDefinition("Routing och sidstruktur", "Föreläsning om navigering, layouts och sidflöden i React.", "Föreläsning"),
-                            new ActivitySeedDefinition("Hämta data från API", "Övning i fetch, loading states och felhantering.", "Övning"),
-                            new ActivitySeedDefinition("Bygg en komplett React-app", "Skapa en mindre applikation med flera vyer och dataflöden.", "Inlämning"),
-                            new ActivitySeedDefinition("Frontendtest", "Prov på begrepp och praktiska mönster inom React.", "Prov"),
-                            new ActivitySeedDefinition("Slutredovisning frontend", "Examination där projektet presenteras och motiveras.", "Examination")
-                        ])
-                ]),
-            "DevOps och molnutveckling" => new CourseSeedDefinition(
-                [
-                    new ModuleSeedDefinition(
-                        "Versionshantering och arbetsflöden",
-                        "Git, branchingstrategier och samarbete i utvecklingsteam.",
-                        [
-                            new ActivitySeedDefinition("Git och samarbete", "Föreläsning om commits, branches, pull requests och code review.", "Föreläsning"),
-                            new ActivitySeedDefinition("Git workshop", "Övning i merge, rebase och konfliktlösning.", "Övning"),
-                            new ActivitySeedDefinition("Teamflöde i Git", "Lämna in ett repo med dokumenterat arbetsflöde och branchstrategi.", "Inlämning"),
-                            new ActivitySeedDefinition("Digital repetition Git", "Självstudier kring vanliga Git-kommandon och best practices.", "E-Learning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "CI/CD och automation",
-                        "Pipelines, tester, byggsteg och automatiserad leverans.",
-                        [
-                            new ActivitySeedDefinition("Introduktion till CI/CD", "Föreläsning om pipeline-koncept och kvalitetssäkring.", "Föreläsning"),
-                            new ActivitySeedDefinition("Bygg en pipeline", "Övning i att sätta upp bygg- och teststeg för en applikation.", "Övning"),
-                            new ActivitySeedDefinition("Automatiserad deployment", "Skapa en pipeline som publicerar en applikation till testmiljö.", "Inlämning"),
-                            new ActivitySeedDefinition("Pipeline review", "Gemensam genomgång av pipeline-design och förbättringar.", "Övning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "Molntjänster och drift",
-                        "Grundläggande Azure-kunskap, containerisering och övervakning.",
-                        [
-                            new ActivitySeedDefinition("Molnarkitektur i Azure", "Föreläsning om compute, storage, identitet och ansvarsfördelning.", "Föreläsning"),
-                            new ActivitySeedDefinition("Containerisering med Docker", "Praktisk övning i att paketera applikationer i containers.", "Övning"),
-                            new ActivitySeedDefinition("Distribuera till molnet", "Implementera en deployment till molnmiljö med enkel övervakning.", "Inlämning"),
-                            new ActivitySeedDefinition("Drift och observability", "Prov på centrala DevOps- och molnbegrepp.", "Prov"),
-                            new ActivitySeedDefinition("Slutexamination DevOps", "Examination där en komplett leveranskedja demonstreras.", "Examination")
-                        ])
-                ]),
-            "Systemdesign och arkitektur" => new CourseSeedDefinition(
-                [
-                    new ModuleSeedDefinition(
-                        "Arkitekturprinciper",
-                        "Introduktion till lagerindelning, ansvar, koppling och cohesion.",
-                        [
-                            new ActivitySeedDefinition("Grunder i mjukvaruarkitektur", "Föreläsning om arkitekturstilar, trade-offs och kvalitetsattribut.", "Föreläsning"),
-                            new ActivitySeedDefinition("Analysera ett system", "Övning där studenterna identifierar ansvar och beroenden i en befintlig lösning.", "Övning"),
-                            new ActivitySeedDefinition("Arkitekturskiss", "Skapa en enkel systemskiss med lager, komponenter och ansvar.", "Inlämning"),
-                            new ActivitySeedDefinition("Begreppsträning arkitektur", "E-learning med fokus på vanliga principer och mönster.", "E-Learning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "Designmönster och integration",
-                        "Arbete med designmönster, kommunikation mellan system och gränssnitt.",
-                        [
-                            new ActivitySeedDefinition("Designmönster i praktiken", "Föreläsning om vanliga patterns och när de passar.", "Föreläsning"),
-                            new ActivitySeedDefinition("Integrationsövning", "Praktisk övning i att modellera API-kontrakt och externa beroenden.", "Övning"),
-                            new ActivitySeedDefinition("Komponentdesign", "Designa en lösning med tydliga kontrakt och mönsteranvändning.", "Inlämning"),
-                            new ActivitySeedDefinition("Arkitekturworkshop", "Peer review av komponentindelning och integrationsval.", "Övning")
-                        ]),
-                    new ModuleSeedDefinition(
-                        "Skalbarhet och dokumentation",
-                        "Kvalitetsattribut, risker, dokumentation och tekniska beslut.",
-                        [
-                            new ActivitySeedDefinition("Skalbarhet och robusthet", "Föreläsning om prestanda, tillgänglighet och driftsäkerhet.", "Föreläsning"),
-                            new ActivitySeedDefinition("ADR och tekniska beslut", "Övning i att dokumentera arkitekturbeslut och konsekvenser.", "Övning"),
-                            new ActivitySeedDefinition("Arkitekturdokument", "Ta fram ett underlag med målbild, risker och föreslagen lösning.", "Inlämning"),
-                            new ActivitySeedDefinition("Systemdesignprov", "Prov på kvalitetsattribut, mönster och arkitekturella val.", "Prov"),
-                            new ActivitySeedDefinition("Slutpresentation arkitektur", "Examination där hela systemdesignen presenteras och försvaras.", "Examination")
-                        ])
-                ]),
-            _ => throw new InvalidOperationException($"Missing course seed definition for course '{courseName}'.")
-        };
-    }
+    private static readonly IReadOnlyList<string> ActivityTypeNames =
+    [
+        "Inlämning",
+        "Övning",
+        "Föreläsning",
+        "E-Learning",
+        "Prov",
+        "Examination"
+    ];
 
-    private sealed record CourseSeedDefinition(IReadOnlyList<ModuleSeedDefinition> Modules);
+    private sealed record CourseSeedDefinition(
+        string Name,
+        string Description,
+        DateOnly StartDate,
+        DateOnly EndDate,
+        IReadOnlyList<ModuleSeedDefinition> Modules);
 
     private sealed record ModuleSeedDefinition(
         string Name,
