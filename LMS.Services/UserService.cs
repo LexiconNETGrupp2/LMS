@@ -7,7 +7,6 @@ using LMS.Shared.DTOs.UserDtos;
 using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Identity;
 using Service.Contracts;
-using System.ComponentModel.DataAnnotations;
 
 namespace LMS.Services;
 
@@ -24,7 +23,7 @@ public class UserService : IUserService
         _uow = uow;
     }
 
-    public async Task<PagedResult<UserDto>> GetAllUsers(PagedQuery query, CancellationToken ct)
+    public async Task<PagedResult<UserDto>> GetAllUsers(AllUsersParams query, CancellationToken ct)
     {
         var users = await _uow.Users.GetAllWithCoursesAsync(query, ct);
         return new PagedResult<UserDto>
@@ -32,7 +31,7 @@ public class UserService : IUserService
             Page = users.Page,
             PageSize = users.PageSize,
             TotalItems = users.TotalItems,
-            Items = users.Items.Select(MapToUserDto).ToList(),
+            Items = users.Items,
         };
     }
 

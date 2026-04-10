@@ -10,15 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Repositories;
 
-public class CourseRepository : RepositoryBase<Course>, ICourseRepository
+public class CourseRepository(ApplicationDbContext context)
+    : RepositoryBase<Course>(context), ICourseRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public CourseRepository(ApplicationDbContext context) : base(context)
-    {
-        _context = context;
-    }
-
     public async Task<PagedResult<Course>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
         var query = FindAll(trackChanges: false);
@@ -41,6 +35,7 @@ public class CourseRepository : RepositoryBase<Course>, ICourseRepository
                             .ThenInclude(m => m.Activities)
                                 .ThenInclude(a => a.Type)
                         .Include(c => c.Students)
+                        .OrderBy(c => c.StartDate)
                         .ToPagedResultAsync(param, token);
     }
 
