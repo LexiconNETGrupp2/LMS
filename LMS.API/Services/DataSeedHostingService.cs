@@ -10,7 +10,7 @@ public sealed class DataSeedHostingService : IHostedService
     private const string TeacherRole = "Teacher";
     private const string StudentRole = "Student";
 
-    private const int NumberOfCoursesToSeed = 5;
+    private const int NumberOfCoursesToSeed = 10;
 
     private const int MinModulesPerCourse = 4;
     private const int MaxModulesPerCourse = 8;
