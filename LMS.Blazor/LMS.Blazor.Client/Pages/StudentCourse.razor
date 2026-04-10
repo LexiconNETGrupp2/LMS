@@ -20,6 +20,11 @@ else if (_student is null)
 else
 {
     <div class="container py-4">
+        <div>
+            <a href="/courses/@_student.CourseId/students" class="text-decoration-none mb-3 d-inline-block">
+                <i class="bi bi-arrow-left"></i> Tillbaka till kursöversikt
+            </a>
+        </div>
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header">
                 <h2 class="h2 fw-semibold mb-0">Elevöversikt</h2>
@@ -32,8 +37,6 @@ else
                     <dd class="col-sm-8 border-bottom p-3 text-muted mb-0">@_student.LastName</dd>
                     <dt class="col-sm-4 border-bottom p-3 fw-semibold">E-postadress</dt>
                     <dd class="col-sm-8 border-bottom p-3 text-muted mb-0">@_student.Email</dd>
-                    <dt class="col-sm-4 border-bottom p-3 fw-semibold">Roll</dt>
-                    <dd class="col-sm-8 border-bottom p-3 text-muted mb-0">@_student.Role</dd>
                 </dl>
             </div>
         </div>
