@@ -14,31 +14,11 @@
         <div>
             <h1 class="modules-page-title mb-1">Kurser</h1>
             <p class="text-body-secondary mb-0">Hantera kurser och dess moduler.</p>
-            <span class="mt-1">
-                <label class="user-select-none">
-                    <input class="form-check-input" type="checkbox" @onchange="ToggleShowingCourses" checked="@showOldCourses" />
-                    Visa kurser som har slutat
-                </label>
-            </span>
         </div>
-        <div>
-            <button type="button" class="btn btn-primary modules-primary-action me-2" @onclick="() => OpenCreateModal()">
-                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
-                Lägg till modul
-            </button>
-            <button type="button" class="btn btn-primary modules-primary-action" @onclick="() => GoToCreateCourses()">
-                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
-                Lägg till Kurs
-            </button>
-            <EditForm Model="searchStr" OnValidSubmit="SearchForCourses" class="d-flex mt-2" role="search">
-                <DataAnnotationsValidator />
-                <InputText @bind-Value="searchStr"
-                           class="form-control search-input"
-                           placeholder="Sök efter kurs...">
-                </InputText>
-                <button class="btn btn-primary ms-2" type="submit">Sök</button>
-            </EditForm>
-        </div>
+        <button type="button" class="btn btn-primary modules-primary-action" @onclick="() => GoToCreateCourses()">
+            <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+            Lägg till Kurs
+        </button>
     </div>
     @if (!string.IsNullOrWhiteSpace(actionMessage))
     {
@@ -49,7 +29,44 @@
     {
         <div class="alert alert-danger">@loadError</div>
     }
-    else if (isLoading)
+
+    <div class="d-flex justify-content-between align-items-end mb-3">
+        <Pagination CurrentPage="@Page" LastPage="@lastPage" />
+        <div class="d-flex flex-column gap-3">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search me-1"></i>
+                </span>
+                <input type="search"
+                       class="form-control border-start-0"
+                       placeholder="Sök efter namn eller e-post..."
+                       @bind-value="Search"/>
+                <button @onclick="LoadCoursesAsync" class="btn btn-outline-primary border-start-0" style="z-index: 2">
+                    Sök
+                </button>
+            </div>
+            <div class="btn-group d-flex" role="group">
+                <button type="button" class="@GetFilterButtonClass(null)"
+                        @onclick="() => SetCourseFilter(null)">
+                    Alla
+                </button>
+                <button type="button" class="@GetFilterButtonClass(ActiveFilter)"
+                        @onclick="() => SetCourseFilter(ActiveFilter)">
+                    Aktiva
+                </button>
+                <button type="button" class="@GetFilterButtonClass(PastFilter)"
+                        @onclick="() => SetCourseFilter(PastFilter)">
+                    Avslutade
+                </button>
+                <button type="button" class="@GetFilterButtonClass(FutureFilter)"
+                        @onclick="() => SetCourseFilter(FutureFilter)">
+                    Kommande
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
     {
         <div class="modules-loading card shadow-sm">
             <div class="card-body d-flex align-items-center gap-2">
@@ -58,7 +75,7 @@
             </div>
         </div>
     }
-    else if (courses.Count == 0)
+    @if (courses.Count == 0)
     {
         <div class="card shadow-sm">
             <div class="card-body">
@@ -68,8 +85,7 @@
     }
     else
     {
-        <Pagination CurrentPage="@Page" LastPage="@lastPage" />
-        <section class="card shadow-sm modules-card my-3">
+        <section class="card shadow-sm modules-card mb-3">
             <div class="modules-accordion">
                 @foreach (var course in courses)
                 {
@@ -199,24 +215,27 @@
                 OnSubmit="SaveModuleAsync" />
 
 @code {
+    private const string ActiveFilter = "active";
+    private const string PastFilter = "past";
+    private const string FutureFilter = "future";
+
     private List<CourseDto> courses = [];
-    private List<CourseDto> allCourses = [];
-    private List<CourseDto> activeCourses = [];
     private HashSet<Guid> expandedCourseIds = [];
     private ModuleFormModel moduleForm = new();
     private bool isLoading = true;
     private bool isModalOpen;
     private bool isSubmitting;
     private bool lockCourseSelection;
-    private int lastPage = 1;
+    private int lastPage = PagedQuery.MinPage;
     private const int DefaultPageSize = 20;
     private string? loadError;
     private string? submitError;
     private string? actionMessage;
-    private string searchStr = "";
-    private bool showOldCourses = true;
 
-    [SupplyParameterFromQuery] public int Page { get; set; } = 1;
+    [SupplyParameterFromQuery] public int Page { get; set; } = PagedQuery.MinPage;
+    [SupplyParameterFromQuery] public DateOnly? AfterDate { get; set; }
+    [SupplyParameterFromQuery] public DateOnly? BeforeDate { get; set; }
+    [SupplyParameterFromQuery] public string Search { get; set; } = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -235,13 +254,12 @@
             Page = Math.Max(Page, PagedQuery.MinPage);
 
             var uri = $"api/courses?page={Page}&pageSize={DefaultPageSize}";
-            if (!string.IsNullOrWhiteSpace(searchStr)) uri += $"&search={Uri.EscapeDataString(searchStr)}";
+            if (!string.IsNullOrWhiteSpace(Search)) uri += $"&search={Uri.EscapeDataString(Search)}";
+            if (AfterDate.HasValue) uri += $"&afterDate={AfterDate:yyyy-MM-dd}";
+            if (BeforeDate.HasValue) uri += $"&beforeDate={BeforeDate:yyyy-MM-dd}";
             var result = await ApiService.GetAsync<PagedResult<CourseDto>>(uri);
-            allCourses = result?.Items.ToList() ?? [];
-            lastPage = Math.Max(result?.TotalPages ?? 1, 1);
-            activeCourses = allCourses.Where(c => c.EndDate >= DateOnly.FromDateTime(DateTime.Now)).ToList();
-            courses = showOldCourses ? allCourses : activeCourses;
-            courses = courses.OrderBy(course => course.Name).ToList();
+            courses = result?.Items.ToList() ?? [];
+            lastPage = result?.TotalPages ?? PagedQuery.MinPage;
 
             expandedCourseIds = courses
                 .Select(course => course.Id)
@@ -259,17 +277,46 @@
         }
     }
 
-    private void ToggleShowingCourses()
+    private bool IsSelectedFilter(string? filter) => filter switch
     {
-        showOldCourses = !showOldCourses;
-        courses = showOldCourses ? allCourses : activeCourses;
-        courses = courses.OrderBy(course => course.Name).ToList();
-    }
+        null => !AfterDate.HasValue && !BeforeDate.HasValue,
+        ActiveFilter => AfterDate == DateOnly.FromDateTime(DateTime.Today) && BeforeDate == DateOnly.FromDateTime(DateTime.Today),
+        PastFilter => !AfterDate.HasValue && BeforeDate == DateOnly.FromDateTime(DateTime.Today).AddDays(-1),
+        FutureFilter => AfterDate == DateOnly.FromDateTime(DateTime.Today).AddDays(1) && !BeforeDate.HasValue,
+        _ => false
+    };
 
-    private async Task SearchForCourses()
+    private string GetFilterButtonClass(string? filter)
+        => $"btn btn-outline-primary {(IsSelectedFilter(filter) ? "active" : string.Empty)}";
+
+    private void SetCourseFilter(string? filter)
     {
-        Page = 1;
-        await LoadCoursesAsync();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        AfterDate = null;
+        BeforeDate = null;
+
+        switch (filter)
+        {
+            case ActiveFilter:
+                AfterDate = today;
+                BeforeDate = today;
+                break;
+            case PastFilter:
+                BeforeDate = today.AddDays(-1);
+                break;
+            case FutureFilter:
+                AfterDate = today.AddDays(1);
+                break;
+        }
+
+        Page = PagedQuery.MinPage;
+
+        var uri = $"/courses?page={Page}";
+        if (AfterDate.HasValue) uri += $"&afterDate={AfterDate:yyyy-MM-dd}";
+        if (BeforeDate.HasValue) uri += $"&beforeDate={BeforeDate:yyyy-MM-dd}";
+
+        NavigationManager.NavigateTo(uri);
     }
 
     private void ToggleCourse(Guid courseId)

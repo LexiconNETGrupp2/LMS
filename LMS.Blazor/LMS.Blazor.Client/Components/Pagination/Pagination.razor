@@ -1,7 +1,7 @@
 @using LMS.Shared.Pagination
 @inject NavigationManager Navigation
 
-<ul class="pagination">
+<ul class="pagination mb-0">
     <li class="page-item @(NormalizedCurrentPage == PagedQuery.MinPage ? "disabled" : "")">
         <a class="page-link" href="@GetPageUrl(NormalizedCurrentPage - 1)" aria-label="Previous page">
             <i class="bi bi-arrow-left"></i>

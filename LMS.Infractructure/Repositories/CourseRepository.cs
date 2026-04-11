@@ -2,10 +2,8 @@ using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
 using LMS.Infractructure.Extensions;
-using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using LMS.Shared.Pagination;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Repositories;
@@ -17,12 +15,23 @@ public class CourseRepository(ApplicationDbContext context)
     {
         var query = FindAll(trackChanges: false);
 
-        if (param.AfterDate is not null) {
-            query = query.Where(c => c.StartDate <= param.AfterDate);
+        // Treat matching after/before date as "active".
+        if (param.AfterDate is not null && param.BeforeDate is not null && param.AfterDate == param.BeforeDate)
+        {
+            var activeDate = param.AfterDate.Value;
+            query = query.Where(c => c.StartDate <= activeDate && c.EndDate >= activeDate);
         }
+        else
+        {
+            if (param.AfterDate is not null)
+            {
+                query = query.Where(c => c.StartDate >= param.AfterDate);
+            }
 
-        if (param.BeforeDate is not null) {
-            query = query.Where(c => c.EndDate >= param.BeforeDate);
+            if (param.BeforeDate is not null)
+            {
+                query = query.Where(c => c.EndDate <= param.BeforeDate);
+            }
         }
 
         if (param.Search is not null) {
