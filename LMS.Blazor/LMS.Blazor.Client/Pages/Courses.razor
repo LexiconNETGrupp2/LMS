@@ -40,9 +40,9 @@
                 <input type="search"
                        class="form-control border-start-0"
                        placeholder="Sök efter namn eller e-post..."
-                       @bind:after="LoadCoursesAsync"
+                       @bind:after="PerformSearch"
                        @bind="Search" />
-                <button @onclick="LoadCoursesAsync" class="btn btn-outline-primary border-start-0" style="z-index: 2">
+                <button @onclick="PerformSearch" class="btn btn-outline-primary border-start-0" style="z-index: 2">
                     Sök
                 </button>
             </div>
@@ -311,9 +311,15 @@
                 break;
         }
 
+        PerformSearch();
+    }
+
+    private void PerformSearch()
+    {
         Page = PagedQuery.MinPage;
 
         var uri = $"/courses?page={Page}";
+        if (!string.IsNullOrWhiteSpace(Search)) uri += $"&search={Uri.EscapeDataString(Search)}";
         if (AfterDate.HasValue) uri += $"&afterDate={AfterDate:yyyy-MM-dd}";
         if (BeforeDate.HasValue) uri += $"&beforeDate={BeforeDate:yyyy-MM-dd}";
 
