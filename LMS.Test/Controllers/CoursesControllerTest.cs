@@ -376,7 +376,7 @@ public class CoursesControllerTest
         serviceManagerMock.SetupGet(s => s.CourseService).Returns(courseServiceMock.Object);
 
         var logger = Mock.Of<ILogger<CoursesController>>();
-        var controller = new CoursesController(serviceManagerMock.Object, logger, new ControllerHelpers())
+        var controller = new CoursesController(serviceManagerMock.Object, logger)
         {
             ControllerContext = new ControllerContext
             {
