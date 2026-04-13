@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using LMS.Shared.Constants;
+﻿using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -17,13 +16,11 @@ public class CoursesController : ControllerBase
 {
     private readonly IServiceManager _serviceManager;
     private readonly ILogger<CoursesController> _logger;
-    private readonly ControllerHelpers _controllerHelpers;
 
-    public CoursesController(IServiceManager serviceManager, ILogger<CoursesController> logger, ControllerHelpers controllerHelpers)
+    public CoursesController(IServiceManager serviceManager, ILogger<CoursesController> logger)
     {
         _serviceManager = serviceManager;
         _logger = logger;
-        _controllerHelpers = controllerHelpers;
     }
 
     [HttpGet]
@@ -52,8 +49,8 @@ public class CoursesController : ControllerBase
     {
         // If a student is requesting a course they're not in, return 403
         string? currentStudentId = null;
-        if (_controllerHelpers.IsStudent(User)) 
-            currentStudentId = _controllerHelpers.GetCurrentUserId(User);
+        if (ControllerHelpers.IsStudent(User)) 
+            currentStudentId = ControllerHelpers.GetCurrentUserId(User);
 
         var courseDto = await _serviceManager.CourseService.GetCourseById(id, currentStudentId, token);
         return Ok(courseDto);
@@ -71,8 +68,8 @@ public class CoursesController : ControllerBase
     public async Task<ActionResult<IReadOnlyCollection<CourseDto>>> GetByUserId(Guid id, CancellationToken token)
     {
         string? currentStudentId = null;
-        if (_controllerHelpers.IsStudent(User))
-            currentStudentId = _controllerHelpers.GetCurrentUserId(User);
+        if (ControllerHelpers.IsStudent(User))
+            currentStudentId = ControllerHelpers.GetCurrentUserId(User);
 
         var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, currentStudentId, token);
         return Ok(courseDto);
@@ -131,7 +128,7 @@ public class CoursesController : ControllerBase
     [SwaggerResponse(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMyCourseParticipants(CancellationToken token)
     {
-        var userIdClaim = _controllerHelpers.GetCurrentUserId(User);
+        var userIdClaim = ControllerHelpers.GetCurrentUserId(User);
 
         if (!Guid.TryParse(userIdClaim, out var userId)) {
             return Unauthorized(new ProblemDetails {

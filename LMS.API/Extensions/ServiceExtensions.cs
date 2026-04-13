@@ -79,7 +79,6 @@ public static class ServiceExtensions
                     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
                 })
                 .AddApplicationPart(typeof(AssemblyReference).Assembly);
-        services.AddScoped<ControllerHelpers>();
     }
 
     public static void ConfigureSql(this IServiceCollection services, IConfiguration configuration)
