@@ -1,0 +1,84 @@
+@using LMS.Shared.Pagination
+@inject NavigationManager Navigation
+
+<ul class="pagination mb-0">
+    <li class="page-item @(NormalizedCurrentPage == PagedQuery.MinPage ? "disabled" : "")">
+        <a class="page-link" href="@GetPageUrl(NormalizedCurrentPage - 1)" aria-label="Previous page">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+    </li>
+
+    @foreach (var item in GetPaginationItems())
+    {
+        if (item is null)
+        {
+            <li class="page-item disabled" aria-hidden="true">
+                <span class="page-link">...</span>
+            </li>
+        }
+        else
+        {
+            var pageNumber = item.Value;
+
+            <li class="page-item @(pageNumber == NormalizedCurrentPage ? "active" : string.Empty)">
+                <a class="page-link"
+                   href="@GetPageUrl(pageNumber)"
+                   aria-current="@(pageNumber == NormalizedCurrentPage ? "page" : null)">
+                    @pageNumber
+                </a>
+            </li>
+        }
+    }
+
+    <li class="page-item @(NormalizedCurrentPage == NormalizedLastPage ? "disabled" : "")">
+        <a class="page-link" href="@GetPageUrl(NormalizedCurrentPage + 1)" aria-label="Next page">
+            <i class="bi bi-arrow-right"></i>
+        </a>
+    </li>
+</ul>
+
+@code {
+    [Parameter, EditorRequired] public int CurrentPage { get; set; }
+    [Parameter, EditorRequired] public int LastPage { get; set; }
+
+    private const int PageButtonsPerSide = 2;
+
+    private int NormalizedLastPage => Math.Max(LastPage, PagedQuery.MinPage);
+    private int NormalizedCurrentPage => Math.Clamp(CurrentPage, PagedQuery.MinPage, NormalizedLastPage);
+
+    private IEnumerable<int?> GetPaginationItems()
+    {
+        var pages = new SortedSet<int>
+        {
+            PagedQuery.MinPage,
+            NormalizedLastPage,
+        };
+
+        var firstPage = Math.Max(PagedQuery.MinPage, NormalizedCurrentPage - PageButtonsPerSide);
+        var lastPage = Math.Min(NormalizedLastPage, NormalizedCurrentPage + PageButtonsPerSide);
+
+        for (var page = firstPage; page <= lastPage; page++)
+            pages.Add(page);
+
+        int? previousPage = null;
+
+        foreach (var page in pages)
+        {
+            if (previousPage.HasValue && page - previousPage.Value > PagedQuery.MinPage)
+                yield return null;
+
+            yield return page;
+            previousPage = page;
+        }
+    }
+
+    private string GetPageUrl(int pageNumber)
+    {
+        var queryParameters = new Dictionary<string, object?>
+        {
+            ["page"] = Math.Clamp(pageNumber, PagedQuery.MinPage, NormalizedLastPage)
+        };
+
+        return Navigation.GetUriWithQueryParameters(Navigation.Uri, queryParameters);
+    }
+}
