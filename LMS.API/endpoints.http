@@ -47,3 +47,19 @@ Authorization: Bearer {{token}}
   "type": {"name": "Examination"},
   "moduleId": "e04e457e-8cdd-4af6-ae15-a77f52dff46c"
 }
+
+### Get paged users
+GET {{server_url}}/api/users?page=2&pageSize=10
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Get paged activities
+GET {{server_url}}/api/activities?page=1&pageSize=10
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Get paged courses
+GET {{server_url}}/api/courses?page=1&pageSize=10
+Accept: application/json
+Authorization: Bearer {{token}}

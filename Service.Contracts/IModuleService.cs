@@ -1,11 +1,11 @@
-
 using LMS.Shared.DTOs.ModuleDtos;
+using LMS.Shared.Pagination;
 
 namespace Service.Contracts;
 
 public interface IModuleService
 {
-    Task<IEnumerable<ModuleDto>> GetAllModulesAsync();
+    Task<PagedResult<ModuleDto>> GetAllModulesAsync(PagedQuery query);
     Task<ModuleDto?> GetModuleByIdAsync(Guid id);
     Task<IEnumerable<ModuleDto>> GetModulesByCourseIdAsync(Guid courseId);
     Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto);

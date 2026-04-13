@@ -5,8 +5,8 @@
         <td>@Course.NumberOfStudents</td>
         <td>@Course.Modules.Count</td>
         <td class="text-end">
-            <a class="text-decoration-none" href="CourseOverviewTeacher">Visa</a>
-            <a class="ms-2 text-decoration-none pe-2" href="#">Redigera</a>
+            <a class="text-decoration-none" href="@($"/courses/{Course.Id}/overview")">Visa</a>
+            <a class="ms-2 text-decoration-none pe-2" href="@($"/create-course/{Course.Id}")">Redigera</a>
         </td>
     </tr>
 }

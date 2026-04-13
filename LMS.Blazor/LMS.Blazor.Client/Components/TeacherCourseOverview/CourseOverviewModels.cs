@@ -11,7 +11,7 @@ public class CourseStatisticsModel
     public int Modules { get; set; }
     public int Activities { get; set; }
     public int Students { get; set; }
-    public int Submissions { get; set; }
+    public int Submissions { get; set; } = 0;
 }
 
 public class ActivityModel
@@ -35,8 +35,11 @@ public class ModuleModel
 
 public class ModuleActivityModel
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string ModuleId { get; set; } = string.Empty;
     public string Title { get; set; } = "";
-    public ModuleActivityType Type { get; set; }
+    public string Description { get; set; } = "";
+    public string Type { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public DateTime? Deadline { get; set; }
     public bool ShowSubmissionButton { get; set; }
@@ -50,17 +53,11 @@ public class ModuleDocumentModel
 }
 public class StudentListItemModel
 {
+    public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public int ProgressPercent { get; set; }
     public DateTime LastActive { get; set; }
-}
-
-public enum ModuleActivityType
-{
-    Lecture,
-    Exercise,
-    Assignment
 }
 
 public enum ActivityType

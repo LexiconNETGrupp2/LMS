@@ -1,0 +1,125 @@
+@using System.Net
+@using LMS.Shared.DTOs.AuthDtos
+@using LMS.Shared.DTOs.UserDtos
+@inject IApiService ApiService
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Redigera användare</h2>
+
+        @if (!string.IsNullOrWhiteSpace(_successMessage))
+        {
+            <div class="alert alert-success" role="alert">@_successMessage</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        <EditForm Model="_form" OnValidSubmit="HandleValidSubmitAsync">
+            <DataAnnotationsValidator />
+
+            <div class="g-3">
+                <div class="mb-3">
+                    <label for="firstName" class="form-label">Förnamn</label>
+                    <InputText id="firstName" class="form-control" @bind-Value="_form.FirstName" placeholder="Förnamn" />
+                    <ValidationMessage For="() => _form.FirstName" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="lastName" class="form-label">Efternamn</label>
+                    <InputText id="lastName" class="form-control" @bind-Value="_form.LastName" placeholder="Efternamn" />
+                    <ValidationMessage For="() => _form.LastName" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">E-post</label>
+                    <InputText id="email" type="email" class="form-control" @bind-Value="_form.Email" placeholder="E-postadress" />
+                    <ValidationMessage For="() => _form.Email" class="text-danger" />
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                    @(_isSubmitting ? "Sparar..." : "Spara")
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="OnClose" disabled="@_isSubmitting">
+                    Stäng
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<UserDto> OnUserEdit { get; set; }
+    [Parameter] public Guid? UserId { get; set; }
+
+    private EditUserFormModel _form = new();
+    private bool _isSubmitting;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserAsync();
+    }
+
+    private async Task LoadUserAsync()
+    {
+        try
+        {
+            var response = await ApiService.GetAsync<UserDto>($"api/users/{UserId}");
+            if (response is null) return;
+            _form.Email = response.Email;
+            _form.FirstName = response.FirstName;
+            _form.LastName = response.LastName;
+        }
+        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+        {
+            _errorMessage = "Kunde inte hitta användaren.";
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        _isSubmitting = true;
+        _successMessage = null;
+        _errorMessage = null;
+        try
+        {
+            var dto = new UpdateUserDto
+            {
+                FirstName = _form.FirstName.Trim(),
+                LastName = _form.LastName.Trim(),
+                Email = _form.Email.Trim(),
+            };
+            await ApiService.PutAsync<UpdateUserDto>($"api/users/{UserId}", dto);
+            _successMessage = "Användaren har uppdaterats.";
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Kunde inte redigera användaren: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private sealed class EditUserFormModel
+    {
+        [Required(ErrorMessage = "Förnamn krävs")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Efternamn krävs")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "E-post krävs")]
+        [EmailAddress(ErrorMessage = "Ange en giltig e-postadress")]
+        public string Email { get; set; } = string.Empty;
+    }
+}

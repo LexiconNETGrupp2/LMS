@@ -1,47 +1,42 @@
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using LMS.Infractructure.Data;
+using LMS.Infractructure.Extensions;
+using LMS.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Infractructure.Repositories;
 
-public class ModuleRepository : RepositoryBase<Module>, IModuleRepository
+public class ModuleRepository(ApplicationDbContext context)
+    : RepositoryBase<Module>(context), IModuleRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public ModuleRepository(ApplicationDbContext context) : base(context)
+    public async Task<PagedResult<Module>> GetAllModulesAsync(PagedQuery query)
     {
-        _context = context;
-    }
-
-    public async Task<IReadOnlyCollection<Module>> GetAllModulesAsync()
-    {
-        return await _context.Modules
-            .AsNoTracking()
+        return await FindAll()
             .Include(m => m.Course)
-            .ToListAsync();
+            .OrderBy(m => m.StartDate)
+            .ToPagedResultAsync(query);
     }
 
     public async Task<Module?> GetModuleByIdAsync(Guid id)
     {
-        return await _context.Modules
-            .AsNoTracking()
+        return await FindAll()
             .Include(m => m.Course)
             .FirstOrDefaultAsync(m => m.Id == id);
     }
 
     public async Task<IReadOnlyCollection<Module>> GetModulesByCourseIdAsync(Guid courseId)
     {
-        return await _context.Modules
-            .AsNoTracking()
+        return await FindAll()
             .Include(m => m.Course)
             .Where(m => m.Course.Id == courseId)
+            .OrderBy(m => m.StartDate)
             .ToListAsync();
     }
 
     public async Task<Module?> GetModuleByIdTrackedAsync(Guid id)
     {
-        return await _context.Modules
+        return await FindAll(trackChanges: true)
             .Include(m => m.Course)
             .FirstOrDefaultAsync(m => m.Id == id);
     }

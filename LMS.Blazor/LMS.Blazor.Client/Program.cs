@@ -21,6 +21,8 @@ internal class Program
 
         builder.Services.AddScoped<IApiService, ClientApiService>();
 
+        builder.Services.AddValidation();
+
         await builder.Build().RunAsync();
     }
 }

@@ -1,24 +1,44 @@
-@page "/Modules"
+@page "/courses"
+@using LMS.Shared.Pagination
 @attribute [Authorize(Roles = "Teacher")]
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @inject IApiService ApiService
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
 
-<PageTitle>Moduler</PageTitle>
+<PageTitle>Kurser</PageTitle>
 
 <div class="modules-page">
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
         <div>
-            <h1 class="modules-page-title mb-1">Moduler</h1>
-            <p class="text-body-secondary mb-0">Hantera moduler för alla kurser.</p>
+            <h1 class="modules-page-title mb-1">Kurser</h1>
+            <p class="text-body-secondary mb-0">Hantera kurser och dess moduler.</p>
+            <span class="mt-1">
+                <label class="user-select-none">
+                    <input class="form-check-input" type="checkbox" @onchange="ToggleShowingCourses" checked="@showOldCourses" />
+                    Visa kurser som har slutat
+                </label>
+            </span>
         </div>
-
-        <button type="button" class="btn btn-primary modules-primary-action" @onclick="() => OpenCreateModal()">
-            <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
-            Lägg till modul
-        </button>
-    </div>
-
+        <div>            
+            <button type="button" class="btn btn-primary modules-primary-action me-2" @onclick="() => OpenCreateModal()">
+                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                Lägg till modul
+            </button>
+            <button type="button" class="btn btn-primary modules-primary-action" @onclick="() => GoToCreateCourses()">
+                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                Lägg till Kurs
+            </button>
+            <EditForm Model="searchStr" OnValidSubmit="SearchForCourses" class="d-flex mt-2" role="search">
+                <DataAnnotationsValidator />
+                <InputText @bind-Value="searchStr"
+                           class="form-control search-input"
+                           placeholder="Sök efter kurs...">
+                </InputText>
+                <button class="btn btn-primary ms-2" type="submit">Sök</button>
+            </EditForm>
+        </div>
+    </div>    
     @if (!string.IsNullOrWhiteSpace(actionMessage))
     {
         <div class="alert alert-success">@actionMessage</div>
@@ -48,38 +68,62 @@
     else
     {
         <section class="card shadow-sm modules-card">
-            <div class="card-body border-bottom">
-                <h2 class="h5 mb-1">Moduler efter kurs</h2>
-                <p class="text-body-secondary mb-0">Hantera moduler för alla kurser</p>
-            </div>
-
             <div class="modules-accordion">
                 @foreach (var course in courses)
                 {
                     var isExpanded = expandedCourseIds.Contains(course.Id);
 
                     <section class="modules-course-section">
-                        <button type="button"
-                                class="modules-course-toggle"
-                                @onclick="() => ToggleCourse(course.Id)">
-                            <span class="d-flex align-items-center gap-3">
-                                <span class="modules-course-icon">
-                                    <i class="bi bi-layers" aria-hidden="true"></i>
-                                </span>
-                                <span>
-                                    <span class="d-block fw-semibold text-dark">@course.Name</span>
+
+                        <div class="d-flex justify-content-between gap-3 w-100 p-2">
+                            <div class="display-inline-block w-50">
+                                <span class="">
+                                    <i class="bi bi-layers modules-course-icon" aria-hidden="true"></i>
+                                    <span class="fw-semibold text-dark">
+                                        <button class="btn btn-link px-0" @onclick="() => GoToCourseOverview(course.Id)">
+                                            @course.Name
+                                        </button>
+                                    </span>
                                 </span>
                                 <span class="modules-chip">@course.Modules.Count moduler</span>
-                            </span>
+                                <span class="modules-chip">@course.NumberOfStudents deltagare</span>
+                                <div class="py-1 ms-2">
+                                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                    <span>@course.StartDateStr - @course.EndDateStr</span>
+                                </div>
+                            </div>
 
-                            <span class="modules-course-chevron">
-                                <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></i>
-                            </span>
-                        </button>
+                            <div class="display-inline-block w-50 d-flex justify-content-end">
+                                <button type="button"
+                                        class="btn btn-link text-decoration-none text-secondary-emphasis ps-lg-5"
+                                        @onclick="() => ToggleCourse(course.Id)">
+                                    <span class="modules-course-chevron">
+                                        <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></i>
+                                        @(isExpanded ? "Dölj" : "Visa") moduler
+                                    </span>
+                                </button>
 
+                                <button type="button"
+                                        class="btn btn-link text-primary modules-icon-button"
+                                        title="Redigera kurs"
+                                        @onclick="() => UpdateCourse(course.Id)">
+                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                    Redigera kurs
+                                </button>
+
+                                <button type="button"
+                                        class="btn btn-link text-danger modules-icon-button"
+                                        title="Ta bort kurs"
+                                        @onclick="() => DeleteCourse(course)">
+                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                    Radera kurs
+                                </button>
+                            </div>
+
+                        </div>
                         @if (isExpanded)
                         {
-                            <div class="modules-course-content">
+                            <div class="modules-course-content pt-3">
                                 <div class="table-responsive modules-table-wrap">
                                     <table class="table align-middle mb-0">
                                         <thead>
@@ -152,7 +196,9 @@
                 OnSubmit="SaveModuleAsync" />
 
 @code {
-    private readonly List<CourseDto> courses = [];
+    private List<CourseDto> courses = [];
+    private List<CourseDto> allCourses = [];
+    private List<CourseDto> activeCourses = [];
     private HashSet<Guid> expandedCourseIds = [];
     private ModuleFormModel moduleForm = new();
     private bool isLoading = true;
@@ -162,6 +208,8 @@
     private string? loadError;
     private string? submitError;
     private string? actionMessage;
+    private string searchStr = "";
+    private bool showOldCourses = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,10 +225,13 @@
 
         try
         {
-            var result = await ApiService.GetAsync<IReadOnlyCollection<CourseDto>>("api/courses");
-
-            courses.Clear();
-            courses.AddRange((result ?? []).OrderBy(course => course.Name));
+            var uri = "api/courses";
+            if (!string.IsNullOrWhiteSpace(searchStr)) uri += $"?search={searchStr}";
+            var result = await ApiService.GetAsync<PagedResult<CourseDto>>(uri);
+            allCourses = result?.Items.ToList() ?? [];
+            activeCourses = allCourses.Where(c => c.EndDate >= DateOnly.FromDateTime(DateTime.Now)).ToList();
+            courses = showOldCourses ? allCourses : activeCourses;
+            courses = courses.OrderBy(course => course.Name).ToList();
 
             expandedCourseIds = courses
                 .Select(course => course.Id)
@@ -201,6 +252,15 @@
             isLoading = false;
         }
     }
+
+    private void ToggleShowingCourses()
+    {
+        showOldCourses = !showOldCourses;
+        courses = showOldCourses ? allCourses : activeCourses;
+        courses = courses.OrderBy(course => course.Name).ToList();
+    }
+
+    private async Task SearchForCourses() => await LoadCoursesAsync();
 
     private void ToggleCourse(Guid courseId)
     {
@@ -239,6 +299,7 @@
             ModuleId = module.Id,
             CourseId = course.Id,
             Name = module.Name,
+            Description = module.Description,
             StartDate = module.StartDate,
             EndDate = module.EndDate
         };
@@ -293,6 +354,7 @@
             {
                 var updateDto = new UpdateModuleDto(
                     moduleForm.Name.Trim(),
+                    moduleForm.Description.Trim(),
                     moduleForm.StartDate.Value,
                     moduleForm.EndDate.Value);
 
@@ -303,6 +365,7 @@
             {
                 var createDto = new CreateModuleDto(
                     moduleForm.Name.Trim(),
+                    moduleForm.Description.Trim(),
                     moduleForm.StartDate.Value,
                     moduleForm.EndDate.Value,
                     moduleForm.CourseId.Value);
@@ -319,7 +382,7 @@
         {
             submitError = ex.Message;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             submitError = "Ett oväntat fel inträffade när modulen skulle sparas.";
         }
@@ -354,9 +417,38 @@
         {
             loadError = ex.Message;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             loadError = "Ett oväntat fel inträffade när modulen skulle tas bort.";
+        }
+    }
+
+    private void GoToCreateCourses() => NavigationManager.NavigateTo("/create-course");
+    private void GoToCourseOverview(Guid courseId) => NavigationManager.NavigateTo($"/courses/{courseId}");
+
+    private void UpdateCourse(Guid courseId) => NavigationManager.NavigateTo($"/create-course/{courseId}");
+
+    private async Task DeleteCourse(CourseDto course)
+    {
+        actionMessage = null;
+        submitError = null;
+
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"Vill du ta bort kursen \"{course.Name}\"?");
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            await ApiService.DeleteAsync($"api/courses/{course.Id}");
+            actionMessage = $"Kursen \"{course.Name}\" togs bort.";
+            await LoadCoursesAsync();
+        } catch (HttpRequestException ex) {
+            loadError = ex.Message;
+        } catch (Exception) {
+            loadError = "Ett oväntat fel inträffade när kursen skulle tas bort.";
         }
     }
 }

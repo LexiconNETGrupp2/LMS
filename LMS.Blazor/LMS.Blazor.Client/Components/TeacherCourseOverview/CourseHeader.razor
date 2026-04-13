@@ -34,8 +34,8 @@
 @code {
     [Parameter] public string Title { get; set; } = "Kursnamn";
     [Parameter] public string? Description { get; set; }
-    [Parameter] public DateTime StartDate { get; set; } = DateTime.Today;
-    [Parameter] public DateTime EndDate { get; set; } = DateTime.Today.AddMonths(3);
+    [Parameter] public DateOnly StartDate { get; set; }
+    [Parameter] public DateOnly EndDate { get; set; }
 
     [Parameter] public string BackUrl { get; set; } = "/";
     [Parameter] public string BackText { get; set; } = "Tillbaka till dashboard";

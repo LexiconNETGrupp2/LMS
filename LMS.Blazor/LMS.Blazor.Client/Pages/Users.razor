@@ -1,0 +1,268 @@
+﻿@page "/Users/{EditUserId:guid?}"
+@using LMS.Blazor.Client.Components.User
+@using LMS.Shared.DTOs.UserDtos
+@using LMS.Shared.Pagination
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@attribute [Authorize(Roles = RolesNames.Teacher)]
+
+<PageTitle>Användare</PageTitle>
+
+<div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="fw-bold fs-3 mb-1">Användare</h1>
+            <div class="text-secondary">Totalt @_totalItemCount användare i systemet</div>
+        </div>
+        <button class="btn btn-primary" @onclick="ToggleCreateForm">
+            @if (!_showCreateForm) {
+                <i class="bi bi-plus"></i>
+                @:Lägg till användare
+            } else {
+                <i class="bi bi-x-lg"></i>
+                @:Stäng
+            }
+        </button>
+    </div>
+</div>
+
+@if (_showCreateForm) {
+    <CreateUser OnUserCreated="OnUserCreated" CourseOptions="CourseOptions" />
+}
+
+@if (EditUserId is not null)
+{
+    <EditUser OnUserEdit="@OnUserEdit" OnClose="@OnUserEditClose" UserId="@EditUserId" />
+}
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="flex-grow-1">
+        <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search me-1"></i>
+                <input type="text" class="form-control border-start-0"
+                           placeholder="Sök efter namn eller e-post..."
+                           @bind-value="_searchTerm" />
+                </span>
+                @if (!string.IsNullOrWhiteSpace(_searchTerm)) {
+                    <button type="button" class="btn btn-outline-secondary border-start-0 border-end-0" style="z-index:2;"
+                            @onclick="ClearSearch" tabindex="-1">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+                <button @onclick="UpdateGrid" class="btn btn-outline-primary border-start-0" style="z-index: 2">Sök</button>
+        </div>
+    </div>
+    <div class="btn-group ms-2" role="group">
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == null ? "active" : "")"
+                @onclick="() => SetRoleFilter(null)">
+            Alla
+        </button>
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == RolesNames.Student ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Student)">
+            Elever
+        </button>
+        <button type="button" class="btn btn-outline-primary @(_roleFilter == RolesNames.Teacher ? "active" : "")"
+                @onclick="() => SetRoleFilter(RolesNames.Teacher)">
+            Lärare
+        </button>
+    </div>
+</div>
+
+@if (_pageErrors.Any()) {
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in _pageErrors) {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="card shadow-sm border-0 p-2">
+    <QuickGrid Class="table table-hover align-middle" ItemKey="u => u.Id" ItemsProvider="_userProvider" Pagination="_pagination" @ref="_grid">
+        <PropertyColumn Property="@(u => u.FullName)"
+                        Title="Namn"
+                        Sortable="true"
+                        IsDefaultSortColumn="true"
+                        Align="Align.Start" />
+        <PropertyColumn Property="@(u => u.Email)" Title="E-post" Sortable="true" Align="Align.Start" />
+        <TemplateColumn Title="Roll" Align="Align.Start">
+            <div class="badge rounded-pill bg-success-subtle text-success">
+                @RoleName(context.Role)
+            </div>
+        </TemplateColumn>
+        <PropertyColumn Property="@(u => u.CourseName)" Title="Kurs" Sortable="true" Align="Align.Start" />
+        <TemplateColumn Context="user" Title="Åtgärder" Align="Align.End">
+            <a href="/Users/@user.Id" class="btn btn-link text-primary p-0">
+                <i class="bi bi-pencil-square"></i> Redigera
+            </a>
+            <button class="btn btn-link text-danger p-0">
+                <i class="bi bi-trash3"></i> Radera
+            </button>
+        </TemplateColumn>
+    </QuickGrid>
+    <Paginator State="@_pagination" />
+</div>
+
+@code {
+    [Parameter]
+    public Guid? EditUserId { get; set; }
+
+    private IReadOnlyList<CourseDto> Courses { get; set; } = [];
+    private Dictionary<Guid, string> CourseOptions => Courses.ToDictionary(c => c.Id, c => c.Name);
+
+    private readonly PaginationState _pagination = new PaginationState { ItemsPerPage = 20 };
+    private string _searchTerm = string.Empty;
+    private string? _roleFilter = null;
+    private GridItemsProvider<UserModel>? _userProvider;
+    private QuickGrid<UserModel>? _grid;
+    private int _totalItemCount = 0;
+
+    private bool _showCreateForm = false;
+    private readonly List<string> _pageErrors = [];
+
+
+    public class UserModel
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        [Required(ErrorMessage = "Förnamn krävs")]
+        public string FirstName { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Efternamn krävs")]
+        public string LastName { get; set; } = string.Empty;
+        public string FullName => $"{FirstName} {LastName}";
+        [Required(ErrorMessage = "E-postadress krävs")]
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = RolesNames.Student;
+        [Required(ErrorMessage = "Kurs krävs")]
+        public Guid? CourseId { get; set; }
+        public string CourseName { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourses();
+        _userProvider = LoadUsers;
+    }
+
+    private async Task LoadCourses()
+    {
+        try {
+            var response = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
+            Courses = response?.Items ?? [];
+        } catch {
+            _pageErrors.Add("Kunde inte ladda kurser");
+        }
+    }
+
+    private async Task UpdateGrid()
+    {
+        Console.WriteLine("Updating grid");
+        if (_grid is not null) {
+            await _grid.RefreshDataAsync();
+        }
+    }
+
+    private async ValueTask<GridItemsProviderResult<UserModel>> LoadUsers(GridItemsProviderRequest<UserModel> request)
+    {
+        PagedResult<UserDto>? pagedResponse;
+        try {
+            string uri = $"api/users?page={_pagination.CurrentPageIndex + 1}&pageSize={_pagination.ItemsPerPage}";
+            uri += GetSearch();
+            uri += GetSorting(request.GetSortByProperties().FirstOrDefault());
+            uri += GetRoleFilter();
+            pagedResponse = await ApiService.GetAsync<PagedResult<UserDto>>(uri);
+            if (pagedResponse is null) return await FailedToLoadUsers();
+        } catch (Exception) {
+            return await FailedToLoadUsers();
+        }
+        var models = pagedResponse.Items.Select(i => new UserModel {
+            Id = Guid.Parse(i.Id),
+            FirstName = i.FirstName,
+            LastName = i.LastName,
+            Email = i.Email,
+            Role = i.Role ?? string.Empty,
+            CourseId = i.CourseId,
+            CourseName = CourseName(i.CourseId)
+        }).AsQueryable();
+        _totalItemCount = pagedResponse!.TotalItems;
+        StateHasChanged();
+        return GridItemsProviderResult.From<UserModel>(items: models.ToList(), totalItemCount: _totalItemCount);
+    }
+
+    private string GetRoleFilter()
+        => string.IsNullOrWhiteSpace(_roleFilter) ? string.Empty : $"&role={_roleFilter}";
+
+    private string GetSearch()
+        => !string.IsNullOrWhiteSpace(_searchTerm) ? $"&search={_searchTerm}" : string.Empty;
+
+    private string GetSorting(SortedProperty? sortedProperties)
+    {
+        if (!sortedProperties.HasValue) return string.Empty;
+
+        var item = sortedProperties.Value;
+        string name = item.PropertyName;
+        bool direction = item.Direction switch {
+            SortDirection.Descending => true,
+            _ => false
+        };
+        return $"&OrderBy={name}&IsDescending={direction}";
+    }
+
+    private async ValueTask<GridItemsProviderResult<UserModel>> FailedToLoadUsers()
+    {
+        _pageErrors.Add("Kunde inte ladda användare");
+        return GridItemsProviderResult.From<UserModel>([], 0);
+    }
+
+    private string CourseName(Guid? courseId) =>
+        Courses.SingleOrDefault(s => s.Id == courseId)?.Name ?? string.Empty;
+
+    private string RoleName(string role) =>
+        role switch {
+            RolesNames.Student => "Elev",
+            RolesNames.Teacher => "Lärare",
+            _ => role
+        };
+
+
+    private async Task SetRoleFilter(string? role)
+    {
+        _roleFilter = role;
+        await UpdateGrid();
+    }
+
+    private async Task ClearSearch()
+    {
+        _searchTerm = string.Empty;
+        await UpdateGrid();
+    }
+
+    private async Task SubmitWithEnter(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter") {
+            Console.WriteLine("PRessed enter");
+            await UpdateGrid();
+        }
+    }
+
+    private void ToggleCreateForm()
+    {
+        _showCreateForm = !_showCreateForm;
+    }
+
+    private async Task OnUserCreated(UserDto user)
+    {
+        await UpdateGrid();
+    }
+
+    private async Task OnUserEdit(UserDto user)
+    {
+        await UpdateGrid();
+    }
+
+    private void OnUserEditClose()
+    {
+        Navigation.NavigateTo("/Users");
+    }
+
+}

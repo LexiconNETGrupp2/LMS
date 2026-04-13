@@ -7,6 +7,8 @@ public class Activity
     public string Description { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public Guid ActivityTypeId { get; set; }
     public required ActivityType Type { get; set; }
+    public Guid ModuleId { get; set; }
     public required Module Module { get; set; }
 }

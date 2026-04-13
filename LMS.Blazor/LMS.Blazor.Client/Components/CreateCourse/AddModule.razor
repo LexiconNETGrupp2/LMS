@@ -1,0 +1,93 @@
+﻿<div class="container py-3 rounded">
+    <div class="row">
+        <div class="col d-flex justify-content-between">
+            <span class="fs-5">Modul @index</span>
+            <span>
+                <button @onclick="DeleteModule"
+                        class="btn btn-link text-decoration-none text-danger fs-6">
+                    Ta bort
+                </button>
+            </span>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="@CreateIdString("name")">Modulnamn</label>
+        <InputText id="@CreateIdString("name")"
+                   class="form-control"
+                   placeholder="Namnet på modulen"
+                   @bind-Value="Module.Name" />
+        <ValidationMessage For="() => Module.Name" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="@CreateIdString("desc")">Modulbeskrivning</label>
+        <InputTextArea id="@CreateIdString("desc")"
+                       class="form-control"
+                       @bind-Value="Module.Description"
+                       placeholder="Beskriv modulen"
+                       rows="3" />
+        <ValidationMessage For="() => Module.Description" />
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <label class="form-label" for="@CreateIdString("start")">Startdatum</label>
+            <InputDate @bind-Value="Module.StartDate"
+                       class="form-control"
+                       id="@CreateIdString("start")"
+                       min="@_minStart"
+                       max="@(Module.EndDate ?? CourseEnd)"
+                       @oninput="UpdateDate" />
+            <ValidationMessage For="() => Module.StartDate" />
+        </div>
+        <div class="col-6">
+            <label class="form-label" for="@CreateIdString("end")">Slutdatum</label>
+            <InputDate @bind-Value="Module.EndDate"
+                       class="form-control"
+                       id="@CreateIdString("end")"
+                       min="@(Module.StartDate ?? CourseStart)"
+                       max="@_maxEnd"
+                       @oninput="UpdateDate" />
+            <ValidationMessage For="() => Module.EndDate" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DateOnly? PreviousModuleEnd { get; set; }
+    [Parameter] public DateOnly? NextModuleStart { get; set; }
+    [Parameter] public DateOnly? CourseStart { get; set; }
+    [Parameter] public DateOnly? CourseEnd { get; set; }
+    private string? _minStart;
+    private string? _maxEnd;
+
+    [Parameter]
+    public int index { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid?> OnDelete { get; set; }
+
+    [Parameter]
+    public required ModuleFormModel Module { get; set; }
+
+    protected async override Task OnParametersSetAsync()
+    {
+        await UpdateDate();
+    }
+
+    private async Task UpdateDate()
+    {
+        var minDate = PreviousModuleEnd?.AddDays(1) < CourseStart ? PreviousModuleEnd?.AddDays(1) : CourseStart;
+        _minStart = minDate?.ToString("yyyy-MM-dd");
+
+        var maxDate = NextModuleStart?.AddDays(-1) < CourseEnd ? NextModuleStart?.AddDays(-1) : CourseEnd;
+        _maxEnd = maxDate?.ToString("yyyy-MM-dd");
+    }
+
+    private async Task DeleteModule()
+    {
+        if (OnDelete.HasDelegate)
+            await OnDelete.InvokeAsync(Module.ModuleId);
+    }
+
+    private string CreateIdString(string propName)
+        => $"add-module-{propName}-{Module.ModuleId.ToString()?[..8]}";
+}

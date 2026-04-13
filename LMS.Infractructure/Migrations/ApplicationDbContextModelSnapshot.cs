@@ -28,6 +28,9 @@ namespace LMS.Infractructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("ActivityTypeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -45,14 +48,11 @@ namespace LMS.Infractructure.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("TypeId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("ModuleId");
+                    b.HasIndex("ActivityTypeId");
 
-                    b.HasIndex("TypeId");
+                    b.HasIndex("ModuleId");
 
                     b.ToTable("Activities");
                 });
@@ -211,6 +211,7 @@ namespace LMS.Infractructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UploaderId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -251,6 +252,10 @@ namespace LMS.Infractructure.Migrations
 
                     b.Property<Guid>("CourseId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly>("EndDate")
                         .HasColumnType("date");
@@ -404,15 +409,15 @@ namespace LMS.Infractructure.Migrations
 
             modelBuilder.Entity("Domain.Models.Entities.Activity", b =>
                 {
-                    b.HasOne("Domain.Models.Entities.Module", "Module")
+                    b.HasOne("Domain.Models.Entities.ActivityType", "Type")
                         .WithMany("Activities")
-                        .HasForeignKey("ModuleId")
+                        .HasForeignKey("ActivityTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Models.Entities.ActivityType", "Type")
-                        .WithMany()
-                        .HasForeignKey("TypeId")
+                    b.HasOne("Domain.Models.Entities.Module", "Module")
+                        .WithMany("Activities")
+                        .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -445,14 +450,16 @@ namespace LMS.Infractructure.Migrations
                         .HasForeignKey("ModuleId");
 
                     b.HasOne("Domain.Models.Entities.DocumentType", "Type")
-                        .WithMany()
+                        .WithMany("Documents")
                         .HasForeignKey("TypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Domain.Models.Entities.ApplicationUser", "Uploader")
                         .WithMany()
-                        .HasForeignKey("UploaderId");
+                        .HasForeignKey("UploaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Activity");
 
@@ -527,11 +534,21 @@ namespace LMS.Infractructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Domain.Models.Entities.ActivityType", b =>
+                {
+                    b.Navigation("Activities");
+                });
+
             modelBuilder.Entity("Domain.Models.Entities.Course", b =>
                 {
                     b.Navigation("Modules");
 
                     b.Navigation("Students");
+                });
+
+            modelBuilder.Entity("Domain.Models.Entities.DocumentType", b =>
+                {
+                    b.Navigation("Documents");
                 });
 
             modelBuilder.Entity("Domain.Models.Entities.Module", b =>

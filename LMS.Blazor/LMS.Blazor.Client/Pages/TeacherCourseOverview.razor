@@ -1,206 +1,688 @@
-﻿@page "/CourseOverviewTeacher"
+﻿@page "/courses/{CourseId:guid}/{ActiveTab?}"
+@inject IApiService ApiService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@attribute [Authorize(Roles = RolesNames.Teacher)]
 
 @using LMS.Blazor.Client.Components.TeacherCourseOverview
 @using LMS.Blazor.Client.Components.TeacherCourseOverview.ModulesComponents
 @using LMS.Blazor.Client.Components.TeacherCourseOverview.OverviewComponents
 @using LMS.Blazor.Client.Components.TeacherCourseOverview.StudentComponents
+@using LMS.Shared.DTOs.ActivityDtos
+@using LMS.Shared.DTOs.ModuleDtos
 
-<CourseHeader Title="Lexicon LTU"
-              Description="En omfattande utbildning i modern webbutveckling med fokus på JavaScript och React."
-              StartDate="@(new DateTime(2023, 8, 15))"
-              EndDate="@(new DateTime(2023, 12, 15))"
-              BackUrl="/"
-              BackText="Tillbaka till dashboard"
-              EditButtonText="Redigera kurs"
-              OnEditClicked="HandleEditCourse" />
 
-<CourseTabs Tabs="_tabs" OnTabChanged="HandleTabChanged" />
-
-@if (_activeTab == "Översikt")
+@if (_isLoading)
 {
-    <div class="container-fluid px-0">
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-xl-6">
-                <CourseProgressCard Progress="35" Modules="_moduleProgress" />
-            </div>
-
-            <div class="col-12 col-xl-6">
-                <CourseStatisticsCard Statistics="_statistics" />
-            </div>
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border" role="status" aria-hidden="true"></div>
+        <span class="ms-3">Laddar kurs...</span>
+    </div>
+}
+else
+{
+    @if (pageErrors.Any())
+    {
+        <div class="alert alert-danger">
+            <ul class="list-unstyled mb-0">
+                @foreach (var error in pageErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
         </div>
+    }
+    <CourseHeader Title="@_course.Name"
+                  Description="@_course.Description"
+                  StartDate="@_course.StartDate"
+                  EndDate="@_course.EndDate"
+                  BackUrl="/"
+                  BackText="Tillbaka till dashboard"
+                  EditButtonText="Redigera kurs"
+                  OnEditClicked="HandleEditCourse" />
 
-        <RecentActivitiesCard Activities="_activities" />
-    </div>
+    <CourseTabs Tabs="_tabs" OnTabChanged="HandleTabChanged" />
+
+    @if (_activeTab == TabOverview)
+    {
+        <div class="container-fluid px-0">
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-xl-6">
+                    <CourseProgressCard Progress="0" Modules="_moduleProgress" />
+                </div>
+
+                <div class="col-12 col-xl-6">
+                    <CourseStatisticsCard Statistics="_statistics" />
+                </div>
+            </div>
+
+            <RecentActivitiesCard Activities="_activities" />
+        </div>
+    }
+    else if (_activeTab == TabModules)
+    {
+        @if (!string.IsNullOrWhiteSpace(modulesActionMessage))
+        {
+            <div class="alert alert-success">@modulesActionMessage</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(modulesErrorMessage))
+        {
+            <div class="alert alert-danger">@modulesErrorMessage</div>
+        }
+
+        <ModulesSection Modules="_courseModules"
+                        OnAddModule="HandleAddModule"
+                        OnEditModule="HandleEditModule"
+                        OnDeleteModule="HandleDeleteModule"
+                        OnAddActivity="HandleAddActivity"
+                        OnEditActivity="HandleEditActivity"
+                        OnDeleteActivity="HandleDeleteActivity"
+                        OnViewSubmissions="HandleViewSubmissions"
+                        OnAddDocument="HandleAddDocument" />
+    }
+    else if (_activeTab == TabSubmissions)
+    {
+        <div class="alert alert-light border rounded-4">
+            Inlämningar kommer här.
+        </div>
+    }
+    else if (_activeTab == TabStudents)
+    {
+        <StudentsSection Students="_students" />
+    }
+    else if (_activeTab == TabDocuments)
+    {
+        <div class="alert alert-light border rounded-4">
+            Dokument kommer här.
+        </div>
+    }
 }
-else if (_activeTab == "Moduler")
-{
-    <ModulesSection Modules="_courseModules" />
-}
-else if (_activeTab == "Inlämningar")
-{
-    <div class="alert alert-light border rounded-4">
-        Inlämningar kommer här.
-    </div>
-}
-else if (_activeTab == "Studenter")
-{
-    <StudentsSection Students="_students" />
-}
-else if (_activeTab == "Dokument")
-{
-    <div class="alert alert-light border rounded-4">
-        Dokument kommer här.
-    </div>
-}
+
+<AddModuleModal IsOpen="@isModuleModalOpen"
+                LockCourseSelection="true"
+                IsSubmitting="@isModuleSubmitting"
+                ErrorMessage="@moduleSubmitError"
+                Courses="@moduleModalCourses"
+                Model="@moduleForm"
+                OnClose="CloseModuleModal"
+                OnSubmit="SaveModuleAsync" />
+
+<AddActivityModal IsOpen="@isActivityModalOpen"
+                  IsSubmitting="@isActivitySubmitting"
+                  ErrorMessage="@activitySubmitError"
+                  Model="@activityForm"
+                  OnClose="CloseActivityModal"
+                  OnSubmit="SaveActivityAsync" />
 
 @code {
-    private string _activeTab = "Översikt";
+    [Parameter]
+    public Guid CourseId { get; set; }
 
-    private List<CourseTabs.CourseTabItem> _tabs = new()
-    {
-        new() { Label = "Översikt", IsActive = true },
-        new() { Label = "Moduler" },
-        new() { Label = "Inlämningar" },
-        new() { Label = "Studenter" },
-        new() { Label = "Dokument" }
-    };
+    [Parameter]
+    public string? ActiveTab { get; set; }
 
-    private List<ModuleProgressModel> _moduleProgress = new()
-    {
-        new() { Name = "HTML & CSS", Progress = 100 },
-        new() { Name = "JavaScript", Progress = 60 },
-        new() { Name = "React", Progress = 20 }
-    };
+    private const string TabOverview = "overview";
+    private const string TabModules = "modules";
+    private const string TabSubmissions = "submissions";
+    private const string TabStudents = "students";
+    private const string TabDocuments = "documents";
 
-    private CourseStatisticsModel _statistics = new()
-    {
-        Modules = 3,
-        Activities = 11,
-        Students = 5,
-        Submissions = 3
-    };
+    private CourseDto _course = new();
+    private CourseStatisticsModel _statistics = new();
+    private List<ModuleProgressModel> _moduleProgress = new();
+    private List<CourseTabs.CourseTabItem> _tabs = new();
+    private List<StudentListItemModel> _students = [];
 
-    private List<ActivityModel> _activities = new()
+    private bool _isLoading = true;
+    private string _activeTab = TabOverview;
+    private Guid _loadedCourseId;
+    private readonly List<string> pageErrors = [];
+
+    protected override async Task OnParametersSetAsync()
     {
-        new()
+        _activeTab = NormalizeTab(ActiveTab);
+        BuildTabs();
+
+        var shouldLoadCourse = _loadedCourseId != CourseId;
+
+        if (!shouldLoadCourse)
+            return;
+
+        _isLoading = true;
+
+        try
         {
-            Title = "Anna Andersson lämnade in uppgift \"JavaScript applikation\"",
-            Time = "2 timmar sedan",
-            Type = ActivityType.Submission
-        },
-        new()
-        {
-            Title = "Nytt material uppladdat: \"React Komponenter Övningar\"",
-            Time = "4 timmar sedan",
-            Type = ActivityType.Document
-        },
-        new()
-        {
-            Title = "Modul \"React\" startade",
-            Time = "1 dag sedan",
-            Type = ActivityType.Module
+            _course = await GetCourse(CourseId);
+            _loadedCourseId = CourseId;
+
+            _statistics = BuildStatistics(_course);
+            _moduleProgress = BuildModuleProgress(_course);
+            _courseModules = BuildCourseModules(_course);
+
+            _students = await LoadCourseStudents(CourseId);
+
         }
+        catch
+        {
+            pageErrors.Add("Kunde inte ladda kursen");
+            return;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task<CourseDto> GetCourse(Guid courseId)
+    {
+        var uri = $"api/courses/{courseId}";
+        return await ApiService.GetAsync<CourseDto>(uri) ?? new();
+    }
+
+    private static string NormalizeTab(string? tab) => tab?.ToLowerInvariant() switch
+    {
+        TabModules => TabModules,
+        TabSubmissions => TabSubmissions,
+        TabStudents => TabStudents,
+        TabDocuments => TabDocuments,
+        TabOverview => TabOverview,
+        _ => TabOverview
     };
 
-    private List<ModuleModel> _courseModules = new()
+    private void BuildTabs()
     {
-        new()
+        _tabs = new()
         {
-            Title = "HTML & CSS",
-            Description = "Grundläggande webbutveckling med HTML5 och CSS3",
-            StartDate = new DateTime(2023, 8, 15),
-            EndDate = new DateTime(2023, 9, 1),
-            Progress = 100,
-            IsExpanded = true,
-            Activities =
-            [
-                new()
-                {
-                    Title = "Introduktion till HTML",
-                    Type = ModuleActivityType.Lecture,
-                    Date = new DateTime(2023, 8, 15),
-                    Documents =
-                    [
-                        new() { FileName = "HTML Grunderna.pdf", FileSize = "1.5 MB" },
-                        new() { FileName = "Taggstruktur.pdf", FileSize = "0.8 MB" }
-                    ]
-                },
-                new()
-                {
-                    Title = "Skapa en webbsida",
-                    Type = ModuleActivityType.Exercise,
-                    Date = new DateTime(2023, 8, 16),
-                    Documents =
-                    [
-                        new() { FileName = "Övningsuppgift.pdf", FileSize = "0.5 MB" }
-                    ]
-                }
-            ]
-        },
-        new()
-        {
-            Title = "JavaScript",
-            StartDate = new DateTime(2023, 9, 2),
-            EndDate = new DateTime(2023, 9, 20),
-            Progress = 60,
-            IsExpanded = false
-        },
-        new()
-        {
-            Title = "React",
-            StartDate = new DateTime(2023, 9, 21),
-            EndDate = new DateTime(2023, 10, 15),
-            Progress = 20,
-            IsExpanded = false
-        }
-    };
+            new() { Label = "Översikt", Value = TabOverview, IsActive = _activeTab == TabOverview },
+            new() { Label = "Moduler", Value = TabModules, IsActive = _activeTab == TabModules },
+            new() { Label = "Inlämningar", Value = TabSubmissions, IsActive = _activeTab == TabSubmissions },
+            new() { Label = "Studenter", Value = TabStudents, IsActive = _activeTab == TabStudents },
+            new() { Label = "Dokument", Value = TabDocuments, IsActive = _activeTab == TabDocuments }
+        };
+    }
 
-    private List<StudentListItemModel> _students = new()
+    private CourseStatisticsModel BuildStatistics(CourseDto course)
     {
-        new()
+        return new CourseStatisticsModel
         {
-            Name = "Anna Andersson",
-            Email = "anna.andersson@example.com",
-            ProgressPercent = 78,
-            LastActive = new DateTime(2023, 9, 10)
-        },
-        new()
+            Modules = course.Modules?.Count ?? 0,
+            Activities = course.Modules?.Sum(m => m.Activities?.Count ?? 0) ?? 0,
+            Students = course.NumberOfStudents
+        };
+    }
+
+    private List<ModuleProgressModel> BuildModuleProgress(CourseDto course)
+    {
+        return course.Modules
+            .Select(module => new ModuleProgressModel
+            {
+                Name = module.Name,
+                Progress = 0
+            })
+            .ToList();
+    }
+
+    private List<ActivityModel> _activities = [];
+
+    private List<ModuleModel> _courseModules = [];
+    private ModuleFormModel moduleForm = new();
+    private ActivityFormModel activityForm = new();
+    private bool isModuleModalOpen;
+    private bool isActivityModalOpen;
+    private bool isModuleSubmitting;
+    private bool isActivitySubmitting;
+    private string? modulesActionMessage;
+    private string? modulesErrorMessage;
+    private string? moduleSubmitError;
+    private string? activitySubmitError;
+    private IReadOnlyCollection<CourseDto> moduleModalCourses =>
+        _course.Id == Guid.Empty ? [] : [_course];
+
+    private static List<ModuleModel> BuildCourseModules(CourseDto course)
+    {
+        return (course.Modules ?? [])
+            .OrderBy(module => module.StartDate)
+            .ThenBy(module => module.Name)
+            .Select((module, index) => new ModuleModel
+            {
+                Id = module.Id.ToString(),
+                Title = module.Name,
+                Description = module.Description,
+                StartDate = module.StartDate.ToDateTime(TimeOnly.MinValue),
+                EndDate = module.EndDate.ToDateTime(TimeOnly.MinValue),
+                Progress = 0,
+                IsExpanded = index == 0,
+                Activities = (module.Activities ?? [])
+                    .OrderBy(activity => activity.StartDate)
+                    .Select(activity => new ModuleActivityModel
+                    {
+                        Id = activity.Id.ToString(),
+                        ModuleId = module.Id.ToString(),
+                        Title = activity.Name,
+                        Description = activity.Description,
+                        Type = activity.Type.Name,
+                        Date = activity.StartDate,
+                        Deadline = activity.EndDate,
+                        ShowSubmissionButton = string.Equals(
+                            activity.Type?.Name,
+                            "Assignment",
+                            StringComparison.OrdinalIgnoreCase)
+                    })
+                    .ToList()
+            })
+            .ToList();
+    }
+
+    private async Task<List<StudentListItemModel>> LoadCourseStudents(Guid courseId)
+    {
+        var uri = $"api/courses/{courseId}/students";
+        var students = await ApiService.GetAsync<List<CourseStudentDto>>(uri) ?? [];
+        return students.Select(s => new StudentListItemModel
         {
-            Name = "Erik Eriksson",
-            Email = "erik.eriksson@example.com",
-            ProgressPercent = 65,
-            LastActive = new DateTime(2023, 9, 9)
-        },
-        new()
-        {
-            Name = "Maria Svensson",
-            Email = "maria.svensson@example.com",
-            ProgressPercent = 92,
-            LastActive = new DateTime(2023, 9, 11)
-        },
-        new()
-        {
-            Name = "Johan Nilsson",
-            Email = "johan.nilsson@example.com",
-            ProgressPercent = 45,
-            LastActive = new DateTime(2023, 9, 8)
-        },
-        new()
-        {
-            Name = "Sara Lindberg",
-            Email = "sara.lindberg@example.com",
-            ProgressPercent = 83,
-            LastActive = new DateTime(2023, 9, 10)
-        }
-    };
+            Id = s.Id,
+            Name = s.FullName,
+            Email = s.Email,
+            ProgressPercent = Random.Shared.Next(0, 100), // TODO: Replace with real progress data
+            LastActive = new DateTime(2000, 1, 1), // TODO: Replace with real last active data
+        }).ToList();
+    }
 
     private void HandleEditCourse()
     {
-        // Navigate to edit page or open modal
+        NavigationManager.NavigateTo($"/create-course/{CourseId}");
     }
 
-    private void HandleTabChanged(string tabLabel)
+    private void HandleTabChanged(string tabValue)
     {
-        _activeTab = tabLabel;
+        var normalizedTab = NormalizeTab(tabValue);
+        NavigationManager.NavigateTo($"/courses/{CourseId}/{normalizedTab}");
+    }
+
+    private async Task RefreshCourseAndModels()
+    {
+        _course = await GetCourse(CourseId);
+        _statistics = BuildStatistics(_course);
+        _moduleProgress = BuildModuleProgress(_course);
+        _courseModules = BuildCourseModules(_course);
+    }
+
+    private async Task HandleAddModule()
+    {
+        modulesActionMessage = null;
+        modulesErrorMessage = null;
+        moduleSubmitError = null;
+
+        moduleForm = new ModuleFormModel
+        {
+            CourseId = CourseId,
+            StartDate = _course.StartDate,
+            EndDate = _course.StartDate
+        };
+
+        isModuleModalOpen = true;
+    }
+
+    private async Task HandleEditModule(ModuleModel module)
+    {
+        modulesActionMessage = null;
+        modulesErrorMessage = null;
+        moduleSubmitError = null;
+
+        if (!Guid.TryParse(module.Id, out var moduleId))
+        {
+            modulesErrorMessage = "Kunde inte läsa modulens id.";
+            return;
+        }
+
+        moduleForm = new ModuleFormModel
+        {
+            ModuleId = moduleId,
+            CourseId = CourseId,
+            Name = module.Title,
+            Description = module.Description,
+            StartDate = DateOnly.FromDateTime(module.StartDate),
+            EndDate = DateOnly.FromDateTime(module.EndDate)
+        };
+
+        isModuleModalOpen = true;
+    }
+
+    private async Task HandleDeleteModule(ModuleModel module)
+    {
+        if (!Guid.TryParse(module.Id, out var moduleId)) return;
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Ta bort modulen '{module.Title}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            await ApiService.DeleteAsync($"api/modules/{moduleId}");
+            modulesActionMessage = "Modulen togs bort.";
+            modulesErrorMessage = null;
+            await RefreshCourseAndModels();
+        }
+        catch (Exception ex)
+        {
+            modulesErrorMessage = ex.Message;
+        }
+    }
+
+    private async Task HandleAddActivity(ModuleModel module)
+    {
+        modulesActionMessage = null;
+        modulesErrorMessage = null;
+        activitySubmitError = null;
+
+        if (!Guid.TryParse(module.Id, out var moduleId))
+        {
+            modulesErrorMessage = "Kunde inte läsa modulens id.";
+            return;
+        }
+
+        var (moduleStartMin, moduleEndMax) = GetModuleDateTimeBounds(module);
+        var start = DateTime.Now;
+
+        if (start < moduleStartMin)
+        {
+            start = moduleStartMin;
+        }
+        else if (start > moduleEndMax)
+        {
+            start = moduleEndMax;
+        }
+
+        var end = start.AddHours(2);
+        if (end > moduleEndMax)
+        {
+            end = moduleEndMax;
+        }
+
+        activityForm = new ActivityFormModel
+        {
+            ModuleId = moduleId,
+            ModuleName = module.Title,
+            ModuleStartDateTimeMin = FormatDateTimeLocal(moduleStartMin),
+            ModuleEndDateTimeMax = FormatDateTimeLocal(moduleEndMax),
+            StartDateTimeLocal = FormatDateTimeLocal(start),
+            EndDateTimeLocal = FormatDateTimeLocal(end)
+        };
+
+        isActivityModalOpen = true;
+    }
+
+    private async Task HandleEditActivity(ModuleActivityModel activity)
+    {
+        modulesActionMessage = null;
+        modulesErrorMessage = null;
+        activitySubmitError = null;
+
+        if (!Guid.TryParse(activity.Id, out var activityId) || !Guid.TryParse(activity.ModuleId, out var moduleId))
+        {
+            modulesErrorMessage = "Kunde inte läsa aktivitetens id.";
+            return;
+        }
+
+        var module = _courseModules.FirstOrDefault(m => m.Id == activity.ModuleId);
+        var moduleName = module?.Title ?? "Modul";
+        var (moduleStartMin, moduleEndMax) = module is null
+            ? (activity.Date, activity.Deadline ?? activity.Date.AddHours(2))
+            : GetModuleDateTimeBounds(module);
+
+        var endDate = activity.Deadline ?? activity.Date.AddHours(2);
+
+        activityForm = new ActivityFormModel
+        {
+            ActivityId = activityId,
+            ModuleId = moduleId,
+            ModuleName = moduleName,
+            ModuleStartDateTimeMin = FormatDateTimeLocal(moduleStartMin),
+            ModuleEndDateTimeMax = FormatDateTimeLocal(moduleEndMax),
+            Name = activity.Title,
+            Description = activity.Description,
+            StartDateTimeLocal = FormatDateTimeLocal(activity.Date),
+            EndDateTimeLocal = FormatDateTimeLocal(endDate),
+            TypeName = activity.Type.ToString()
+        };
+
+        isActivityModalOpen = true;
+    }
+
+    private async Task HandleDeleteActivity(ModuleActivityModel activity)
+    {
+        if (!Guid.TryParse(activity.Id, out var activityId)) return;
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Ta bort aktiviteten '{activity.Title}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            await ApiService.DeleteAsync($"api/activities/{activityId}");
+            modulesActionMessage = "Aktiviteten togs bort.";
+            modulesErrorMessage = null;
+            await RefreshCourseAndModels();
+        }
+        catch (Exception ex)
+        {
+            modulesErrorMessage = ex.Message;
+        }
+    }
+
+    private Task HandleViewSubmissions(ModuleActivityModel _)
+    {
+        NavigationManager.NavigateTo($"/courses/{CourseId}/{TabSubmissions}");
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAddDocument(ModuleActivityModel _)
+    {
+        NavigationManager.NavigateTo($"/courses/{CourseId}/{TabDocuments}");
+        return Task.CompletedTask;
+    }
+
+    private async Task CloseModuleModal()
+    {
+        if (isModuleSubmitting)
+            return;
+
+        isModuleModalOpen = false;
+        moduleSubmitError = null;
+        await Task.CompletedTask;
+    }
+
+    private async Task SaveModuleAsync()
+    {
+        moduleSubmitError = null;
+        modulesErrorMessage = null;
+        modulesActionMessage = null;
+
+        if (!moduleForm.CourseId.HasValue || !moduleForm.StartDate.HasValue || !moduleForm.EndDate.HasValue)
+        {
+            moduleSubmitError = "Fyll i kurs och datum innan du sparar.";
+            return;
+        }
+
+        if (moduleForm.StartDate.Value > moduleForm.EndDate.Value)
+        {
+            moduleSubmitError = "Startdatum kan inte vara senare än slutdatum.";
+            return;
+        }
+
+        if (moduleForm.StartDate.Value < _course.StartDate || moduleForm.EndDate.Value > _course.EndDate)
+        {
+            moduleSubmitError = $"Modulens datum måste ligga inom kursens period ({_course.StartDateStr} - {_course.EndDateStr}).";
+            return;
+        }
+
+        isModuleSubmitting = true;
+
+        try
+        {
+            if (moduleForm.IsEditMode && moduleForm.ModuleId.HasValue)
+            {
+                var updateDto = new UpdateModuleDto(
+                    moduleForm.Name.Trim(),
+                    moduleForm.Description.Trim(),
+                    moduleForm.StartDate.Value,
+                    moduleForm.EndDate.Value);
+
+                await ApiService.PutAsync($"api/modules/{moduleForm.ModuleId.Value}", updateDto);
+                modulesActionMessage = "Modulen uppdaterades.";
+            }
+            else
+            {
+                var createDto = new CreateModuleDto(
+                    moduleForm.Name.Trim(),
+                    moduleForm.Description.Trim(),
+                    moduleForm.StartDate.Value,
+                    moduleForm.EndDate.Value,
+                    CourseId);
+
+                await ApiService.PostAsync<CreateModuleDto, ModuleDto>("api/modules", createDto);
+                modulesActionMessage = "Modulen skapades.";
+            }
+
+            isModuleModalOpen = false;
+            await RefreshCourseAndModels();
+        }
+        catch (HttpRequestException ex)
+        {
+            moduleSubmitError = ex.Message;
+        }
+        catch (Exception)
+        {
+            moduleSubmitError = "Ett oväntat fel inträffade när modulen skulle sparas.";
+        }
+        finally
+        {
+            isModuleSubmitting = false;
+        }
+    }
+
+    private async Task CloseActivityModal()
+    {
+        if (isActivitySubmitting)
+            return;
+
+        isActivityModalOpen = false;
+        activitySubmitError = null;
+        await Task.CompletedTask;
+    }
+
+    private async Task SaveActivityAsync()
+    {
+        activitySubmitError = null;
+        modulesErrorMessage = null;
+        modulesActionMessage = null;
+
+        if (!DateTime.TryParse(activityForm.StartDateTimeLocal, out var startDate) ||
+            !DateTime.TryParse(activityForm.EndDateTimeLocal, out var endDate))
+        {
+            activitySubmitError = "Felaktigt datumformat för start eller slut.";
+            return;
+        }
+
+        if (startDate > endDate)
+        {
+            activitySubmitError = "Startdatum kan inte vara senare än slutdatum.";
+            return;
+        }
+
+        var selectedModule = _courseModules.FirstOrDefault(module =>
+            Guid.TryParse(module.Id, out var moduleId) &&
+            moduleId == activityForm.ModuleId);
+
+        if (selectedModule is null)
+        {
+            activitySubmitError = "Kunde inte hitta den valda modulen.";
+            return;
+        }
+
+        var validationError = ValidateActivitySchedule(selectedModule, startDate, endDate);
+        if (validationError is not null)
+        {
+            activitySubmitError = validationError;
+            return;
+        }
+
+        isActivitySubmitting = true;
+
+        try
+        {
+            if (activityForm.IsEditMode && activityForm.ActivityId.HasValue)
+            {
+                var updateDto = new UpdateActivityDto(
+                    activityForm.Name.Trim(),
+                    activityForm.Description.Trim(),
+                    startDate,
+                    endDate,
+                    new ActivityTypeDto(activityForm.TypeName));
+
+                await ApiService.PutAsync($"api/activities/{activityForm.ActivityId.Value}", updateDto);
+                modulesActionMessage = "Aktiviteten uppdaterades.";
+            }
+            else
+            {
+                var createDto = new CreateActivityDto(
+                    activityForm.Name.Trim(),
+                    activityForm.Description.Trim(),
+                    startDate,
+                    endDate,
+                    new ActivityTypeDto(activityForm.TypeName),
+                    activityForm.ModuleId);
+
+                await ApiService.PostAsync<CreateActivityDto, ActivityDto>("api/activities", createDto);
+                modulesActionMessage = "Aktiviteten skapades.";
+            }
+
+            isActivityModalOpen = false;
+            await RefreshCourseAndModels();
+        }
+        catch (HttpRequestException ex)
+        {
+            activitySubmitError = ex.Message;
+        }
+        catch (Exception)
+        {
+            activitySubmitError = "Ett oväntat fel inträffade när aktiviteten skulle sparas.";
+        }
+        finally
+        {
+            isActivitySubmitting = false;
+        }
+    }
+
+    private string? ValidateActivitySchedule(ModuleModel module, DateTime startDate, DateTime endDate)
+    {
+        if (startDate.Date < module.StartDate.Date || endDate.Date > module.EndDate.Date)
+        {
+            return $"Aktivitetens datum måste ligga inom modulens datum ({module.StartDate:yyyy-MM-dd} - {module.EndDate:yyyy-MM-dd}).";
+        }
+
+        var currentActivityId = activityForm.IsEditMode && activityForm.ActivityId.HasValue
+            ? activityForm.ActivityId.Value.ToString()
+            : null;
+
+        var hasOverlap = module.Activities.Any(activity =>
+            activity.Id != currentActivityId &&
+            startDate <= (activity.Deadline ?? activity.Date) &&
+            endDate >= activity.Date);
+
+        if (hasOverlap)
+        {
+            return "Aktivitetens datum överlappar med en annan aktivitet i den här modulen. En aktivitet kan inte sluta samtidigt som en annan börjar.";
+        }
+
+        return null;
+    }
+
+    private static (DateTime Min, DateTime Max) GetModuleDateTimeBounds(ModuleModel module)
+    {
+        return (module.StartDate.Date, module.EndDate.Date.AddDays(1).AddMinutes(-1));
+    }
+
+    private static string FormatDateTimeLocal(DateTime value)
+    {
+        return value.ToString("yyyy-MM-ddTHH:mm");
     }
 }

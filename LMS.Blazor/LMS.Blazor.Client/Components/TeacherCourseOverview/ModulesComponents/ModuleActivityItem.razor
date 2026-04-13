@@ -2,20 +2,28 @@
     <div class="d-flex justify-content-between align-items-start gap-3">
         <div class="min-w-0">
             <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
-                <span class="@GetBadgeClass()">@GetTypeLabel()</span>
+                <span class="badge rounded-pill text-primary bg-primary-subtle">@Activity.Type</span>
                 <span class="fw-semibold fs-5">@Activity.Title</span>
             </div>
 
             <div class="text-secondary mb-3">
                 <i class="bi bi-calendar3 me-1"></i>
-                @Activity.Date.ToString("yyyy-MM-dd")
+                @Activity.Date.ToString("yyyy-MM-dd 'kl.' HH:mm")
 
                 @if (Activity.Deadline is not null)
                 {
-                    <span class="ms-2 text-warning-emphasis">
-                        <i class="bi bi-clock me-1"></i>
-                        Deadline: @Activity.Deadline.Value.ToString("yyyy-MM-dd")
-                    </span>
+                    @if (Activity.Type == "Inlämning")
+                    {
+                        <span class="ms-3 text-warning-emphasis">
+                            <i class="bi bi-clock me-1"></i>
+                            <span>Deadline: @Activity.Deadline.Value.ToString("yyyy-MM-dd 'kl.' HH:mm")</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="mx-2">-</span>
+                        <span>@Activity.Deadline.Value.ToString("yyyy-MM-dd 'kl.' HH:mm")</span>
+                    }
                 }
             </div>
         </div>
@@ -23,17 +31,18 @@
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
             @if (Activity.ShowSubmissionButton)
             {
-                <button class="btn btn-success-subtle text-success rounded-3">
+                <button class="btn btn-success-subtle text-success rounded-3"
+                        @onclick="() => OnViewSubmissions.InvokeAsync(Activity)">
                     <i class="bi bi-eye me-2"></i>
                     Se inlämningar
                 </button>
             }
 
-            <button class="btn btn-link text-primary p-0">
+            <button class="btn btn-link text-primary p-0" @onclick="() => OnEdit.InvokeAsync(Activity)">
                 <i class="bi bi-pencil-square fs-5"></i>
             </button>
 
-            <button class="btn btn-link text-danger p-0">
+            <button class="btn btn-link text-danger p-0" @onclick="() => OnDelete.InvokeAsync(Activity)">
                 <i class="bi bi-trash fs-5"></i>
             </button>
         </div>
@@ -53,7 +62,8 @@
         </div>
     }
 
-    <button class="btn btn-link text-decoration-none px-0 mt-2">
+    <button class="btn btn-link text-decoration-none px-0 mt-2"
+            @onclick="() => OnAddDocument.InvokeAsync(Activity)">
         <i class="bi bi-plus-circle me-1"></i>
         Lägg till dokument
     </button>
@@ -61,20 +71,8 @@
 
 @code {
     [Parameter, EditorRequired] public ModuleActivityModel Activity { get; set; } = new();
-
-    private string GetTypeLabel() => Activity.Type switch
-    {
-        ModuleActivityType.Lecture => "Föreläsning",
-        ModuleActivityType.Exercise => "Övning",
-        ModuleActivityType.Assignment => "Inlämning",
-        _ => "Aktivitet"
-    };
-
-    private string GetBadgeClass() => Activity.Type switch
-    {
-        ModuleActivityType.Lecture => "badge rounded-pill text-primary bg-primary-subtle",
-        ModuleActivityType.Exercise => "badge rounded-pill text-primary bg-primary-subtle",
-        ModuleActivityType.Assignment => "badge rounded-pill text-primary bg-primary-subtle",
-        _ => "badge rounded-pill text-secondary bg-light"
-    };
+    [Parameter] public EventCallback<ModuleActivityModel> OnEdit { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnDelete { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnViewSubmissions { get; set; }
+    [Parameter] public EventCallback<ModuleActivityModel> OnAddDocument { get; set; }
 }
