@@ -41,7 +41,9 @@
                   OnRemoveModule="RemoveModule"
                   OnCreateCourse="SubmitCourse"
                   IsLoading="_isLoading"
-                  OverlapErrors="_overlapErrors" />
+                  OverlapErrors="_overlapErrors"
+                  EarliestStartDate="@_earliestStart"
+                  LatestEndDate="@_latestEnd" />
 
 @code {
     [Parameter] public string? CourseId { get; set; }
@@ -52,6 +54,9 @@
     private string? _successMessage;
     private string? _errorMessage;
     private bool _includeReloadButton = false;
+
+    private string? _earliestStart = null;
+    private string? _latestEnd = null;
 
     protected async override Task OnInitializedAsync()
     {
@@ -80,6 +85,11 @@
         if (courseDto is null) {
             InitCourse();
             return;
+        }
+
+        if (courseDto.Modules.Count > 0) {
+            _earliestStart = courseDto.Modules.OrderBy(m => m.StartDate).First().StartDateStr;
+            _latestEnd = courseDto.Modules.OrderBy(m => m.StartDate).Last().EndDateStr;
         }
 
         _course = new() {
