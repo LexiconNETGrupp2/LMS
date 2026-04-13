@@ -12,10 +12,9 @@ namespace LMS.Presentation.Controllers;
 [Route("api/modules")]
 [ApiController]
 [Authorize]
-public class ModulesController(IServiceManager serviceManager, ControllerHelpers controllerHelpers) : ControllerBase
+public class ModulesController(IServiceManager serviceManager) : ControllerBase
 {
     private readonly IServiceManager _serviceManager = serviceManager;
-    private readonly ControllerHelpers _controllerHelpers = controllerHelpers;
 
     private IModuleService moduleService => _serviceManager.ModuleService;
 
