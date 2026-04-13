@@ -100,10 +100,22 @@ public class CourseService : ICourseService
         }
         if (updateCourseDto.StartDate is not null)
         {
+            if (course.Modules.Count > 0) {
+                Module module = course.Modules.OrderBy(m => m.StartDate).First();
+                DateOnly earliestDate = module.StartDate;
+                if (updateCourseDto.StartDate > earliestDate)
+                    throw new BadRequestException($"Den här kursen kan börja senast {earliestDate:yyyy-MM-dd} så att modulen {module.Name} inte startar innan kursen.");
+            }
             course.StartDate = (DateOnly)updateCourseDto.StartDate;
         }
         if (updateCourseDto.EndDate is not null)
         {
+            if (course.Modules.Count > 0) {
+                Module module = course.Modules.OrderBy(m => m.EndDate).Last();
+                DateOnly latestDate = module.EndDate;
+                if (updateCourseDto.EndDate < latestDate)
+                    throw new BadRequestException($"Den här kursen kan sluta tidigast {latestDate:yyyy-MM-dd} så att modulen {module.Name} inte slutar efter kursen.");
+            }
             course.EndDate = (DateOnly)updateCourseDto.EndDate;
         }
 
