@@ -1,3 +1,4 @@
+using LMS.Shared.Constants;
 using LMS.Shared.DTOs.ModuleDtos;
 using LMS.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
@@ -11,12 +12,15 @@ namespace LMS.Presentation.Controllers;
 [Route("api/modules")]
 [ApiController]
 [Authorize]
-public class ModulesController(IServiceManager serviceManager) : ControllerBase
+public class ModulesController(IServiceManager serviceManager, ControllerHelpers controllerHelpers) : ControllerBase
 {
     private readonly IServiceManager _serviceManager = serviceManager;
+    private readonly ControllerHelpers _controllerHelpers = controllerHelpers;
+
     private IModuleService moduleService => _serviceManager.ModuleService;
 
     [HttpGet]
+    [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Get all modules",
         Description = "Retrieves all modules in the system."
@@ -54,7 +58,7 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Create a new module",
         Description = "Creates a new module for the specified course. Requires Teacher role."
@@ -69,7 +73,7 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Update a module",
         Description = "Updates an existing module. Requires Teacher role."
@@ -83,7 +87,7 @@ public class ModulesController(IServiceManager serviceManager) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
         Summary = "Delete a module",
         Description = "Deletes an existing module. Requires Teacher role."

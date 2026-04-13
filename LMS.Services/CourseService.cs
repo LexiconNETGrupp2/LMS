@@ -65,16 +65,20 @@ public class CourseService : ICourseService
         
         var userIds = course.Students.Select(u => u.Id);
         if (currentStudentId is not null && !userIds.Contains(currentStudentId))
-            throw new UserUnauthorizedException();
+            throw new UserForbiddenException("You're not allowed to access this course");
 
         var courseDto = _mapper.Map<CourseDto>(course);
         return courseDto;
     }
 
-    public async Task<CourseDto?> GetCourseByUserId(Guid id, CancellationToken token)
+    public async Task<CourseDto?> GetCourseByUserId(Guid id, string? currentStudentId, CancellationToken token)
     {
         var course = await _uow.Courses.GetCourseFromUserId(id, trackChanges: false, token)
             ?? throw new CourseNotFoundException(id);
+
+        var userIds = course.Students.Select(u => u.Id);
+        if (currentStudentId is not null && !userIds.Contains(currentStudentId))
+            throw new UserForbiddenException("You're not allowed to access this course");
 
         var courseDto = _mapper.Map<CourseDto>(course);
         return courseDto;
