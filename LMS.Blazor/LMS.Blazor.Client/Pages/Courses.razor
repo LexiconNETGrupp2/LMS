@@ -40,7 +40,8 @@
                 <input type="search"
                        class="form-control border-start-0"
                        placeholder="Sök efter namn eller e-post..."
-                       @bind-value="Search"/>
+                       @bind:after="LoadCoursesAsync"
+                       @bind="Search" />
                 <button @onclick="LoadCoursesAsync" class="btn btn-outline-primary border-start-0" style="z-index: 2">
                     Sök
                 </button>
@@ -235,7 +236,7 @@
     [SupplyParameterFromQuery] public int Page { get; set; } = PagedQuery.MinPage;
     [SupplyParameterFromQuery] public DateOnly? AfterDate { get; set; }
     [SupplyParameterFromQuery] public DateOnly? BeforeDate { get; set; }
-    [SupplyParameterFromQuery] public string Search { get; set; } = string.Empty;
+    [SupplyParameterFromQuery] public string? Search { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
