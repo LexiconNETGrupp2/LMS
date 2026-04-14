@@ -14,16 +14,20 @@ Laddar...
         // Get UserId
         var authState = await _authenticationStateTask;
         var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId is null)
+        if (userId is null) {
             GoToDashboard();
+            return;
+        }
 
         // Get CourseId
         var uri = $"api/courses/user/{userId}";
         var result = await ApiService.GetAsync<CourseDto>(uri);
-        if (result is null)
+        if (result is null) {
             GoToDashboard();
+            return;
+        }
 
-        NavigationManager.NavigateTo($"/courses/{result!.Id}");
+        NavigationManager.NavigateTo($"/courses/{result.Id}");
     }
 
     private void GoToDashboard()
