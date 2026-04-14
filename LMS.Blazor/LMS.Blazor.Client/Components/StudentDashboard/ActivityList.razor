@@ -1,0 +1,73 @@
+﻿@using System.Globalization
+@inject IApiService ApiService
+
+<div class="list-group list-group-flush">
+    @foreach (var a in _activities.Where(x => x.ModuleId == Module.Id).OrderBy(x => x.StartDate))
+    {
+
+        <div class="list-group-item px-0 py-2 border-top">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="badge rounded-pill me-2" style="@GetBadgeStyle(a.Type.Name)">@a.Type.Name</span>
+                    <div class="fw-medium">@a.Name</div>
+                </div>
+
+                <div class="text-end small d-flex align-items-center">
+                    <i class="bi bi-file-earmark-text text-primary me-1" aria-hidden="true"></i>
+                    <div class="text-primary me-3">Dokument</div>
+                    @if (a.Type.Name == "Inlämning")
+                    {
+                        <div class="small text-warning">Ej inlämnad</div>
+                    }
+                </div>
+            </div>
+
+            <div class="text-muted small mt-2 d-flex align-items-center">
+                <i class="bi bi-calendar3 text-muted me-2" aria-hidden="true"></i>
+                <div>@a.StartDate.ToString("yyyy-MM-dd")</div>
+
+                <div class="mx-3"> &middot; </div>
+
+                <i class="bi bi-clock text-muted me-2" aria-hidden="true"></i>
+                <div>@a.StartDate.ToString("HH:mm", CultureInfo.InvariantCulture) - @a.EndDate.ToString("HH:mm", CultureInfo.InvariantCulture)</div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ActivityDto> _activities = [];
+    private bool _isExpanded = false;
+
+    [Parameter, EditorRequired]
+    public CourseModuleDto Module { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _activities = await GetActivities();
+
+        DateTime upperLimit = DateTime.Today.AddDays(DayOfWeek.Saturday - DateTime.Today.DayOfWeek + 1);
+        DateTime lowerLimit = DateTime.Today.AddDays(DayOfWeek.Monday - DateTime.Today.DayOfWeek);
+
+        _activities = _activities.Where(a => (a.StartDate > lowerLimit) && (a.EndDate < upperLimit))
+        .ToList();
+    }
+
+    private async Task<List<ActivityDto>> GetActivities()
+    {
+        var uri = $"api/activities/module/{Module.Id}";
+        var result = await ApiService.GetAsync<List<ActivityDto>>(uri);
+        if (result == null)
+            return [];
+        return result;
+    }
+
+    private void ToggleExpandModule()
+    {
+        _isExpanded = !_isExpanded;
+    }
+
+    private string GetBadgeStyle(string typeName) =>
+        "background-color:#eef6ff;color:#0d6efd;font-size:0.75rem;padding:.25rem .5rem;";
+
+}

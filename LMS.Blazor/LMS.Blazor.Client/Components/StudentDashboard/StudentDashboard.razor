@@ -1,0 +1,51 @@
+﻿@using System.Security.Claims
+@inject IApiService ApiService
+@attribute [Authorize]
+
+<div class="container py-3">
+    <div class="row mb-3">
+        <div class="col">
+            <h5 class="mb-1">Välkommen tillbaka!</h5>
+            <small class="text-muted">Veckans aktiviteter</small>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card mb-0">
+                <div class="card-body p-2">
+                    <ModuleList Course="_course" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> _authenticationStateTask { get; set; } = default!;
+    private CourseDto _course = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await _authenticationStateTask;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return;
+
+        _course = await GetCourse(userId);
+
+        _course.Modules = _course.Modules.Where(a => (a.StartDate < DateOnly.FromDateTime(DateTime.Today)) && (a.EndDate > DateOnly.FromDateTime(DateTime.Today)))
+        .ToList();
+    }
+
+    private async Task<CourseDto> GetCourse(string userId)
+    {
+        var uri = $"api/courses/user/{userId}";
+        var result = await ApiService.GetAsync<CourseDto>(uri);
+        if (result == null)
+            return new();
+        ArgumentNullException.ThrowIfNull(result);
+        return result;
+    }
+}
