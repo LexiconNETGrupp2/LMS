@@ -1,4 +1,6 @@
-﻿@attribute [Authorize]
+﻿@using System.Security.Claims
+@inject IApiService ApiService
+@attribute [Authorize]
 
 <div class="container py-3">
     <div class="row mb-3">
@@ -12,7 +14,7 @@
         <div class="col-12">
             <div class="card mb-0">
                 <div class="card-body p-2">
-                    <ActivityList Activities="activities" ModuleId="moduleId" />
+                    <ModuleList Activities="activities" ModuleId="moduleId" Course="_course" />
                 </div>
             </div>
         </div>
@@ -40,6 +42,33 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> _authenticationStateTask { get; set; } = default!;
+    private CourseDto _course = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await _authenticationStateTask;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return;
+
+        _course = await GetCourse(userId);
+    }
+
+    private async Task<CourseDto> GetCourse(string userId)
+    {
+        var uri = $"api/courses/user/{userId}";
+        var result = await ApiService.GetAsync<CourseDto>(uri);
+        if (result == null)
+            return new();
+        ArgumentNullException.ThrowIfNull(result);
+        return result;
+    }
+
+
+
+
     private const string guidStr = "11111111-2222-3333-4444-555555555555";
     private readonly Guid moduleId = Guid.Parse(guidStr); // example module id
 
