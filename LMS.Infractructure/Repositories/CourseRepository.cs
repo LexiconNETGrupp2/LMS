@@ -51,12 +51,16 @@ public class CourseRepository(ApplicationDbContext context)
     public async Task<Course?> GetCourseById(Guid id, bool trackChanges, CancellationToken token, bool includeAllData = true)
     {
         var query = FindAll(trackChanges: trackChanges);
+                    
         if (includeAllData) {
             query = query.Include(c => c.Modules)
                             .ThenInclude(m => m.Activities)
                                 .ThenInclude(a => a.Type)
                           .Include(c => c.Students);
+        } else {
+            query = query.Include(c => c.Modules);
         }
+
         return await query.FirstOrDefaultAsync(c => c.Id == id, token);
     }
 

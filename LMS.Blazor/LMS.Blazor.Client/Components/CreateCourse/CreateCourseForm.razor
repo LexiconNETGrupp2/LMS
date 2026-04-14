@@ -34,6 +34,10 @@
                            id="course-start-date"
                            max="@Course.EndDate" />
                 <ValidationMessage For="() => Course.StartDate" />
+                @if (EarliestStartDate is not null)
+                {
+                    <span class="text-danger">Måste vara @EarliestStartDate eller tidigare</span>
+                }
             </div>
             <div class="col-6">
                 <label class="form-label" for="course-end-date">Slutdatum</label>
@@ -42,6 +46,10 @@
                            id="course-end-date"
                            min="@Course.StartDate" />
                 <ValidationMessage For="() => Course.EndDate" />
+                @if (LatestEndDate is not null)
+                {
+                    <span class="text-danger">Måste vara @LatestEndDate eller senare</span>
+                }
             </div>
         </div>
 
@@ -93,6 +101,12 @@
 
     [Parameter]
     public bool IsEditing { get; set; }
+
+    [Parameter]
+    public string EarliestStartDate { get; set; } = string.Empty;
+
+    [Parameter]
+    public string LatestEndDate { get; set; } = string.Empty;
 
     [Parameter]
     public EventCallback<CourseFormModel> OnCreateCourse { get; set; }
