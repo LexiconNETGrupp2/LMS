@@ -1,4 +1,4 @@
-﻿@page "/create-course/{CourseId?}"
+﻿@page "/create-course/{CourseId:guid?}"
 @inject IApiService ApiService
 @inject NavigationManager NavigationManager
 
@@ -46,7 +46,7 @@
                   LatestEndDate="@_latestEnd" />
 
 @code {
-    [Parameter] public string? CourseId { get; set; }
+    [Parameter] public Guid? CourseId { get; set; }
     private bool _isEdit = false;
     private CourseFormModel _course = new();
     private List<string> _overlapErrors = [];
@@ -76,7 +76,7 @@
 
     private async Task GetCourse()
     {
-        if (!Guid.TryParse(CourseId, out _)) {
+        if (CourseId is null) {
             InitCourse();
             return;
         }
@@ -130,18 +130,17 @@
         }
 
         _isLoading = true;
+
         try {
             if (_isEdit) {
                 await UpdateCourse();
-                _successMessage = $"Kurs {_course.Name} redigerad";
-                InitCourse();
-                CourseId = null;
-                NavigationManager.NavigateTo("/create-course");
+                _successMessage = "Kursen har uppdaterats!";
             } else {
-                var createdId = await CreateNewCourse();
-                NavigationManager.NavigateTo($"/courses/{createdId}");
+                CourseId = await CreateNewCourse();
+                _successMessage = "Kursen har skapats!";
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (e.Message == "405 MethodNotAllowed") {
                 _errorMessage = "Ett fel har uppstått. Snälla ladda om sidan och försök igen.";
                 _includeReloadButton = true;
