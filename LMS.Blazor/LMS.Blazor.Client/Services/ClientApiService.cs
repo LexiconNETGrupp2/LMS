@@ -74,9 +74,8 @@ public class ClientApiService : IApiService
 
     private async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken token)
     {
-        if (response.StatusCode == HttpStatusCode.Unauthorized ||
-            response.StatusCode == HttpStatusCode.Forbidden) {
-            //_navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        if (response.StatusCode == HttpStatusCode.Unauthorized) {
+            _navigationManager.NavigateTo("/Account/Login", forceLoad: true);
         }
 
         if (response.IsSuccessStatusCode)
