@@ -163,7 +163,7 @@ public class CourseService : ICourseService
 
     public async Task DeleteCourse(Guid id, CancellationToken token)
     {
-        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
+        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: true, token)
             ?? throw new CourseNotFoundException(id);
 
         try
