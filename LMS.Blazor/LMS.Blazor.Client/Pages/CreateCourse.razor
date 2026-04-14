@@ -129,17 +129,19 @@
             if (_overlapErrors.Count > 0) return;
         }
 
-        bool isSuccess = false;
         _isLoading = true;
         try {
             if (_isEdit) {
                 await UpdateCourse();
+                _successMessage = $"Kurs {_course.Name} redigerad";
+                InitCourse();
+                CourseId = null;
+                NavigationManager.NavigateTo("/create-course");
             } else {
-                await CreateNewCourse();
+                var createdId = await CreateNewCourse();
+                NavigationManager.NavigateTo($"/courses/{createdId}");
             }
-            isSuccess = true;
         } catch (Exception e) {
-            isSuccess = false;
             if (e.Message == "405 MethodNotAllowed") {
                 _errorMessage = "Ett fel har uppstått. Snälla ladda om sidan och försök igen.";
                 _includeReloadButton = true;
@@ -150,15 +152,9 @@
         } finally {
             _isLoading = false;
         }
-        if (isSuccess) {
-            _successMessage = _isEdit ? $"Kurs {_course.Name} redigerad" : $"Kurs {_course.Name} sparad";
-            InitCourse();
-            CourseId = null;
-            NavigationManager.NavigateTo("/create-course");
-        }
     }
 
-    private async Task CreateNewCourse()
+    private async Task<Guid> CreateNewCourse()
     {
         CreateCourseDto createCourseDto = new() {
             Name = _course.Name,
@@ -173,7 +169,8 @@
                 CourseId: (Guid)m.CourseId!
             )).ToList()
         };
-        await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
+        var result = await ApiService.PostAsync<CreateCourseDto, CourseDto>("api/courses", createCourseDto);
+        return result!.Id;
     }
 
     private async Task UpdateCourse()

@@ -171,7 +171,7 @@ public class CoursesControllerTest
         var result = await controller.Create(createCourseDto, ct);
 
         // Assert
-        Assert.IsType<CreatedResult>(result);
+        Assert.IsType<CreatedAtActionResult>(result);
         courseServiceMock.Verify(s => s.CreateCourse(createCourseDto, ct), Times.Once);
     }
 
