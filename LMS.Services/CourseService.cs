@@ -31,8 +31,19 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto> CreateCourse(CreateCourseDto createCourseDto, CancellationToken token)
     {
+        if (createCourseDto.StartDate > createCourseDto.EndDate)
+            throw new BadRequestException("Start- och slutdatum måste får inte överlappa.");
+
         Course course = _mapper.Map<Course>(createCourseDto);
         foreach (var module in course.Modules) {
+            if (module.StartDate < createCourseDto.StartDate ||
+                module.StartDate > createCourseDto.EndDate ||
+                module.EndDate > createCourseDto.EndDate ||
+                module.EndDate < createCourseDto.StartDate)
+            {
+                throw new BadRequestException($"Modulen '{module.Name}' start- och slutdatum får inte överlappa kursens start- och slutdatum.");
+            }
+
             module.Course = course;
         }
         try {
@@ -43,7 +54,7 @@ public class CourseService : ICourseService
             _logger.LogWarning("Error when adding course {CourseId} to database: {ExMessage}", course.Id, ex.Message);
             throw new BadRequestException(ex.Message);
         }
-    }    
+    }
 
     public async Task<PagedResult<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
