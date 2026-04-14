@@ -3,7 +3,6 @@ using Domain.Contracts.Queries;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
-using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using LMS.Shared.Pagination;
 using Microsoft.Extensions.Logging;
@@ -49,12 +48,15 @@ public class CourseService : ICourseService
     public async Task<PagedResult<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
         var result = await _uow.Courses.GetAllCourses(param, token);
+        var courseDtos = _mapper.Map<List<CourseDto>>(result.Items);
+        await FillParticipantCounts(courseDtos, token);
+
         return new PagedResult<CourseDto>
         {
             Page = result.Page,
             PageSize = result.PageSize,
             TotalItems = result.TotalItems,
-            Items = _mapper.Map<List<CourseDto>>(result.Items),
+            Items = courseDtos,
         };
     }
 
@@ -68,6 +70,7 @@ public class CourseService : ICourseService
             throw new UserForbiddenException("You're not allowed to access this course");
 
         var courseDto = _mapper.Map<CourseDto>(course);
+        await FillParticipantCounts([courseDto], token);
         return courseDto;
     }
 
@@ -81,6 +84,7 @@ public class CourseService : ICourseService
             throw new UserForbiddenException("You're not allowed to access this course");
 
         var courseDto = _mapper.Map<CourseDto>(course);
+        await FillParticipantCounts([courseDto], token);
         return courseDto;
     }
 
@@ -155,5 +159,21 @@ public class CourseService : ICourseService
     public async Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token)
     {
         return await _participantQuery.GetStudentsByCourseId(courseId, token);
+    }
+
+    private async Task FillParticipantCounts(IReadOnlyCollection<CourseDto> courseDtos, CancellationToken token)
+    {
+        var countsByCourseId = await _participantQuery.GetCourseParticipantCountsByCourseIds(
+            courseDtos.Select(course => course.Id).ToArray(),
+            token);
+
+        foreach (var courseDto in courseDtos)
+        {
+            if (!countsByCourseId.TryGetValue(courseDto.Id, out var participantCounts))
+                continue;
+
+            courseDto.NumberOfTeachers = participantCounts.NumberOfTeachers;
+            courseDto.NumberOfStudents = participantCounts.NumberOfStudents;
+        }
     }
 }

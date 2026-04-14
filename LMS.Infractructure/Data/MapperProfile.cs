@@ -14,7 +14,10 @@ public class MapperProfile : Profile
     {
         CreateMap<UserRegistrationDto, ApplicationUser>();
         CreateMap<UserDto, ApplicationUser>().ReverseMap();
-        CreateMap<Course, CourseDto>().ForMember(dest => dest.NumberOfStudents, opt => opt.MapFrom(c => c.Students.Count)).ReverseMap();
+        CreateMap<Course, CourseDto>()
+            .ForMember(dest => dest.NumberOfTeachers, opt => opt.Ignore())
+            .ForMember(dest => dest.NumberOfStudents, opt => opt.Ignore())
+            .ReverseMap();
         CreateMap<CreateCourseDto, Course>();
         CreateMap<CreateModuleDto, Module>();
         CreateMap<CourseModuleDto, Module>().ReverseMap();
