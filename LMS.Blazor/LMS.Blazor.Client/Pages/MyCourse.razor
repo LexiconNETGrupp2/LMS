@@ -2,6 +2,8 @@
 @using LMS.Blazor.Client.Components.CourseOverview
 @attribute [Authorize]
 
+<PageTitle>Min kurs</PageTitle>
+
 <AuthorizeView Roles="@RolesNames.Teacher">
     <Authorized>
         <TeacherMyCourse />
