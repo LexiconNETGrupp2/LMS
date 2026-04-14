@@ -152,7 +152,7 @@
     private async Task LoadCourses()
     {
         try {
-            var response = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses");
+            var response = await ApiService.GetAsync<PagedResult<CourseDto>>("api/courses?pageSize=100");
             Courses = response?.Items ?? [];
         } catch {
             _pageErrors.Add("Kunde inte ladda kurser");
