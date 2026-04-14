@@ -208,7 +208,8 @@ else
         {
             Modules = course.Modules?.Count ?? 0,
             Activities = course.Modules?.Sum(m => m.Activities?.Count ?? 0) ?? 0,
-            Students = course.NumberOfStudents
+            Students = course.NumberOfStudents,
+            Teachers = course.NumberOfTeachers
         };
     }
 

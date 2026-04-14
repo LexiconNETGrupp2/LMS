@@ -43,7 +43,6 @@ public class CourseRepository(ApplicationDbContext context)
                         .Include(c => c.Modules)
                             .ThenInclude(m => m.Activities)
                                 .ThenInclude(a => a.Type)
-                        .Include(c => c.Students)
                         .OrderBy(c => c.StartDate)
                         .ToPagedResultAsync(param, token);
     }

@@ -16,6 +16,41 @@ public class ParticipantQuery : IParticipantQuery
         _context = context;
     }
 
+    public async Task<IReadOnlyDictionary<Guid, CourseParticipantCounts>> GetCourseParticipantCountsByCourseIds(
+        IReadOnlyCollection<Guid> courseIds,
+        CancellationToken token)
+    {
+        if (courseIds.Count == 0)
+            return new Dictionary<Guid, CourseParticipantCounts>();
+
+        var counts = await (
+            from user in _context.Users.AsNoTracking()
+
+            join userRole in _context.UserRoles.AsNoTracking()
+                on user.Id equals userRole.UserId
+
+            join role in _context.Roles.AsNoTracking()
+                on userRole.RoleId equals role.Id
+
+            where user.CourseId != null
+                && courseIds.Contains(user.CourseId.Value)
+                && (role.Name == RolesNames.Student || role.Name == RolesNames.Teacher)
+
+            group role by user.CourseId!.Value into roleGroup
+
+            select new
+            {
+                CourseId = roleGroup.Key,
+                NumberOfTeachers = roleGroup.Count(role => role.Name == RolesNames.Teacher),
+                NumberOfStudents = roleGroup.Count(role => role.Name == RolesNames.Student)
+            }
+        ).ToListAsync(token);
+
+        return counts.ToDictionary(
+            count => count.CourseId,
+            count => new CourseParticipantCounts(count.NumberOfTeachers, count.NumberOfStudents));
+    }
+
     public async Task<CourseParticipantsDto?> GetCourseParticipantsByUserId(Guid userId, CancellationToken token)
     {
         var userIdStr = userId.ToString();
