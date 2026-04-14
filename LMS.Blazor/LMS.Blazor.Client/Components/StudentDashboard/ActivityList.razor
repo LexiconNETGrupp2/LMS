@@ -45,6 +45,12 @@
     protected override async Task OnInitializedAsync()
     {
         _activities = await GetActivities();
+
+        DateTime upperLimit = DateTime.Today.AddDays(DayOfWeek.Saturday - DateTime.Today.DayOfWeek + 1);
+        DateTime lowerLimit = DateTime.Today.AddDays(DayOfWeek.Monday - DateTime.Today.DayOfWeek);
+
+        _activities = _activities.Where(a => (a.StartDate > lowerLimit) && (a.EndDate < upperLimit))
+        .ToList();
     }
 
     private async Task<List<ActivityDto>> GetActivities()

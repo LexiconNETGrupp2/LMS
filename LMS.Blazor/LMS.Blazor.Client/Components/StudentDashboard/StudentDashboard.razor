@@ -34,6 +34,9 @@
             return;
 
         _course = await GetCourse(userId);
+
+        _course.Modules = _course.Modules.Where(a => (a.StartDate < DateOnly.FromDateTime(DateTime.Today)) && (a.EndDate > DateOnly.FromDateTime(DateTime.Today)))
+        .ToList();
     }
 
     private async Task<CourseDto> GetCourse(string userId)
