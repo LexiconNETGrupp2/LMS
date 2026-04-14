@@ -63,3 +63,28 @@ Authorization: Bearer {{token}}
 GET {{server_url}}/api/courses?page=1&pageSize=10
 Accept: application/json
 Authorization: Bearer {{token}}
+
+### create course
+POST {{server_url}}/api/courses
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{"name":"asd",
+  "description":"asd",
+  "startDate":"2026-03-01",
+  "endDate":"2026-04-30",
+  "modules":[
+    {
+      "name":"asd",
+      "description":"asd",
+      "startDate":"2026-04-01",
+      "endDate":"2026-04-03",
+      "courseId":"564dff0b-e4e5-42c3-ac92-0cb0dfc4bd18"},
+    {
+      "name":"dsa","description":"dsa",
+      "startDate":"2026-03-29",
+      "endDate":"2026-04-30",
+      "courseId":"564dff0b-e4e5-42c3-ac92-0cb0dfc4bd18"}
+  ]
+}

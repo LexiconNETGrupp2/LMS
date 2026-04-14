@@ -1,4 +1,4 @@
-﻿@page "/create-course/{CourseId?}"
+﻿@page "/create-course/{CourseId:guid?}"
 @inject IApiService ApiService
 @inject NavigationManager NavigationManager
 
@@ -19,17 +19,15 @@
     </div>
 }
 
-@if (_errorMessage is not null) {
+@if (_includeReloadButton) {
     <div class="container">
         <div class="alert alert-danger alert-dismissible" role="alert">
-            <span>@_errorMessage</span>
-            @if (_includeReloadButton) {
-                <button type="button" 
+            <span>Något gick fel. Ladda om sidan.</span>
+                <button type="button"
                         class="btn btn-link" 
                         @onclick="() => NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true)">
                         Ladda om
                 </button>
-            }
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     </div>
@@ -46,13 +44,12 @@
                   LatestEndDate="@_latestEnd" />
 
 @code {
-    [Parameter] public string? CourseId { get; set; }
+    [Parameter] public Guid? CourseId { get; set; }
     private bool _isEdit = false;
     private CourseFormModel _course = new();
     private List<string> _overlapErrors = [];
     private bool _isLoading = false;
     private string? _successMessage;
-    private string? _errorMessage;
     private bool _includeReloadButton = false;
 
     private string? _earliestStart = null;
@@ -76,7 +73,7 @@
 
     private async Task GetCourse()
     {
-        if (!Guid.TryParse(CourseId, out _)) {
+        if (CourseId is null) {
             InitCourse();
             return;
         }
@@ -122,43 +119,37 @@
     private async Task SubmitCourse()
     {
         _successMessage = null;
-        _errorMessage = null;
 
         if (_course.Modules.Count > 0) {
             CheckForOverlap();
             if (_overlapErrors.Count > 0) return;
         }
 
-        bool isSuccess = false;
         _isLoading = true;
+
         try {
             if (_isEdit) {
                 await UpdateCourse();
+                _successMessage = "Kursen har uppdaterats!";
             } else {
-                await CreateNewCourse();
+                CourseId = await CreateNewCourse();
+                _successMessage = "Kursen har skapats!";
             }
-            isSuccess = true;
-        } catch (Exception e) {
-            isSuccess = false;
+        }
+        catch (Exception e) {
             if (e.Message == "405 MethodNotAllowed") {
-                _errorMessage = "Ett fel har uppstått. Snälla ladda om sidan och försök igen.";
+                _overlapErrors.Add("Ett fel har uppstått. Snälla ladda om sidan och försök igen.");
                 _includeReloadButton = true;
             } else {
-                _errorMessage = e.Message;
+                _overlapErrors.Add(e.Message);
                 _includeReloadButton = false;
             }
         } finally {
             _isLoading = false;
         }
-        if (isSuccess) {
-            _successMessage = _isEdit ? $"Kurs {_course.Name} redigerad" : $"Kurs {_course.Name} sparad";
-            InitCourse();
-            CourseId = null;
-            NavigationManager.NavigateTo("/create-course");
-        }
     }
 
-    private async Task CreateNewCourse()
+    private async Task<Guid> CreateNewCourse()
     {
         CreateCourseDto createCourseDto = new() {
             Name = _course.Name,
@@ -173,7 +164,8 @@
                 CourseId: (Guid)m.CourseId!
             )).ToList()
         };
-        await ApiService.PostAsync<CreateCourseDto, bool>("api/courses", createCourseDto);
+        var result = await ApiService.PostAsync<CreateCourseDto, CourseDto>("api/courses", createCourseDto);
+        return result!.Id;
     }
 
     private async Task UpdateCourse()

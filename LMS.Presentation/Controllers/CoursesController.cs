@@ -37,7 +37,7 @@ public class CoursesController : ControllerBase
         return Ok(courseDtos);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id:guid}", Name = nameof(GetById))]
     [SwaggerOperation(
         Summary = "Get a course by its ID",
         Description = "Get's a course by its ID. If a student is requesting a course they're not in, returns a 401"
@@ -86,7 +86,7 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
     {
         CourseDto courseDto = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
-        return Created("", courseDto);
+        return CreatedAtAction(nameof(GetById), new { courseDto.Id }, courseDto);
     }
 
     [HttpPatch("{id:guid}")]

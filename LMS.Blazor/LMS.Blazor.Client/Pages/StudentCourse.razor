@@ -5,6 +5,8 @@
 @inject IApiService ApiService
 @attribute [Authorize(Roles = RolesNames.Teacher)]
 
+<PageTitle>Elevöversikt</PageTitle>
+
 @if (_isLoading)
 {
     <div class="container py-4">

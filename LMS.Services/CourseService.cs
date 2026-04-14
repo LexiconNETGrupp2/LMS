@@ -31,8 +31,30 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto> CreateCourse(CreateCourseDto createCourseDto, CancellationToken token)
     {
+        if (createCourseDto.StartDate > createCourseDto.EndDate)
+            throw new BadRequestException("Start- och slutdatum måste får inte överlappa.");
+
         Course course = _mapper.Map<Course>(createCourseDto);
-        foreach (var module in course.Modules) {
+        var modules = course.Modules.ToList();
+        for (int moduleIndex = 0; moduleIndex < modules.Count; ++moduleIndex)
+        {
+            var module = modules[moduleIndex];
+            if (module.StartDate < createCourseDto.StartDate ||
+                module.StartDate > createCourseDto.EndDate ||
+                module.EndDate > createCourseDto.EndDate ||
+                module.EndDate < createCourseDto.StartDate)
+            {
+                throw new BadRequestException($"Modulen '{module.Name}' start- och slutdatum får inte överlappa kursens start- och slutdatum.");
+            }
+
+            for (int i = moduleIndex + 1; i < modules.Count; i++)
+            {
+                var m = modules[i];
+                if ((module.StartDate >= m.StartDate && module.EndDate <= m.EndDate) ||
+                    (module.EndDate >= m.StartDate && module.StartDate <= m.EndDate))
+                    throw new BadRequestException($"Modul '{module.Name}' och '{m.Name}' får inte överlappa.");
+            }
+
             module.Course = course;
         }
         try {
@@ -43,7 +65,7 @@ public class CourseService : ICourseService
             _logger.LogWarning("Error when adding course {CourseId} to database: {ExMessage}", course.Id, ex.Message);
             throw new BadRequestException(ex.Message);
         }
-    }    
+    }
 
     public async Task<PagedResult<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
@@ -141,7 +163,7 @@ public class CourseService : ICourseService
 
     public async Task DeleteCourse(Guid id, CancellationToken token)
     {
-        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
+        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: true, token)
             ?? throw new CourseNotFoundException(id);
 
         try

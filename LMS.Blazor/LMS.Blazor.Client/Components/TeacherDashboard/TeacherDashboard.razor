@@ -14,7 +14,6 @@
 @code {
     private IReadOnlyCollection<CourseDto>? courses;
     private IReadOnlyCollection<CourseDto> activeCourses = [];
-    private bool isLoading = false;
     private DateOnly _today = DateOnly.FromDateTime(DateTime.Now);
 
     protected override async Task OnInitializedAsync()
