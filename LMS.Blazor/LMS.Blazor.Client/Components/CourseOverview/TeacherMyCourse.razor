@@ -1,0 +1,31 @@
+﻿@using System.Security.Claims
+@inject NavigationManager NavigationManager
+@inject IApiService ApiService
+
+Laddar...
+
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> _authenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get UserId
+        var authState = await _authenticationStateTask;
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId is null)
+            GoToDashboard();
+
+        // Get CourseId
+        var uri = $"api/courses/user/{userId}";
+        var result = await ApiService.GetAsync<CourseDto>(uri);
+        if (result is null)
+            GoToDashboard();
+
+        NavigationManager.NavigateTo($"/courses/{result!.Id}");
+    }
+
+    private void GoToDashboard()
+        => NavigationManager.NavigateTo("/");
+}

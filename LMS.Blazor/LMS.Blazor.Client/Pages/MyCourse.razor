@@ -1,32 +1,15 @@
 ﻿@page "/MyCourse"
 @using LMS.Blazor.Client.Components.CourseOverview
-@using System.Security.Claims
-@inject IApiService ApiService
 @attribute [Authorize]
 
-<CourseOverviewView Course="_model" />
-@code {
-    [CascadingParameter]
-    private Task<AuthenticationState> _authenticationStateTask { get; set; } = default!;
-    private CourseOverviewViewModel _model = new();
+<AuthorizeView Roles="@RolesNames.Teacher">
+    <Authorized>
+        <TeacherMyCourse />
+    </Authorized>
+</AuthorizeView>
 
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = await _authenticationStateTask;
-        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null)
-            return;
-
-        _model = await GetCourse(userId);
-    }
-
-    private async Task<CourseOverviewViewModel> GetCourse(string userId)
-    {
-        var uri = $"api/courses/user/{userId}";
-        var result = await ApiService.GetAsync<CourseDto>(uri);
-        if (result == null)
-            return new();
-        ArgumentNullException.ThrowIfNull(result);
-        return CourseOverviewMapper.Map(result);
-    }
-}
+<AuthorizeView Roles="@RolesNames.Student">
+    <Authorized>
+        <StudentMyCourse />
+    </Authorized>
+</AuthorizeView>
