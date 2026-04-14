@@ -218,7 +218,7 @@ else
             .Select(module => new ModuleProgressModel
             {
                 Name = module.Name,
-                Progress = 0
+                Progress = Random.Shared.Next(0, 100) // TODO: Replace with real progress data
             })
             .ToList();
     }
@@ -251,7 +251,7 @@ else
                 Description = module.Description,
                 StartDate = module.StartDate.ToDateTime(TimeOnly.MinValue),
                 EndDate = module.EndDate.ToDateTime(TimeOnly.MinValue),
-                Progress = 0,
+                Progress = Random.Shared.Next(0, 100), // TODO: Replace with real progress data
                 IsExpanded = index == 0,
                 Activities = (module.Activities ?? [])
                     .OrderBy(activity => activity.StartDate)
