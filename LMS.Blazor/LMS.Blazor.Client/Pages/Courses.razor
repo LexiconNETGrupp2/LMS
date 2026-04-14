@@ -13,7 +13,7 @@
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
         <div>
             <h1 class="modules-page-title mb-1">Kurser</h1>
-            <p class="text-body-secondary mb-0">Hantera kurser och dess moduler.</p>
+            <p class="text-secondary mb-0">Totalt @totalCourses kurser i systemet.</p>
         </div>
         <button type="button" class="btn btn-primary modules-primary-action" @onclick="() => GoToCreateCourses()">
             <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
@@ -232,6 +232,7 @@
     private string? loadError;
     private string? submitError;
     private string? actionMessage;
+    private int totalCourses;
 
     [SupplyParameterFromQuery] public int Page { get; set; } = PagedQuery.MinPage;
     [SupplyParameterFromQuery] public DateOnly? AfterDate { get; set; }
@@ -261,6 +262,7 @@
             var result = await ApiService.GetAsync<PagedResult<CourseDto>>(uri);
             courses = result?.Items.ToList() ?? [];
             lastPage = result?.TotalPages ?? PagedQuery.MinPage;
+            totalCourses = result?.TotalItems ?? 0;
 
             expandedCourseIds = courses
                 .Select(course => course.Id)
