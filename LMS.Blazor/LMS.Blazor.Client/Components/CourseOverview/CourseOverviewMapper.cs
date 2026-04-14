@@ -10,7 +10,7 @@ public static class CourseOverviewMapper
             Title = result.Name,
             Description = result.Description,
             DateRange = $"{result.StartDate} - {result.EndDate}",
-            ProgressPercent = 0,
+            ProgressPercent = Random.Shared.Next(0, 100), // TODO: Calculate progress percent
             Modules = result.Modules.Select(s => new ModuleViewModel()
             {
                 Id = s.Id.ToString(),
@@ -19,6 +19,7 @@ public static class CourseOverviewMapper
                 // Expand when current date is between start and end date of the module
                 IsExpanded = DateTime.Now >= s.StartDate.ToDateTime(TimeOnly.MinValue) &&
                              DateTime.Now <= s.EndDate.ToDateTime(TimeOnly.MaxValue),
+                ProgressPercent = Random.Shared.Next(0, 100), // TODO: Calculate progress percent based on activities
                 Activities = s.Activities.Select(a => new ActivityViewModel()
                 {
                     Title = a.Name,
