@@ -32,7 +32,10 @@
 
 @if (EditUserId is not null)
 {
-    <EditUser OnUserEdit="@OnUserEdit" OnClose="@OnUserEditClose" UserId="@EditUserId" />
+    <EditUser @key="EditUserId"
+              OnUserEdit="@OnUserEdit"
+              OnClose="@OnUserEditClose"
+              UserId="@EditUserId" />
 }
 
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
