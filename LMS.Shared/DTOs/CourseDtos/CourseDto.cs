@@ -9,6 +9,9 @@ public sealed record CourseDto
     public string StartDateStr => StartDate.ToString("yyyy-MM-dd");
     public DateOnly EndDate {get; set; }
     public string EndDateStr => EndDate.ToString("yyyy-MM-dd");
+    public int NumberOfTeachers { get; set; }
     public int NumberOfStudents {get; set; }
+    public int TotalParticipants => NumberOfTeachers + NumberOfStudents;
+
     public ICollection<CourseModuleDto> Modules { get; set; } = [];
 }

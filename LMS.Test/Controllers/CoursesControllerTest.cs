@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Domain.Models.Exceptions;
+using LMS.Presentation;
 using LMS.Presentation.Controllers;
 using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
@@ -22,7 +23,6 @@ public class CoursesControllerTest
         // Arrange
         var ct = CancellationToken.None;
         var param = new AllCoursesParams(
-            Search: null,
             AfterDate: null,
             BeforeDate: null)
         {
@@ -114,7 +114,7 @@ public class CoursesControllerTest
 
     [Fact]
     [Trait("Layer", "Controller")]
-    public async Task GetByUserId_WhenStudentRequestsDifferentUser_ReturnsUnauthorized()
+    public async Task GetByUserId_WhenStudentRequestsDifferentUser_ReturnsForbidden()
     {
         // Arrange
         var ct = CancellationToken.None;
@@ -122,6 +122,9 @@ public class CoursesControllerTest
         var currentStudentId = Guid.NewGuid();
 
         var courseServiceMock = new Mock<ICourseService>();
+        courseServiceMock
+            .Setup(s => s.GetCourseByUserId(requestedUserId, currentStudentId.ToString(), ct))
+            .Throws<UserForbiddenException>();
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
             new Claim(ClaimTypes.NameIdentifier, currentStudentId.ToString()),
@@ -131,11 +134,9 @@ public class CoursesControllerTest
         var controller = CreateController(courseServiceMock, principal);
 
         // Act
-        var result = await controller.GetByUserId(requestedUserId, ct);
-
         // Assert
-        Assert.IsType<UnauthorizedObjectResult>(result);
-        courseServiceMock.Verify(s => s.GetCourseByUserId(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        await Assert.ThrowsAsync<UserForbiddenException>(async () => await controller.GetByUserId(requestedUserId, ct));
+        courseServiceMock.Verify(s => s.GetCourseByUserId(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -170,7 +171,7 @@ public class CoursesControllerTest
         var result = await controller.Create(createCourseDto, ct);
 
         // Assert
-        Assert.IsType<CreatedResult>(result);
+        Assert.IsType<CreatedAtActionResult>(result);
         courseServiceMock.Verify(s => s.CreateCourse(createCourseDto, ct), Times.Once);
     }
 

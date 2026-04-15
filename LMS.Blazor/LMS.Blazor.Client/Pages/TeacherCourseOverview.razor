@@ -11,6 +11,7 @@
 @using LMS.Shared.DTOs.ActivityDtos
 @using LMS.Shared.DTOs.ModuleDtos
 
+<PageTitle>Kursdetaljer</PageTitle>
 
 @if (_isLoading)
 {
@@ -208,7 +209,8 @@ else
         {
             Modules = course.Modules?.Count ?? 0,
             Activities = course.Modules?.Sum(m => m.Activities?.Count ?? 0) ?? 0,
-            Students = course.NumberOfStudents
+            Students = course.NumberOfStudents,
+            Teachers = course.NumberOfTeachers
         };
     }
 
@@ -218,7 +220,7 @@ else
             .Select(module => new ModuleProgressModel
             {
                 Name = module.Name,
-                Progress = 0
+                Progress = Random.Shared.Next(0, 100) // TODO: Replace with real progress data
             })
             .ToList();
     }
@@ -251,7 +253,7 @@ else
                 Description = module.Description,
                 StartDate = module.StartDate.ToDateTime(TimeOnly.MinValue),
                 EndDate = module.EndDate.ToDateTime(TimeOnly.MinValue),
-                Progress = 0,
+                Progress = Random.Shared.Next(0, 100), // TODO: Replace with real progress data
                 IsExpanded = index == 0,
                 Activities = (module.Activities ?? [])
                     .OrderBy(activity => activity.StartDate)
@@ -280,6 +282,7 @@ else
         var students = await ApiService.GetAsync<List<CourseStudentDto>>(uri) ?? [];
         return students.Select(s => new StudentListItemModel
         {
+            Id = s.Id,
             Name = s.FullName,
             Email = s.Email,
             ProgressPercent = Random.Shared.Next(0, 100), // TODO: Replace with real progress data
@@ -289,7 +292,7 @@ else
 
     private void HandleEditCourse()
     {
-        // Navigate to edit page or open modal
+        NavigationManager.NavigateTo($"/create-course/{CourseId}");
     }
 
     private void HandleTabChanged(string tabValue)
@@ -379,15 +382,32 @@ else
             return;
         }
 
+        var (moduleStartMin, moduleEndMax) = GetModuleDateTimeBounds(module);
         var start = DateTime.Now;
+
+        if (start < moduleStartMin)
+        {
+            start = moduleStartMin;
+        }
+        else if (start > moduleEndMax)
+        {
+            start = moduleEndMax;
+        }
+
         var end = start.AddHours(2);
+        if (end > moduleEndMax)
+        {
+            end = moduleEndMax;
+        }
 
         activityForm = new ActivityFormModel
         {
             ModuleId = moduleId,
             ModuleName = module.Title,
-            StartDateTimeLocal = start.ToString("yyyy-MM-ddTHH:mm"),
-            EndDateTimeLocal = end.ToString("yyyy-MM-ddTHH:mm")
+            ModuleStartDateTimeMin = FormatDateTimeLocal(moduleStartMin),
+            ModuleEndDateTimeMax = FormatDateTimeLocal(moduleEndMax),
+            StartDateTimeLocal = FormatDateTimeLocal(start),
+            EndDateTimeLocal = FormatDateTimeLocal(end)
         };
 
         isActivityModalOpen = true;
@@ -405,9 +425,11 @@ else
             return;
         }
 
-        var moduleName = _courseModules
-            .FirstOrDefault(m => m.Id == activity.ModuleId)?.Title
-            ?? "Modul";
+        var module = _courseModules.FirstOrDefault(m => m.Id == activity.ModuleId);
+        var moduleName = module?.Title ?? "Modul";
+        var (moduleStartMin, moduleEndMax) = module is null
+            ? (activity.Date, activity.Deadline ?? activity.Date.AddHours(2))
+            : GetModuleDateTimeBounds(module);
 
         var endDate = activity.Deadline ?? activity.Date.AddHours(2);
 
@@ -416,10 +438,12 @@ else
             ActivityId = activityId,
             ModuleId = moduleId,
             ModuleName = moduleName,
+            ModuleStartDateTimeMin = FormatDateTimeLocal(moduleStartMin),
+            ModuleEndDateTimeMax = FormatDateTimeLocal(moduleEndMax),
             Name = activity.Title,
             Description = activity.Description,
-            StartDateTimeLocal = activity.Date.ToString("yyyy-MM-ddTHH:mm"),
-            EndDateTimeLocal = endDate.ToString("yyyy-MM-ddTHH:mm"),
+            StartDateTimeLocal = FormatDateTimeLocal(activity.Date),
+            EndDateTimeLocal = FormatDateTimeLocal(endDate),
             TypeName = activity.Type.ToString()
         };
 
@@ -566,6 +590,23 @@ else
             return;
         }
 
+        var selectedModule = _courseModules.FirstOrDefault(module =>
+            Guid.TryParse(module.Id, out var moduleId) &&
+            moduleId == activityForm.ModuleId);
+
+        if (selectedModule is null)
+        {
+            activitySubmitError = "Kunde inte hitta den valda modulen.";
+            return;
+        }
+
+        var validationError = ValidateActivitySchedule(selectedModule, startDate, endDate);
+        if (validationError is not null)
+        {
+            activitySubmitError = validationError;
+            return;
+        }
+
         isActivitySubmitting = true;
 
         try
@@ -611,5 +652,39 @@ else
         {
             isActivitySubmitting = false;
         }
+    }
+
+    private string? ValidateActivitySchedule(ModuleModel module, DateTime startDate, DateTime endDate)
+    {
+        if (startDate.Date < module.StartDate.Date || endDate.Date > module.EndDate.Date)
+        {
+            return $"Aktivitetens datum måste ligga inom modulens datum ({module.StartDate:yyyy-MM-dd} - {module.EndDate:yyyy-MM-dd}).";
+        }
+
+        var currentActivityId = activityForm.IsEditMode && activityForm.ActivityId.HasValue
+            ? activityForm.ActivityId.Value.ToString()
+            : null;
+
+        var hasOverlap = module.Activities.Any(activity =>
+            activity.Id != currentActivityId &&
+            startDate <= (activity.Deadline ?? activity.Date) &&
+            endDate >= activity.Date);
+
+        if (hasOverlap)
+        {
+            return "Aktivitetens datum överlappar med en annan aktivitet i den här modulen. En aktivitet kan inte sluta samtidigt som en annan börjar.";
+        }
+
+        return null;
+    }
+
+    private static (DateTime Min, DateTime Max) GetModuleDateTimeBounds(ModuleModel module)
+    {
+        return (module.StartDate.Date, module.EndDate.Date.AddDays(1).AddMinutes(-1));
+    }
+
+    private static string FormatDateTimeLocal(DateTime value)
+    {
+        return value.ToString("yyyy-MM-ddTHH:mm");
     }
 }

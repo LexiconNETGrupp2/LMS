@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using LMS.Shared.Constants;
+﻿using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -31,27 +30,27 @@ public class CoursesController : ControllerBase
         Description = "Gets all the courses that's in the database"
     )]
     [SwaggerResponse(StatusCodes.Status200OK)]
-    [SwaggerResponse(StatusCodes.Status401Unauthorized, "You need to be a teacher")]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "You need to be a teacher")]
     public async Task<IActionResult> GetAll([FromQuery] AllCoursesParams param, CancellationToken token)
     {
         var courseDtos = await _serviceManager.CourseService.GetAllCourses(param, token);
         return Ok(courseDtos);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id:guid}", Name = nameof(GetById))]
     [SwaggerOperation(
         Summary = "Get a course by its ID",
         Description = "Get's a course by its ID. If a student is requesting a course they're not in, returns a 401"
     )]
     [SwaggerResponse(StatusCodes.Status200OK)]
-    [SwaggerResponse(StatusCodes.Status401Unauthorized, "You need to be a teacher to request a course you're not in")]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "You need to be a teacher to request a course you're not in")]
     [SwaggerResponse(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken token)
     {
-        // If a student is requesting a course they're not in, return 401
+        // If a student is requesting a course they're not in, return 403
         string? currentStudentId = null;
-        if (IsStudent()) 
-            currentStudentId = GetCurrentUserId();
+        if (ControllerHelpers.IsStudent(User)) 
+            currentStudentId = ControllerHelpers.GetCurrentUserId(User);
 
         var courseDto = await _serviceManager.CourseService.GetCourseById(id, currentStudentId, token);
         return Ok(courseDto);
@@ -61,23 +60,18 @@ public class CoursesController : ControllerBase
     [SwaggerOperation(
         Summary = "Get a course by a user's ID",
         Description = "Takes a user's ID and returns the course they're in. " +
-            "Returns 401 if a student is trying to request someone else's course (ID of authorized user != ID in request)"
+            "Returns 403 if a student is trying to request someone else's course (ID of authorized user != ID in request)"
     )]
     [SwaggerResponse(StatusCodes.Status200OK)]
-    [SwaggerResponse(StatusCodes.Status401Unauthorized, "You can only request your own course")]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "You can only request your own course")]
     [SwaggerResponse(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByUserId(Guid id, CancellationToken token)
+    public async Task<ActionResult<IReadOnlyCollection<CourseDto>>> GetByUserId(Guid id, CancellationToken token)
     {
-        // If a student is requesting someone else's courses, return 401
-        if (IsStudentGettingUnauthorizedCourse(id)) 
-        {
-            return Unauthorized(new ProblemDetails {
-                Title = "Unauthorized",
-                Detail = "You're not authorized to get this course"
-            });
-        }
+        string? currentStudentId = null;
+        if (ControllerHelpers.IsStudent(User))
+            currentStudentId = ControllerHelpers.GetCurrentUserId(User);
 
-        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, token);        
+        var courseDto = await _serviceManager.CourseService.GetCourseByUserId(id, currentStudentId, token);
         return Ok(courseDto);
     }
 
@@ -92,7 +86,7 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto, CancellationToken token)
     {
         CourseDto courseDto = await _serviceManager.CourseService.CreateCourse(createCourseDto, token);
-        return Created("", courseDto);
+        return CreatedAtAction(nameof(GetById), new { courseDto.Id }, courseDto);
     }
 
     [HttpPatch("{id:guid}")]
@@ -130,15 +124,16 @@ public class CoursesController : ControllerBase
     )]
     [SwaggerResponse(StatusCodes.Status200OK)]
     [SwaggerResponse(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status403Forbidden)]
     [SwaggerResponse(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMyCourseParticipants(CancellationToken token)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdClaim = ControllerHelpers.GetCurrentUserId(User);
 
         if (!Guid.TryParse(userIdClaim, out var userId)) {
             return Unauthorized(new ProblemDetails {
                 Title = "Unauthorized",
-                Detail = "You're not allowed get the participants for this course"
+                Detail = "You need to login again"
             });
         }
 
@@ -150,27 +145,14 @@ public class CoursesController : ControllerBase
     [HttpGet("{id:guid}/students")]
     [Authorize(Roles = RolesNames.Teacher)]
     [SwaggerOperation(
-    Summary = "Get students in the current course",
-    Description = "Retrieves the students for the course. Require Teacher role"
+        Summary = "Get students in the current course",
+        Description = "Retrieves the students for the course. Require Teacher role"
     )]
     [SwaggerResponse(StatusCodes.Status200OK)]
-    [SwaggerResponse(StatusCodes.Status401Unauthorized)]
+    [SwaggerResponse(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetCourseStudents(Guid id, CancellationToken token)
     {
         var students = await _serviceManager.CourseService.GetStudentsByCourseId(id, token);
         return Ok(students);
-    }
-
-    private bool IsStudent()
-        => User.IsInRole(RolesNames.Student);
-    private string? GetCurrentUserId()
-        => User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-    private bool IsStudentGettingUnauthorizedCourse(Guid studentId)
-    {
-        var isStudent = IsStudent();
-        if (!isStudent) return false;
-        var currentUserId = GetCurrentUserId();
-        return currentUserId is null || currentUserId != studentId.ToString();
     }
 }

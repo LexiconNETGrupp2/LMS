@@ -1,4 +1,5 @@
 using LMS.Presentation.Controllers;
+using LMS.Shared.Constants;
 using LMS.Shared.DTOs.AuthDtos;
 using LMS.Shared.DTOs.UserDtos;
 using LMS.Shared.Pagination;
@@ -33,7 +34,7 @@ public class UsersControllerTest
                 },
             },
         };
-        PagedQuery query = new() { Page = 1, PageSize = 20 };
+        AllUsersParams query = new(RolesNames.Teacher) { Page = 1, PageSize = 20 };
         userServiceMock
             .Setup(s => s.GetAllUsers(query, ct))
             .ReturnsAsync(expectedUsers);
@@ -108,6 +109,43 @@ public class UsersControllerTest
         Assert.Equal(createdUser.Id, createdAtActionResult.RouteValues!["id"]);
         Assert.Same(createdUser, createdAtActionResult.Value);
         userServiceMock.Verify(s => s.CreateUser(userRegistrationDto), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Layer", "Controller")]
+    public async Task Update_WhenUserIsValid_ReturnsOkWithUpdatedUser()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var ct = new CancellationTokenSource().Token;
+        var updateUserDto = new UpdateUserDto
+        {
+            Email = "updated@example.com",
+            FirstName = "Updated",
+            LastName = "User"
+        };
+        var updatedUser = new UserDto
+        {
+            Id = userId,
+            Email = updateUserDto.Email,
+            FirstName = updateUserDto.FirstName,
+            LastName = updateUserDto.LastName
+        };
+
+        var userServiceMock = new Mock<IUserService>();
+        userServiceMock
+            .Setup(s => s.UpdateUser(userId, updateUserDto, ct))
+            .ReturnsAsync(updatedUser);
+
+        var controller = CreateController(userServiceMock);
+
+        // Act
+        var result = await controller.Update(userId, updateUserDto, ct);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(updatedUser, okResult.Value);
+        userServiceMock.Verify(s => s.UpdateUser(userId, updateUserDto, ct), Times.Once);
     }
 
     private static UsersController CreateController(Mock<IUserService> userServiceMock)

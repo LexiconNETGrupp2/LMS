@@ -18,7 +18,7 @@ public class UsersController(IServiceManager serviceManager) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<UserDto>>> GetAll([FromQuery] PagedQuery query)
+    public async Task<ActionResult<PagedResult<UserDto>>> GetAll([FromQuery] AllUsersParams query)
     {
         var users = await UserService.GetAllUsers(query);
         return Ok(users);
@@ -49,5 +49,17 @@ public class UsersController(IServiceManager serviceManager) : ControllerBase
     {
         await UserService.DeleteUser(id);
         return NoContent();
+    }
+
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateUserDto request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var updatedUser = await UserService.UpdateUser(id, request, token);
+        return Ok(updatedUser);
     }
 }

@@ -11,7 +11,7 @@ public class CourseStatisticsModel
     public int Modules { get; set; }
     public int Activities { get; set; }
     public int Students { get; set; }
-    public int Submissions { get; set; } = 0;
+    public int Teachers { get; set; } = 0;
 }
 
 public class ActivityModel
@@ -53,6 +53,7 @@ public class ModuleDocumentModel
 }
 public class StudentListItemModel
 {
+    public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public int ProgressPercent { get; set; }

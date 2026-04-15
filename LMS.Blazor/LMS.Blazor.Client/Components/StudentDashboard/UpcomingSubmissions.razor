@@ -1,0 +1,20 @@
+﻿<ul class="list-unstyled mb-0">
+@foreach (var s in Items)
+{
+  <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+    <div>
+      <div class="small fw-medium">@s.Title</div>
+      <small class="text-muted">@s.DueText</small>
+    </div>
+    @if (!string.IsNullOrEmpty(s.Badge))
+    {
+      <span class="badge bg-warning text-dark">@s.Badge</span>
+    }
+  </li>
+}
+</ul>
+
+@code {
+    [Parameter]
+    public List<SubmissionItem> Items { get; set; } = [];
+}

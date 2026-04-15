@@ -14,10 +14,9 @@
 @code {
     private IReadOnlyCollection<CourseDto>? courses;
     private IReadOnlyCollection<CourseDto> activeCourses = [];
-    private bool isLoading = false;
-    private DateOnly _today = DateOnly.FromDateTime(DateTime.Now);    
+    private DateOnly _today = DateOnly.FromDateTime(DateTime.Now);
 
-    protected async override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         await Init();
     }
@@ -25,8 +24,9 @@
     private async Task Init()
     {
         // AFAIK this component can only load if the current user is a teacher + api also has validation
-        
-        var response = await ApiService.GetAsync<PagedResult<CourseDto>>($"api/courses?beforeDate={_today}");
+
+        var uri = $"api/courses?beforeDate={_today}&afterDate={_today}";
+        var response = await ApiService.GetAsync<PagedResult<CourseDto>>(uri);
         courses = response?.Items ?? [];
         await SetActiveCourses();
     }

@@ -3,7 +3,6 @@ using Domain.Contracts.Queries;
 using Domain.Contracts.Repositories;
 using Domain.Models.Entities;
 using Domain.Models.Exceptions;
-using LMS.Shared.Constants;
 using LMS.Shared.DTOs.CourseDtos;
 using LMS.Shared.Pagination;
 using Microsoft.Extensions.Logging;
@@ -32,8 +31,30 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto> CreateCourse(CreateCourseDto createCourseDto, CancellationToken token)
     {
+        if (createCourseDto.StartDate > createCourseDto.EndDate)
+            throw new BadRequestException("Start- och slutdatum måste får inte överlappa.");
+
         Course course = _mapper.Map<Course>(createCourseDto);
-        foreach (var module in course.Modules) {
+        var modules = course.Modules.ToList();
+        for (int moduleIndex = 0; moduleIndex < modules.Count; ++moduleIndex)
+        {
+            var module = modules[moduleIndex];
+            if (module.StartDate < createCourseDto.StartDate ||
+                module.StartDate > createCourseDto.EndDate ||
+                module.EndDate > createCourseDto.EndDate ||
+                module.EndDate < createCourseDto.StartDate)
+            {
+                throw new BadRequestException($"Modulen '{module.Name}' start- och slutdatum får inte överlappa kursens start- och slutdatum.");
+            }
+
+            for (int i = moduleIndex + 1; i < modules.Count; i++)
+            {
+                var m = modules[i];
+                if ((module.StartDate >= m.StartDate && module.EndDate <= m.EndDate) ||
+                    (module.EndDate >= m.StartDate && module.StartDate <= m.EndDate))
+                    throw new BadRequestException($"Modul '{module.Name}' och '{m.Name}' får inte överlappa.");
+            }
+
             module.Course = course;
         }
         try {
@@ -44,17 +65,20 @@ public class CourseService : ICourseService
             _logger.LogWarning("Error when adding course {CourseId} to database: {ExMessage}", course.Id, ex.Message);
             throw new BadRequestException(ex.Message);
         }
-    }    
+    }
 
     public async Task<PagedResult<CourseDto>> GetAllCourses(AllCoursesParams param, CancellationToken token)
     {
         var result = await _uow.Courses.GetAllCourses(param, token);
+        var courseDtos = _mapper.Map<List<CourseDto>>(result.Items);
+        await FillParticipantCounts(courseDtos, token);
+
         return new PagedResult<CourseDto>
         {
             Page = result.Page,
             PageSize = result.PageSize,
             TotalItems = result.TotalItems,
-            Items = _mapper.Map<List<CourseDto>>(result.Items),
+            Items = courseDtos,
         };
     }
 
@@ -65,18 +89,24 @@ public class CourseService : ICourseService
         
         var userIds = course.Students.Select(u => u.Id);
         if (currentStudentId is not null && !userIds.Contains(currentStudentId))
-            throw new UserUnauthorizedException();
+            throw new UserForbiddenException("You're not allowed to access this course");
 
         var courseDto = _mapper.Map<CourseDto>(course);
+        await FillParticipantCounts([courseDto], token);
         return courseDto;
     }
 
-    public async Task<CourseDto?> GetCourseByUserId(Guid id, CancellationToken token)
+    public async Task<CourseDto?> GetCourseByUserId(Guid id, string? currentStudentId, CancellationToken token)
     {
         var course = await _uow.Courses.GetCourseFromUserId(id, trackChanges: false, token)
             ?? throw new CourseNotFoundException(id);
 
+        var userIds = course.Students.Select(u => u.Id);
+        if (currentStudentId is not null && !userIds.Contains(currentStudentId))
+            throw new UserForbiddenException("You're not allowed to access this course");
+
         var courseDto = _mapper.Map<CourseDto>(course);
+        await FillParticipantCounts([courseDto], token);
         return courseDto;
     }
 
@@ -87,7 +117,7 @@ public class CourseService : ICourseService
 
     public async Task UpdateCourse(Guid id, UpdateCourseDto updateCourseDto, CancellationToken token)
     {
-        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
+        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token, includeAllData: false)
            ?? throw new CourseNotFoundException(id);
 
         if (updateCourseDto.Name is not null)
@@ -100,10 +130,22 @@ public class CourseService : ICourseService
         }
         if (updateCourseDto.StartDate is not null)
         {
+            if (course.Modules.Count > 0) {
+                Module module = course.Modules.OrderBy(m => m.StartDate).First();
+                DateOnly earliestDate = module.StartDate;
+                if (updateCourseDto.StartDate > earliestDate)
+                    throw new BadRequestException($"Den här kursen kan börja senast {earliestDate:yyyy-MM-dd} så att modulen {module.Name} inte startar innan kursen.");
+            }
             course.StartDate = (DateOnly)updateCourseDto.StartDate;
         }
         if (updateCourseDto.EndDate is not null)
         {
+            if (course.Modules.Count > 0) {
+                Module module = course.Modules.OrderBy(m => m.EndDate).Last();
+                DateOnly latestDate = module.EndDate;
+                if (updateCourseDto.EndDate < latestDate)
+                    throw new BadRequestException($"Den här kursen kan sluta tidigast {latestDate:yyyy-MM-dd} så att modulen {module.Name} inte slutar efter kursen.");
+            }
             course.EndDate = (DateOnly)updateCourseDto.EndDate;
         }
 
@@ -121,7 +163,7 @@ public class CourseService : ICourseService
 
     public async Task DeleteCourse(Guid id, CancellationToken token)
     {
-        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: false, token)
+        Course? course = await _uow.Courses.GetCourseById(id, trackChanges: true, token)
             ?? throw new CourseNotFoundException(id);
 
         try
@@ -139,5 +181,21 @@ public class CourseService : ICourseService
     public async Task<IReadOnlyCollection<CourseStudentDto>> GetStudentsByCourseId(Guid courseId, CancellationToken token)
     {
         return await _participantQuery.GetStudentsByCourseId(courseId, token);
+    }
+
+    private async Task FillParticipantCounts(IReadOnlyCollection<CourseDto> courseDtos, CancellationToken token)
+    {
+        var countsByCourseId = await _participantQuery.GetCourseParticipantCountsByCourseIds(
+            courseDtos.Select(course => course.Id).ToArray(),
+            token);
+
+        foreach (var courseDto in courseDtos)
+        {
+            if (!countsByCourseId.TryGetValue(courseDto.Id, out var participantCounts))
+                continue;
+
+            courseDto.NumberOfTeachers = participantCounts.NumberOfTeachers;
+            courseDto.NumberOfStudents = participantCounts.NumberOfStudents;
+        }
     }
 }
